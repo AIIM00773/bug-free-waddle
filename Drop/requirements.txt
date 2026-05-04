@@ -1,0 +1,15 @@
+asgiref==3.8.1
+Django==6.0.3
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.3.1
+django-cors-headers==4.4.0
+django-jazzmin==3.0.1
+Pillow==10.4.0
+sqlparse==0.5.1
+typing-extensions==4.12.2
+django-ratelimit==4.1.0
+cryptography==43.0.1
+python-decouple==3.8
+django-secure==1.0.2
+python-magic==0.4.27
+whitenoise==6.7.0
