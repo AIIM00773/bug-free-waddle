@@ -91,6 +91,7 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
 
+
     @property
     def age(self):
 
@@ -115,6 +116,7 @@ class User(AbstractUser):
     def __str__(self):
         return self.phone
     
+
 
 
 
