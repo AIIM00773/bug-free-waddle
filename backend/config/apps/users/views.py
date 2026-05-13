@@ -16,9 +16,6 @@ User = get_user_model()
 
 
 
-
-
-
 class UserRegistrationView(APIView):
 
     permission_classes = [permissions.AllowAny]
@@ -48,6 +45,7 @@ class UserRegistrationView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
 
 
 
@@ -114,9 +112,11 @@ class UserRegistrationView(APIView):
 
 
 
+
+
         # Create user
         user = User.objects.create_user(
-            phone=phone,
+            username= phone,
             email=email,
             first_name=first_name,
             last_name=last_name,
@@ -134,7 +134,7 @@ class UserRegistrationView(APIView):
 
                 "user": {
                     "uuid": str(user.unique_uuid),
-                    "phone": user.phone,
+                    "phone": user.username,
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
@@ -170,8 +170,10 @@ class UserRegistrationView(APIView):
 
 
 
-class UserLoginView(APIView):
 
+
+class UserLoginView(APIView):
+   
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
@@ -239,7 +241,7 @@ class UserLogoutView(APIView):
     permission_classes = [
         permissions.IsAuthenticated
     ]
-    
+
 
     def get(self, request, *args, **kwargs):
 

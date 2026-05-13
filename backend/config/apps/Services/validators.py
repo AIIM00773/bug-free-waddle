@@ -58,7 +58,7 @@ def validate_password(password: str) -> bool:
     """
 
     return bool(
-        PASSWORD_PATTERN.fullmatch(password)
+        len(password.strip()) >=6
     )
 
 
@@ -75,7 +75,7 @@ def validate_phone(phone: str) -> bool:
     cleaned_phone = phone.strip()
 
     phone_exists = User.objects.filter(
-        phone=cleaned_phone
+        username=cleaned_phone
     ).exists()
 
     return (
