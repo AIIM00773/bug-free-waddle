@@ -6,6 +6,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import App from "./App";
 import ShopPage from "./Home"; // (rename later to ShopPage.tsx for clarity)
+import AuthPage from "./Auth"; // (if you have an auth page, otherwise remove this import)
 
 const router = createBrowserRouter([
   {
@@ -21,6 +22,10 @@ const router = createBrowserRouter([
     path: "/shop",
     element: <ShopPage />,
   },
+  {
+    path: "/auth",
+    element: <AuthPage />,
+  }
   
 ]);
 
