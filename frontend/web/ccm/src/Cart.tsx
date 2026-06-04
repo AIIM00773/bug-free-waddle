@@ -24,26 +24,7 @@ interface CartItem {
 
 export default function CartPage() {
     // Mocking the local state synchronized from your global state/cart context
-    const [cartItems, setCartItems] = useState<CartItem[]>([
-        {
-            id: 'prod-001',
-            title: 'Oraimo FreePods 4 True Wireless Stereo Earbuds',
-            price: 3400,
-            image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=200&q=80',
-            quantity: 1,
-            platformBadge: 'Vendor Tier A',
-            specification: 'Black / Active Noise Cancellation'
-        },
-        {
-            id: 'prod-002',
-            title: 'Generic Men Cargo Pants - Multi-pocket Desert Khaki',
-            price: 1850,
-            image: 'https://images.unsplash.com/photo-1517423568366-8b83523034fd?auto=format&fit=crop&w=200&q=80',
-            quantity: 2,
-            platformBadge: 'Vendor Tier B',
-            specification: 'Size 32 / Khaki'
-        }
-    ]);
+    const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
     const updateQuantity = (id: string, delta: number) => {
         setCartItems(prev => prev.map(item => {

@@ -1,9 +1,23 @@
 import { useState, useEffect } from 'react';
-import { ArrowRightIcon, XIcon } from 'lucide-react';
+import {
+  ArrowRight,
+  X,
+  Sparkles,
+  Store,
+  ShoppingBag,
+  CheckCircle2,
+  Layers,
+  Maximize2,
+  Eye,
+  Cpu,
+  ArrowUpRight
+} from 'lucide-react';
+import { Link, Links } from 'react-router-dom';
 
 export default function LandingPage() {
-  const [merchantStep, setMerchantStep] = useState(1);
+  const [merchantStep, setMerchantStep] = useState<1 | 2 | 3>(1);
   const [userType, setUserType] = useState<'buyer' | 'merchant' | null>(null);
+  const [isProcessingVision, setIsProcessingVision] = useState(false);
 
   // Keyboard shortcut handler to close modals on 'Escape'
   useEffect(() => {
@@ -14,76 +28,108 @@ export default function LandingPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const triggerVisionPipeline = () => {
+    setIsProcessingVision(true);
+    setTimeout(() => {
+      setIsProcessingVision(false);
+      setMerchantStep(2);
+    }, 1400);
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans antialiased selection:bg-indigo-100 selection:text-indigo-900">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-900">
 
       {/* 1. Header Navigation */}
-      <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <nav className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/80 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white flex items-center justify-center font-black text-sm tracking-tighter shadow-sm">
-              CC
+            <div className="h-9 w-9 rounded-xl bg-slate-950 text-white flex items-center justify-center font-black text-sm tracking-tight shadow-xs">
+              S
             </div>
-            <span className="font-bold text-lg tracking-tight text-zinc-900">
-              ccm<span className="text-indigo-600">.</span>
+            <span className="font-black text-base tracking-tight text-slate-900 uppercase">
+              Soko<span className="text-emerald-600">AI</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button className="bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition shadow-sm flex items-center flex-shrink-0 flex-row gap-1">
-              Get Started
-              <ArrowRightIcon className="ml-1 h-3.5 w-3.5" />
-            </button>
+          <div className="flex items-center gap-4">
+            <Link to="/shop">
+              <button className="bg-slate-900 hover:bg-slate-800 active:scale-98 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-xs flex items-center gap-1.5">
+                Explore Marketplace
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+            </Link>
           </div>
         </div>
       </nav>
 
+      {/* 2. Hero Section */}
+      <header className="relative bg-white border-b border-slate-200 min-h-[calc(100vh-4rem)] flex items-center justify-center overflow-hidden py-12">
+        {/* Immersive mesh gradients */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-100/40 rounded-full filter blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-100/40 rounded-full filter blur-3xl pointer-events-none" />
 
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center space-y-8">
 
-
-      {/* 2. Hero Background Context */}
-      <header className="relative bg-white border-b border-zinc-200 h-[calc(text-sm,100vh-4rem)] min-h-[calc(100vh-6rem)] flex items-center justify-center overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-100/30 rounded-full filter blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-violet-100/30 rounded-full filter blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center space-y-6">
-    
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-zinc-950 leading-[1.05] max-w-3xl mx-auto">
-            The marketplace built on <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-600">pure intent.</span>
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-black tracking-tight text-slate-950 leading-[1.05] max-w-4xl mx-auto">
+            The local marketplace built on <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600">pure intent.</span>
           </h1>
 
-          <p className="text-base md:text-lg text-zinc-500 max-w-xl mx-auto leading-relaxed">
-            A frictionless platform matching conscious buyers with fast-moving local merchants using tailored AI conversation and automated vision tools.
+          <p className="text-sm md:text-base text-slate-500 max-w-xl mx-auto leading-relaxed font-medium">
+            An automated platform matching conscious buyers with fast-moving local merchants using customized conversational intelligence and streamlined vision indexing tools.
           </p>
 
-          <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center items-center">
+          {/* ASYMMETRICAL INTERACTIVE ACTION CARDS */}
+          <div className="pt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-3xl mx-auto">
 
-            {/* 1. Buyer Flow Button - Deep Indigo Tint */}
-            <button
+            <div
               onClick={() => setUserType('buyer')}
-              className="w-full sm:w-auto bg-[transparent] cursor-pointer  hover:bg-indigo-100/60 text-indigo-600 hover:text-indigo-700 text-xs font-semibold px-5 py-3 transition-all duration-200 "
+              className="bg-white hover:bg-slate-50 border border-slate-200 p-5 rounded-2xl text-left transition-all hover:border-emerald-500 cursor-pointer shadow-2xs hover:shadow-md group relative overflow-hidden"
             >
-              🛍️ Buyer Flow
-            </button>
+              <div className="h-9 w-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-emerald-100">
+                <ShoppingBag className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1">
+                Buyer Interface <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">Deploy contextual filters instantly using natural prose queries.</p>
+            </div>
 
-            {/* 2. Merchant Flow Button - Vibrant Purple/Violet Tint */}
-            <button
+            <div
               onClick={() => setUserType('merchant')}
-              className="w-full sm:w-auto bg-[transparent] cursor-pointer  hover:bg-indigo-100/60 text-indigo-600 hover:text-indigo-700 text-xs font-semibold px-5 py-3 transition-all duration-200 "
+              className="bg-white hover:bg-slate-50 border border-slate-200 p-5 rounded-2xl text-left transition-all hover:border-indigo-500 cursor-pointer shadow-2xs hover:shadow-md group relative overflow-hidden"
             >
-              💼 Merchant Flow
-            </button>
+              <div className="h-9 w-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 border border-indigo-100">
+                <Store className="h-4 w-4" />
+              </div>
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1">
+                Merchant Pipeline <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">Upload inventory logs via visual parsing engines.</p>
+            </div>
 
-            {/* 3. Proceed / Product Flow Button - Minimalist Slate Tint */}
-            <button
-              onClick={() => setUserType('buyer')} // Adjust target state if this serves a third modal view
-              className="w-full sm:w-auto bg-[transparent] cursor-pointer  hover:bg-indigo-100/60 text-indigo-600 hover:text-indigo-700 text-xs font-semibold px-5 py-3 transition-all duration-200 "
+
+            <Link to="/shop">
+
+            <div
+              className="sm:col-span-2 lg:col-span-1 bg-slate-900 hover:bg-slate-800 text-white p-5 rounded-2xl text-left transition-all cursor-pointer shadow-md group relative overflow-hidden flex flex-col justify-between"
             >
-              ⚡ Proceed 
-            </button>
+              <div>
+                <div className="h-9 w-9 rounded-xl bg-white/10 text-white flex items-center justify-center mb-4">
+                  <Layers className="h-4 w-4" />
+                </div>
+                <h3 className="font-bold text-sm flex items-center gap-1">
+                  Get Sarted 
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">start smart shopping.</p>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-xs font-bold text-emerald-400">
+                <span>Proceed </span>
+                <ArrowRight className="h-3.5 w-3.5 transform group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+            </Link>
 
           </div>
-
 
         </div>
       </header>
@@ -95,197 +141,235 @@ export default function LandingPage() {
       {/* 3. CORE MODAL PORTAL CONTROLLER */}
       {userType !== null && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-xs animate-fade-in"
-          onClick={() => setUserType(null)} // Click outside window container layer to close layout
+          className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-slate-950/40 backdrop-blur-md animate-fadeIn"
+          onClick={() => setUserType(null)}
         >
           <div
-            className={`w-full max-w-5xl bg-white border rounded-[28px] shadow-2xl overflow-hidden grid lg:grid-cols-12 relative animate-scale-up max-h-[90vh] overflow-y-auto ${userType === 'buyer' ? 'border-indigo-100 shadow-indigo-900/5' : 'border-violet-100 shadow-violet-900/5'
+            className={`w-full max-w-5xl bg-white sm:border rounded-t-3xl sm:rounded-[24px] shadow-2xl overflow-hidden grid lg:grid-cols-12 relative max-h-[100vh] sm:max-h-[90vh] overflow-y-auto ${userType === 'buyer' ? 'border-emerald-100' : 'border-indigo-100'
               }`}
-            onClick={(e) => e.stopPropagation()} // Stop event leakage out to backdrop dismissal
+            onClick={(e) => e.stopPropagation()}
           >
             {/* Native Close Box Action Button */}
             <button
               onClick={() => setUserType(null)}
-              className="absolute top-4 right-4 z-20 h-8 w-8 rounded-full border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-500 hover:text-zinc-900 flex items-center justify-center transition shadow-xs"
+              className="absolute top-4 right-4 z-50 h-9 w-9 rounded-full bg-slate-900 text-white hover:bg-slate-800 flex items-center justify-center transition shadow-md active:scale-95"
             >
-              <XIcon className="h-4 w-4" />
+              <X className="h-4 w-4" />
             </button>
 
             {/* ================= BUYER MODAL VIEW ================= */}
             {userType === 'buyer' && (
               <>
                 {/* Left Descriptive Column */}
-                <div className="lg:col-span-5 p-8 lg:p-12 flex flex-col justify-center bg-white">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1 rounded-md w-fit">
-                    <span>🛍️</span> Buyer Interface
+                <div className="lg:col-span-5 p-6 sm:p-10 lg:p-12 flex flex-col justify-center bg-white border-b lg:border-b-0 border-slate-100">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-md w-fit">
+                    <ShoppingBag className="h-3 w-3" /> Buyer Interface
                   </div>
 
-                  <h2 className="mt-5 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 leading-tight">
-                    Say goodbye to infinite product grids.
+                  <h2 className="mt-5 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
+                    Say goodbye to endless tabular grids.
                   </h2>
 
-                  <p className="mt-3.5 text-xs md:text-sm text-zinc-500 leading-relaxed">
-                    Don't spend your weekends tinkering with sorting menus, jumping through product tabs, and managing 20 open browser windows.
+                  <p className="mt-4 text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                    Stop wasting hours fine-tuning search filters, switching between multiple e-commerce tabs, and verifying stock levels manually across individual store pages.
                   </p>
 
-                  <p className="mt-2 text-xs md:text-sm text-zinc-500 leading-relaxed">
-                    Simply express what you need in your natural voice. CCM builds a tailored micro-catalog instantly for you to finalize and purchase natively.
+                  <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                    State what you require in natural conversational text. SokoAI crawls active databases instantly, building a custom catalog for clean, immediate execution.
                   </p>
 
-                  <div className="mt-6 pt-6 border-t border-zinc-100 space-y-3 text-xs text-zinc-700 font-medium">
+                  <div className="mt-6 pt-6 border-t border-slate-100 space-y-3.5 text-xs text-slate-700 font-bold">
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>Intuitive natural language processing</span>
+                      <div className="h-4 w-4 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] border border-emerald-200">✓</div>
+                      <span>Contextual natural text parameter parsing</span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>Direct parameters built contextually</span>
+                      <div className="h-4 w-4 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] border border-emerald-200">✓</div>
+                      <span>Cross-marketplace localized price checking</span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>In-timeline unified checkout flow</span>
+                      <div className="h-4 w-4 rounded-md bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] border border-emerald-200">✓</div>
+                      <span>Integrated merchant communication portal</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Right Visual Simulation Column */}
-                <div className="lg:col-span-7 bg-zinc-50/50 p-6 lg:p-12 flex items-center justify-center border-t lg:border-t-0 lg:border-l border-zinc-100">
-                  <div className="w-full max-w-sm bg-white border border-zinc-200 rounded-2xl shadow-sm p-4 space-y-4 text-xs font-sans">
+                <div className="lg:col-span-7 bg-slate-50/60 p-6 lg:p-12 flex items-center justify-center lg:border-l border-slate-200/60">
+                  <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl shadow-xs p-4 space-y-4 text-xs">
+
+                    {/* Simulated User Input */}
                     <div className="flex justify-end">
-                      <div className="bg-indigo-600 text-white px-3.5 py-2 rounded-2xl rounded-tr-xs max-w-[85%] text-xs shadow-xs leading-normal">
-                        "Need minimalist running shoes, breathable mesh, under $90. Dark colors."
+                      <div className="bg-slate-900 text-white px-3.5 py-2.5 rounded-2xl rounded-tr-none max-w-[85%] text-xs shadow-xs leading-normal font-medium">
+                        "Looking for minimalist running trainers, high breathability, under KSh 8,500. Dark colors if possible."
                       </div>
                     </div>
 
-                    <div className="flex justify-start">
-                      <div className="bg-zinc-100 text-zinc-800 px-3.5 py-2.5 rounded-2xl rounded-tl-xs max-w-[90%] space-y-2.5">
-                        <p className="text-zinc-500 text-[11px]">I matched your requirements with local inventory verified options:</p>
+                    {/* Simulated System Response */}
+                    <div className="flex justify-start animate-fadeIn">
+                      <div className="bg-slate-50 border border-slate-200/80 text-slate-800 px-3.5 py-3 rounded-2xl rounded-tl-none max-w-[95%] space-y-3">
+                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Cpu className="h-3 w-3 text-emerald-500" /> SokoAI Aggregator Active
+                        </p>
 
-                        <div className="border border-zinc-200 rounded-xl p-2.5 bg-white shadow-xs flex gap-3 items-center">
-                          <div className="w-12 h-12 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-lg shrink-0">👟</div>
+                        <div className="border border-slate-200 rounded-xl p-2.5 bg-white shadow-2xs flex gap-3 items-center group transition-all hover:border-slate-300">
+                          <div className="w-12 h-12 rounded-lg bg-slate-100 border border-slate-100 flex items-center justify-center text-lg shrink-0">👟</div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h4 className="font-bold text-zinc-900 truncate text-[11px]">AeroMesh Onyx Runner</h4>
-                              <span className="font-black text-zinc-900">$84</span>
+                              <h4 className="font-bold text-slate-900 truncate text-[11px]">AeroMesh Stealth Shadow</h4>
+                              <span className="font-black text-emerald-600 font-mono text-[11px]">KSh 7,200</span>
                             </div>
-                            <p className="text-[10px] text-zinc-400">Pace Athletic Co. • 4.8★</p>
-                            <div className="mt-1 flex justify-between items-center">
-                              <span className="text-[9px] bg-zinc-100 text-zinc-600 px-1.5 py-0.5 rounded font-mono">Size 10, Black</span>
-                              <button className="bg-indigo-600 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-xs">Instant Buy</button>
+                            <p className="text-[10px] text-slate-400 font-medium">Kilimani Warehouse • 4.9 ★</p>
+
+                            <div className="mt-2 flex justify-between items-center pt-1.5 border-t border-slate-100">
+                              <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md font-bold font-mono">Size 42, Navy</span>
+                              <button className="bg-emerald-600 text-white text-[9px] font-bold px-2 py-1 rounded shadow-2xs flex items-center gap-1">
+                                View Deal
+                              </button>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex gap-1.5 flex-wrap pt-0.5">
-                      <button className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 transition">🔄 Size 9 instead</button>
-                      <button className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-zinc-200 bg-zinc-50 text-zinc-500 hover:text-indigo-600 hover:border-indigo-200 transition">🏷️ Lower price cap</button>
+                    {/* Interactive suggestions chips */}
+                    <div className="flex gap-1.5 flex-wrap pt-1 border-t border-slate-100">
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 shadow-2xs">🔄 Shift to Size 43</span>
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-500 shadow-2xs">📍 Filter near CBD</span>
                     </div>
                   </div>
                 </div>
               </>
             )}
 
-
-
-
-
             {/* ================= MERCHANT MODAL VIEW ================= */}
             {userType === 'merchant' && (
               <>
                 {/* Left Visual Simulation Column */}
-                <div className="lg:col-span-7 bg-zinc-50/50 p-6 lg:p-12 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-zinc-100 order-last lg:order-first">
-                  <div className="w-full max-w-sm bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden text-xs font-sans">
-                    <div className="flex border-b border-zinc-100 bg-zinc-50/50 text-[9px] uppercase font-bold tracking-wider text-zinc-400 text-center">
-                      <button onClick={() => setMerchantStep(1)} className={`flex-1 py-2 border-b-2 transition ${merchantStep === 1 ? 'border-violet-600 text-violet-600 bg-white' : 'border-transparent'}`}>1. Upload</button>
-                      <button onClick={() => setMerchantStep(2)} className={`flex-1 py-2 border-b-2 transition ${merchantStep === 2 ? 'border-violet-600 text-violet-600 bg-white' : 'border-transparent'}`}>2. Analyze</button>
-                      <button onClick={() => setMerchantStep(3)} className={`flex-1 py-2 border-b-2 transition ${merchantStep === 3 ? 'border-violet-600 text-violet-600 bg-white' : 'border-transparent'}`}>3. Sync</button>
+                <div className="lg:col-span-7 bg-slate-50/60 p-6 lg:p-12 flex items-center justify-center border-b lg:border-b-0 lg:border-r border-slate-200/60 order-last lg:order-first">
+                  <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden text-xs">
+
+                    {/* Custom Nav Bar */}
+                    <div className="flex border-b border-slate-200/80 bg-slate-50 text-[9px] font-black uppercase tracking-wider text-slate-400 text-center">
+                      <div className={`flex-1 py-3 transition-colors ${merchantStep === 1 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600' : ''}`}>1. Media Upload</div>
+                      <div className={`flex-1 py-3 transition-colors ${merchantStep === 2 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600' : ''}`}>2. Vision Parse</div>
+                      <div className={`flex-1 py-3 transition-colors ${merchantStep === 3 ? 'text-indigo-600 bg-white border-b-2 border-indigo-600' : ''}`}>3. Index Sync</div>
                     </div>
 
+                    {/* Step 1: Drag Drop Container */}
                     {merchantStep === 1 && (
-                      <div className="p-6 text-center space-y-3">
-                        <div className="h-28 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 flex flex-col items-center justify-center text-zinc-400 gap-1.5">
-                          <span className="text-xl">📸</span>
-                          <span className="font-medium text-[11px] text-zinc-500">Drop product camera rolls</span>
+                      <div className="p-6 text-center space-y-4">
+                        <div className="h-32 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 flex flex-col items-center justify-center text-slate-400 gap-1 relative overflow-hidden">
+                          {isProcessingVision ? (
+                            <div className="absolute inset-0 bg-white/90 backdrop-blur-xs flex flex-col items-center justify-center gap-2">
+                              <div className="h-5 w-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Analyzing Image Arrays...</span>
+                            </div>
+                          ) : null}
+                          <span className="text-2xl">📷</span>
+                          <span className="font-bold text-[11px] text-slate-600">Drop camera rolls or catalogs</span>
+                          <span className="text-[9px] text-slate-400 font-medium">JPEG, PNG arrays up to 10MB</span>
                         </div>
-                        <button onClick={() => setMerchantStep(2)} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 rounded-lg transition text-center shadow-xs">Run Image Extraction</button>
+                        <button
+                          onClick={triggerVisionPipeline}
+                          disabled={isProcessingVision}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white font-bold py-2.5 rounded-xl transition-all text-center shadow-xs text-xs"
+                        >
+                          Run Extraction Model
+                        </button>
                       </div>
                     )}
 
+                    {/* Step 2: Computer Vision Spec Verification */}
                     {merchantStep === 2 && (
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-center gap-2.5 bg-zinc-50 border border-zinc-200 p-2 rounded-xl">
-                          <div className="w-8 h-8 bg-zinc-200 rounded-lg flex items-center justify-center text-base">🎒</div>
+                      <div className="p-4 space-y-3.5 animate-fadeIn">
+                        <div className="flex items-center gap-2.5 bg-slate-900 text-white p-2.5 rounded-xl shadow-xs">
+                          <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-base">🎒</div>
                           <div className="flex-1 min-w-0">
-                            <div className="h-2 w-20 bg-zinc-300 rounded animate-pulse mb-1"></div>
-                            <div className="h-1.5 w-12 bg-zinc-200 rounded"></div>
+                            <h4 className="font-bold font-mono text-[10px] text-indigo-400 uppercase tracking-widest">Metadata Sync</h4>
+                            <p className="text-[11px] font-bold truncate text-white">Waterproof Terrain Rucksack</p>
                           </div>
-                          <span className="text-[9px] text-violet-600 bg-violet-50 font-bold px-1.5 py-0.5 rounded border border-violet-100">Vision Parsing</span>
+                          <span className="text-[9px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-md">94% Match</span>
                         </div>
-                        <div className="space-y-2 text-[11px]">
+
+                        <div className="space-y-2.5 text-[11px] bg-slate-50 p-3 rounded-xl border border-slate-200/60">
                           <div>
-                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Identified Item Title</span>
-                            <p className="font-semibold text-zinc-800 border-b border-zinc-100 pb-0.5 mt-0.5">Technical Waterproof Backpack</p>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Generated Catalog Title</span>
+                            <span className="font-bold text-slate-800 block mt-0.5">Tactical All-Weather Waterproof Backpack</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-3">
+                          <div className="grid grid-cols-2 gap-3 pt-1">
                             <div>
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Suggested Pricing</span>
-                              <p className="font-semibold text-zinc-800 border-b border-zinc-100 pb-0.5 mt-0.5">$68.00</p>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Target Marketplace Price</span>
+                              <span className="font-bold font-mono text-emerald-600 block mt-0.5">KSh 4,500</span>
                             </div>
                             <div>
-                              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Taxonomy Tag</span>
-                              <p className="font-semibold text-zinc-800 border-b border-zinc-100 pb-0.5 mt-0.5">Bags & Rugged Travel</p>
+                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Categorization Taxonomy</span>
+                              <span className="font-bold text-slate-800 block mt-0.5">Luggage & Travel Bags</span>
                             </div>
                           </div>
                         </div>
-                        <button onClick={() => setMerchantStep(3)} className="w-full bg-violet-600 hover:bg-violet-700 text-white font-semibold py-2 rounded-lg transition text-center shadow-xs mt-1">Verify Specs & Publish</button>
+                        <button
+                          onClick={() => setMerchantStep(3)}
+                          className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl transition-all text-center shadow-xs text-xs"
+                        >
+                          Verify & Publish to Feed
+                        </button>
                       </div>
                     )}
 
+                    {/* Step 3: Complete Block */}
                     {merchantStep === 3 && (
-                      <div className="p-6 text-center space-y-3">
-                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full flex items-center justify-center mx-auto text-base font-bold">✓</div>
-                        <div>
-                          <h4 className="font-bold text-zinc-900">Storefront Index Completed</h4>
-                          <p className="text-zinc-400 text-[11px] mt-0.5">Item attributes mapped securely. Live buyers matching target conditions view listing instantly.</p>
+                      <div className="p-6 text-center space-y-4 animate-fadeIn">
+                        <div className="w-10 h-10 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mx-auto shadow-2xs">
+                          <CheckCircle2 className="h-5 w-5" />
                         </div>
-                        <button onClick={() => setMerchantStep(1)} className="text-[10px] text-zinc-400 hover:text-zinc-700 underline font-medium">Process next item</button>
+                        <div>
+                          <h4 className="font-black text-slate-900 text-sm">Storefront Index Finalized</h4>
+                          <p className="text-slate-400 text-xs mt-1 font-medium leading-relaxed">
+                            Attributes synced successfully. Active search queries meeting item criteria now fetch this card automatically.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setMerchantStep(1)}
+                          className="text-xs text-indigo-600 hover:text-indigo-700 underline font-bold transition-colors"
+                        >
+                          Process Next Batch Item
+                        </button>
                       </div>
                     )}
                   </div>
                 </div>
 
                 {/* Right Descriptive Column */}
-                <div className="lg:col-span-5 p-8 lg:p-12 flex flex-col justify-center bg-white">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-violet-600 bg-violet-50 border border-violet-100 px-3 py-1 rounded-md w-fit">
-                    <span>💼</span> Merchant Interface
+                <div className="lg:col-span-5 p-6 sm:p-10 lg:p-12 flex flex-col justify-center bg-white">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-md w-fit">
+                    <Store className="h-3 w-3" /> Merchant Interface
                   </div>
 
-                  <h2 className="mt-5 text-2xl md:text-3xl font-bold tracking-tight text-zinc-950 leading-tight">
-                    Onboard inventory via text-free pipelines.
+                  <h2 className="mt-5 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 leading-tight">
+                    Onboard local stocks via automated vision.
                   </h2>
 
-                  <p className="mt-3.5 text-xs md:text-sm text-zinc-500 leading-relaxed">
-                    If your store relies on chat channels like WhatsApp groups or Instagram DMs, typing detailed web catalog inventories is holding you back.
+                  <p className="mt-4 text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                    If your distribution relies on fast-moving channels like social feeds, WhatsApp groups, or direct messaging, typing out endless description parameters limits scale.
                   </p>
 
-                  <p className="mt-2 text-xs md:text-sm text-zinc-500 leading-relaxed">
-                    Dump product pictures straight into CCM. The internal vision parser converts media into structured parameters, titles, and tax brackets for zero-effort creation.
+                  <p className="mt-2 text-xs sm:text-sm text-slate-500 leading-relaxed font-medium">
+                    Drop clear item camera captures directly into the engine. Our automated network interprets parameters, prices, and tax brackets with zero heavy layout setup.
                   </p>
 
-                  <div className="mt-6 pt-6 border-t border-zinc-100 space-y-3 text-xs text-zinc-700 font-medium">
+                  <div className="mt-6 pt-6 border-t border-slate-100 space-y-3.5 text-xs text-slate-700 font-bold">
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-violet-50 text-violet-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>Zero manual copy or typing required</span>
+                      <div className="h-4 w-4 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] border border-indigo-200">✓</div>
+                      <span>Zero manual copy pasting or form entry</span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-violet-50 text-violet-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>Auto-categorized tag structures</span>
+                      <div className="h-4 w-4 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] border border-indigo-200">✓</div>
+                      <span>Automated tags & description indexing</span>
                     </div>
                     <div className="flex items-center gap-2.5">
-                      <div className="h-4 w-4 rounded bg-violet-50 text-violet-600 flex items-center justify-center text-[10px]">✓</div>
-                      <span>Seamless catalog sync across categories</span>
+                      <div className="h-4 w-4 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] border border-indigo-200">✓</div>
+                      <span>Instant sync straight to consumer comparison algorithms</span>
                     </div>
                   </div>
                 </div>
@@ -294,8 +378,6 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-
-
 
     </div>
   );
