@@ -9,6 +9,9 @@ import ShopPage from "./Home"; // (rename later to ShopPage.tsx for clarity)
 import AuthPage from "./Auth"; // (if you have an auth page, otherwise remove this import)
 import CartPage from "./Cart"; // (if you have a cart page, otherwise remove this import)
 import ProfilePage from "./Profile"; // (if you have a profile page, otherwise remove this import)
+
+import { AuthProvider } from "./Providers/AuthContex"; // (if you have an auth context, otherwise remove this import)
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -40,9 +43,13 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>
 );
+
+
 
 
 

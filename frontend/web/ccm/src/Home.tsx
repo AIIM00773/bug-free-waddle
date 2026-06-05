@@ -1,63 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
-    Menu,
     MessageSquare,
     PanelLeftClose,
     PanelLeft,
     ArrowUp,
     Plus,
-    ExternalLink,
     ShoppingBag,
     User,
-    X,
     Star,
     MapPin,
-    CheckCircle,
     ShoppingCart,
     LogIn,
     MoreVertical,
     User2,
     Settings,
     HelpCircle,
-    Sparkles
+    Sparkles,
+    X,
+    BellDot,
+    CheckCircle2
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useEffect } from 'react';
-
-interface Product {
-    id: number;
-    title: string;
-    price: string;
-    originalPrice?: string;
-    merchant: 'Jumia' | 'Kilimall' | 'SkyGarden';
-    rating: string;
-    image: string;
-    location: string;
-    description?: string;
-    inStock?: boolean;
-}
-
-interface Message {
-    id: string;
-    sender: 'user' | 'assistant';
-    text: string;
-    products?: Product[];
-}
-
-
 import ProductDetailsModal from './Components/ProductDetails';
+import { useAuth } from './Providers/AuthContex';
+import { EXTENSIVE_MOCK_DATABASE } from './Constants/fakedb';
+import type { Product } from './Constants/productTypes';
 
+// --- Static / Mock Data ---
+const RECENT_SEARCHES = [
+    "Sneakers under KSh 10k",
+    "MacBook Pro M1 Nairobi",
+    "Ergonomic office chair",
+    "Gaming monitors Jumia"
+];
 
 export default function GPTMarketplace() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [actionsOpen, setActionsOpen] = useState(false);
     const [input, setInput] = useState("");
-    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-
-
+    const [sampleProducts, setSampleProducts] = useState<Product[]>([]);
+    const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [cartCount, setCartCount] = useState(0);
 
-    const [messages, setMessages] = useState<Message[]>([
+    // Pulled structural tracking flags out of your refactored provider context hook
+    const { isAuthenticated, remindAlertActive } = useAuth();
+    const [localHideReminder, setLocalHideReminder] = useState(false);
+
+    // Synchronize local manual dismiss tracking state whenever the context timer cycles
+    useEffect(() => {
+        if (remindAlertActive) {
+            setLocalHideReminder(false);
+        }
+    }, [remindAlertActive]);
+
+    useEffect(() => {
+        if (selectedProduct) {
+            const shuffled = EXTENSIVE_MOCK_DATABASE.sort(() => 0.5 - Math.random());
+            setRelatedProducts(shuffled.filter(p => p.id !== selectedProduct.id).slice(0, 4));
+        }
+    }, [selectedProduct]);
+
+    const [messages, setMessages] = useState<any[]>([
         {
             id: '1',
             sender: 'assistant',
@@ -65,68 +69,18 @@ export default function GPTMarketplace() {
         }
     ]);
 
-    const [sampleProducts, setSampleProducts] = useState<any[]>([]);
-
-
-
     useEffect(() => {
-        // Simulate fetching sample products for the initial assistant message
-        setTimeout(() => {
-            setSampleProducts([
-                {
-                    id: 1,
-                    title: "AeroMesh Onyx Running Shoes - Sport Edition",
-                    price: "KSh 9,500",
-                    originalPrice: "KSh 12,000",
-                    merchant: "Jumia",
-                    rating: "4.8",
-                    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=60",
-                    location: "Nairobi CBD",
-                    description: "High-performance breathable running shoes featuring adaptive foam mid-soles and vulcanized rubber traction pads. Perfect for daily training and urban athletics.",
-                    inStock: true
-                },
-                {
-                    id: 2,
-                    title: "Nimbus Breathable Trainer Cushion V2",
-                    price: "KSh 11,200",
-                    originalPrice: "KSh 13,500",    
-                    merchant: "Kilimall",
-                    rating: "4.5",
-                    image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&auto=format&fit=crop&q=60",
-                    location: "Mombasa Road",
-                    description: "Engineered with multi-directional mesh materials and an advanced orthotic internal layout. Delivers complete support over extended long-distance road wear.",
-                    inStock: true
-                },
-                {
-                    id: 3,
-                    title: "Apex Horizon Light Trail Racers",
-                    price: "KSh 8,900",
-                    originalPrice: "KSh 10,500",
-                    merchant: "SkyGarden",
-                    rating: "4.2",
-                    image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop&q=60",
-                    location: "Thika Road",
-                    description: "Ultra-lightweight offroad shoes tailored with enhanced mud guards and high-friction tread depth layouts to confidently master technical terrain trails.",
-                    inStock: false
-                }
-            ]);
-        }, 1200);
+        const timer = setTimeout(() => {
+            setSampleProducts(EXTENSIVE_MOCK_DATABASE);
+        }, 1000);
+        return () => clearTimeout(timer);
     }, []);
-
-
-
-    const historyItems = [
-        "Sneakers under KSh 10k",
-        "MacBook Pro M1 Nairobi",
-        "Ergonomic office chair",
-        "Gaming monitors Jumia"
-    ];
 
     const handleSend = (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
 
-        const userMsg: Message = {
+        const userMsg: any = {
             id: Date.now().toString(),
             sender: 'user',
             text: input
@@ -136,46 +90,11 @@ export default function GPTMarketplace() {
         setInput("");
 
         setTimeout(() => {
-            const assistantMsg: Message = {
+            const assistantMsg: any = {
                 id: (Date.now() + 1).toString(),
                 sender: 'assistant',
                 text: "Here are the top live product listings aggregated matching your request parameters:",
-                products: [
-                    {
-                        id: 1,
-                        title: "AeroMesh Onyx Running Shoes - Sport Edition",
-                        price: "KSh 9,500",
-                        originalPrice: "KSh 12,000",
-                        merchant: "Jumia",
-                        rating: "4.8",
-                        image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=60",
-                        location: "Nairobi CBD",
-                        description: "High-performance breathable running shoes featuring adaptive foam mid-soles and vulcanized rubber traction pads. Perfect for daily training and urban athletics.",
-                        inStock: true
-                    },
-                    {
-                        id: 2,
-                        title: "Nimbus Breathable Trainer Cushion V2",
-                        price: "KSh 11,200",
-                        merchant: "Kilimall",
-                        rating: "4.5",
-                        image: "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&auto=format&fit=crop&q=60",
-                        location: "Mombasa Road",
-                        description: "Engineered with multi-directional mesh materials and an advanced orthotic internal layout. Delivers complete support over extended long-distance road wear.",
-                        inStock: true
-                    },
-                    {
-                        id: 3,
-                        title: "Apex Horizon Light Trail Racers",
-                        price: "KSh 8,900",
-                        merchant: "SkyGarden",
-                        rating: "4.2",
-                        image: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=400&auto=format&fit=crop&q=60",
-                        location: "Thika Road",
-                        description: "Ultra-lightweight offroad shoes tailored with enhanced mud guards and high-friction tread depth layouts to confidently master technical terrain trails.",
-                        inStock: false
-                    }
-                ]
+                products: sampleProducts
             };
             setMessages(prev => [...prev, assistantMsg]);
         }, 800);
@@ -190,16 +109,13 @@ export default function GPTMarketplace() {
         }
     };
 
-    const [IsAuthenticated, setIsAuthenticated] = useState(false);
-
     return (
-        <div className="h-screen w-screen flex bg-slate-50 text-slate-800 font-sans antialiased overflow-hidden">
-            {/* LEFT SIDEBAR: History & Profile Panel */}
-            <aside className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} bg-slate-90 h-full flex flex-col transition-all border border-r-emerald-500/40  duration-200 ease-in-out border-r border-slate-200/80 overflow-hidden shrink-0 text-slate-700`}>
+        <div className="h-screen w-screen flex bg-slate-50 text-slate-800 font-sans antialiased overflow-hidden relative">
 
-                {/* Upper Navigation Anchor */}
+            {/* LEFT SIDEBAR: History & Profile Panel */}
+            <aside className={`${sidebarOpen ? 'w-[260px]' : 'w-0'} bg-white h-full flex flex-col transition-all duration-200 ease-in-out border-r border-slate-200/80 overflow-hidden shrink-0 text-slate-700`}>
                 <div className="p-4 flex items-center justify-between gap-2 shrink-0">
-                    <button className="flex items-center justify-center gap-2 bg-emerald-600  hover:bg-emerald-700 rounded-xl px-3 py-2 text-xs font-semibold w-full text-center transition text-white shadow-xs active:scale-[0.98]">
+                    <button className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl px-3 py-2 text-xs font-semibold w-full text-center transition text-white shadow-xs active:scale-[0.98]">
                         <Plus className="h-3.5 w-3.5 stroke-[2.5]" /> New Search
                     </button>
                     <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-slate-200/60 rounded-xl text-slate-400 hover:text-slate-700 transition shrink-0">
@@ -207,12 +123,11 @@ export default function GPTMarketplace() {
                     </button>
                 </div>
 
-                {/* History Stream List */}
                 <div className="flex-1 overflow-y-auto px-3.5 py-2 space-y-0.5">
                     <span className="px-2 text-[10px] font-medium text-slate-400 uppercase block mb-2.5 tracking-wide">
                         Recent Searches
                     </span>
-                    {historyItems.map((item, idx) => (
+                    {RECENT_SEARCHES.map((item, idx) => (
                         <button
                             key={idx}
                             className="w-full text-left px-2.5 py-2 rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-200/40 hover:text-slate-900 flex items-center gap-2.5 transition group truncate"
@@ -223,11 +138,9 @@ export default function GPTMarketplace() {
                     ))}
                 </div>
 
-                {/* BOTTOM SECTION: User Auth State Dock */}
                 <div className="p-3 border-t border-slate-200/60 bg-slate-50/50 shrink-0">
-                    {IsAuthenticated ? (
+                    {isAuthenticated ? (
                         <div className="space-y-1">
-                            {/* Cart CTA */}
                             <Link to="/cart" className="block">
                                 <button className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition group">
                                     <div className="flex items-center gap-2.5 min-w-0">
@@ -242,7 +155,6 @@ export default function GPTMarketplace() {
                                 </button>
                             </Link>
 
-                            {/* Profile CTA */}
                             <Link to="/profile" className="block">
                                 <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition group min-w-0">
                                     <User2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition shrink-0" />
@@ -251,9 +163,8 @@ export default function GPTMarketplace() {
                             </Link>
                         </div>
                     ) : (
-                        /* Guest / Unauthenticated State CTA */
                         <Link to="/auth" className="block">
-                            <button className="w-full flex items-center justify-center gap-2 px-3 py-4 bg-slate-900   border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-50 hover:text-emerald-500 transition shadow-xs active:scale-[0.98]">
+                            <button className="w-full flex items-center justify-center gap-2 px-3 py-4 bg-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-50 hover:text-emerald-500 transition shadow-xs active:scale-[0.98]">
                                 <LogIn className="h-3.5 w-3.5 text-slate-400" />
                                 <span>Sign In to Account</span>
                             </button>
@@ -262,20 +173,16 @@ export default function GPTMarketplace() {
                 </div>
             </aside>
 
-
-
-
             {/* RIGHT MAIN WORKSPACE */}
             <div className="flex-1 flex flex-col h-full bg-slate-50 relative overflow-hidden">
 
                 {/* Floating Top Nav Bar Controls */}
                 <header className="absolute top-0 left-0 right-0 h-14 bg-transparent flex items-center px-6 justify-between shrink-0 z-20 select-none">
-                    {/* Left Side: Brand & Workspace Toggles */}
                     <div className="flex items-center gap-3">
                         {!sidebarOpen && (
                             <button
                                 onClick={() => setSidebarOpen(true)}
-                                className="p-2 hover:bg-slate-200 active:bg-slate-200 rounded-[200px] transition text-slate-500 hover:text-slate-800"
+                                className="p-2 hover:bg-slate-200 active:bg-slate-200 rounded-full transition text-slate-500 hover:text-slate-800"
                             >
                                 <PanelLeft className="h-4 w-4" />
                             </button>
@@ -285,25 +192,21 @@ export default function GPTMarketplace() {
                         </span>
                     </div>
 
-                    {/* Right Side: Toggle Action Menu */}
                     <div className="relative">
                         <button
                             onClick={() => setActionsOpen(!actionsOpen)}
-                            className={`p-2 hover:bg-slate-200 active:bg-slate-200 rounded-[200px] transition text-slate-600 hover:text-slate-950 active:scale-[0.97] ${actionsOpen ? 'bg-slate-900 border-slate-300 shadow-inner text-white' : 'bg-slate-200 border-slate-200 hover:border-slate-300 shadow-xs'}`}
+                            className={`p-2 hover:bg-slate-200 active:bg-slate-200 rounded-full transition active:scale-[0.97] ${actionsOpen ? 'bg-slate-900 border-slate-300 shadow-inner text-white' : 'bg-slate-200 border-slate-200 hover:border-slate-300 shadow-xs'}`}
                             title="More Actions"
                         >
                             <MoreVertical className="h-4 w-4 stroke-[2.2]" />
                         </button>
 
-                        {/* Floating Action Menu Card */}
                         {actionsOpen && (
                             <>
-                                {/* Click-outside overlay layer */}
                                 <div className="fixed inset-0 z-10" onClick={() => setActionsOpen(false)} />
-
                                 <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-20 animate-fadeIn flex flex-col divide-y divide-slate-100">
                                     <div className="px-2 pb-1.5 space-y-0.5">
-                                        {!IsAuthenticated && (
+                                        {!isAuthenticated && (
                                             <Link to="/auth" onClick={() => setActionsOpen(false)} className="w-full">
                                                 <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
                                                     <LogIn className="h-4 w-4 text-slate-400" />
@@ -327,7 +230,6 @@ export default function GPTMarketplace() {
                                         </Link>
                                     </div>
 
-                                    {/* Additional contextual utility links */}
                                     <div className="px-2 pt-1.5 space-y-0.5">
                                         <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
                                             <Settings className="h-4 w-4 text-slate-400" />
@@ -342,73 +244,57 @@ export default function GPTMarketplace() {
                             </>
                         )}
                     </div>
-
                 </header>
 
                 {/* Conversation Viewport Container */}
-
                 <div className="flex-1 overflow-y-auto w-full">
                     {messages.length <= 1 ? (
                         <div className="max-w-xl mx-auto px-6 py-24 flex flex-col items-center justify-center text-center animate-fadeIn select-none h-full">
-
-                            {/* Clean, un-gradiented icon anchor */}
-                            <div className="h-12 w-12 rounded-[200px]  flex items-center justify-center text-slate-700 mb-6">
-                                <Sparkles className="h-7.5 w-7.5  stroke-[1.75] text-emerald-500" />
+                            <div className="h-12 w-12 rounded-full flex items-center justify-center text-slate-700 mb-6">
+                                <Sparkles className="h-7.5 w-7.5 stroke-[1.75] text-emerald-500" />
                             </div>
-
-                            {/* Subtle, tracking-tight typographic pairing */}
                             <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">
                                 Shop intelligently with ccm-ai,
                             </h1>
-
                             <p className="mt-2 text-[10px] md:text-sm text-slate-400 max-w-xs leading-relaxed">
-                                Find the best deals across kenya, shop smarter with inteligent guidance, and save time and money with ccm-ai's powerful shopping assistant.
+                                Find the best deals across Kenya, shop smarter with intelligent guidance, and save time and money with ccm-ai's powerful shopping assistant.
                             </p>
-
                         </div>
                     ) : (
-                        /* STANDARD CONVERSATION STREAM: Rendered when a dialogue is actively happening */
-                        <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 space-y-8 pb-30 ">
+                        <div className="max-w-3xl mx-auto px-4 md:px-6 py-8 space-y-8 pb-30">
                             {messages.map((msg) => (
                                 <div key={msg.id} className="flex gap-4 items-start text-xs md:text-sm">
-
-                                    {/* Identity Profiles */}
                                     <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-sm ${msg.sender === 'user' ? 'bg-slate-200 text-slate-700' : 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white font-bold'}`}>
                                         {msg.sender === 'user' ? <User className="h-4 w-4" /> : 'S'}
                                     </div>
 
-                                    {/* Content Stream Bubble Layer */}
                                     <div className="space-y-2.5 flex-1">
-                                        <div className="font-bold text-slate-400 text-[10px] uppercase tracking-wider mt-2 ">
-                                            {msg.sender === 'user' ? 'You' : 'ccm-ai '}
+                                        <div className="font-bold text-slate-400 text-[10px] uppercase tracking-wider mt-2">
+                                            {msg.sender === 'user' ? 'You' : 'ccm-ai'}
                                         </div>
-
                                         <div className="text-sm md:text-base leading-relaxed font-normal text-slate-800">
                                             <p>{msg.text}</p>
                                         </div>
 
-                                        {/* Real Vertical Marketplace Card Grid Structure Block */}
                                         {msg.products && msg.products.length > 0 && (
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2 ">
-                                                {msg.products.map((product) => (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-2">
+                                                {msg.products.map((product: Product) => (
                                                     <div
                                                         key={product.id}
                                                         onClick={() => setSelectedProduct(product)}
                                                         className="bg-white rounded-2xl overflow-hidden border border-slate-200/80 hover:border-slate-300 transition-all duration-200 group flex flex-col justify-between cursor-pointer hover:shadow-lg hover:-translate-y-0.5"
                                                     >
-                                                        {/* Image Window Wrap with Aspect Lock */}
                                                         <div className="relative aspect-video w-full bg-slate-100 overflow-hidden border-b border-slate-100">
                                                             <img
                                                                 src={product.image}
                                                                 alt={product.title}
-                                                                className="w-full h-full object-cover group-hover:scale-103 transition duration-500 ease-out"
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition duration-500 ease-out"
                                                             />
                                                             <span className={`absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm tracking-wide ${getMerchantStyles(product.merchant)}`}>
                                                                 {product.merchant}
                                                             </span>
                                                         </div>
 
-                                                        {/* Data Matrix */}
                                                         <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
                                                             <div className="space-y-1">
                                                                 <h4 className="font-bold text-xs line-clamp-2 leading-snug text-slate-900 group-hover:text-emerald-600 transition">{product.title}</h4>
@@ -439,7 +325,6 @@ export default function GPTMarketplace() {
                                                 ))}
                                             </div>
                                         )}
-
                                     </div>
                                 </div>
                             ))}
@@ -447,28 +332,24 @@ export default function GPTMarketplace() {
                     )}
                 </div>
 
-
-
-
                 {/* BOTTOM FIXED CHAT CONTAINER */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent pt-1 pb-1 px-4 shrink-0 z-10 pointer-events-none">
                     <div className="max-w-2xl mx-auto w-full pointer-events-auto">
                         <form
                             onSubmit={handleSend}
-                            className="bg-white/80 backdrop-blur-md border border-emerald-400 mb-4 focus-within:mb-1  focus-within:border-emerald-500 focus-within:bg-white ring-emerald-400/5   focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-2 pl-4 flex items-center gap-3 transition-all duration-300 shadow-[0_10px_30px_-5px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.02)]"
+                            className="bg-white/80 backdrop-blur-md border border-emerald-400 mb-4 focus-within:mb-1 focus-within:border-emerald-500 focus-within:bg-white ring-emerald-400/5 focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-2 pl-4 flex items-center gap-3 transition-all duration-300 shadow-sm"
                         >
                             <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask SokoAI... e.g., 'Find running shoes on Kilimall'"
-                                className="flex-1 bg-transparent  border-none  text-sm font-normal  text-slate-800 placeholder-slate-600 focus:outline-hidden py-2 focus:py-2.5 transition-all duration-200"
+                                className="flex-1 bg-transparent border-none text-sm font-normal text-slate-800 placeholder-slate-400 focus:outline-none py-2 focus:py-2.5 transition-all duration-200"
                             />
                             {input.trim() && (
                                 <button
                                     type="submit"
-                                    disabled={!input.trim()}
-                                    className="h-8 w-8 rounded-[400px] bg-slate-900 hover:bg-emerald-600 disabled:bg-slate-100 text-white disabled:text-slate-300 flex items-center justify-center transition-all duration-200 shrink-0 font-bold active:scale-[0.95] transition-all duration-300"
+                                    className="h-8 w-8 rounded-full bg-slate-900 hover:bg-emerald-600 disabled:bg-slate-100 text-white disabled:text-slate-300 flex items-center justify-center transition-all duration-200 shrink-0 font-bold active:scale-[0.95]"
                                 >
                                     <ArrowUp className="h-4 w-4 stroke-[2.5]" />
                                 </button>
@@ -479,6 +360,154 @@ export default function GPTMarketplace() {
 
 
 
+
+
+
+                {/* ==========================================================FLOATING SHOPPER BENEFITS CARD ========================================================== */}
+                {remindAlertActive && !localHideReminder && !isAuthenticated && (
+                    <div className="absolute bottom-22 right-6 w-full max-w-lg z-50 animate-slideUp">
+                        <div
+                            className="
+                relative
+                overflow-hidden
+                rounded-3xl
+                border
+                border-orange-100
+                bg-gradient-to-br
+                from-orange-50
+                via-white
+                to-amber-50
+                shadow-[0_20px_70px_rgba(251,146,60,0.12)]
+                backdrop-blur-xl
+            "
+                        >
+                            {/* Ambient glow */}
+                            <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-orange-200/20 blur-3xl" />
+                            <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
+
+                            <div className="relative p-7">
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex-1">
+                                        <span
+                                            className="
+                                inline-flex
+                                items-center
+                                rounded-full
+                                border
+                                border-orange-200
+                                bg-orange-50
+                                px-3
+                                py-1
+                                text-[11px]
+                                font-medium
+                                text-orange-700
+                            "
+                                        >
+                                            Shopping gets smarter with an account
+                                        </span>
+
+                                        <h3 className="mt-4 text-2xl font-semibold text-slate-900 tracking-tight">
+                                            Continue browsing freely.
+                                        </h3>
+
+                                        <p className="mt-2 text-[15px] leading-relaxed text-slate-600">
+                                            Sign in whenever you're ready to save products,
+                                            track price drops, and access direct marketplace
+                                            checkout links from one place.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setLocalHideReminder(true)}
+                                        className="
+                            h-9
+                            w-9
+                            rounded-xl
+                            flex
+                            items-center
+                            justify-center
+                            text-slate-400
+                            hover:text-slate-700
+                            hover:bg-white
+                            transition
+                        "
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </button>
+                                </div>
+
+                                {/* Benefits */}
+                                <div className="mt-6 grid gap-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-orange-600" />
+                                        </div>
+
+                                        <span className="text-sm text-slate-700">
+                                            Save products across marketplaces
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-orange-600" />
+                                        </div>
+
+                                        <span className="text-sm text-slate-700">
+                                            Get notified when prices drop
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-7 w-7 rounded-full bg-orange-100 flex items-center justify-center">
+                                            <CheckCircle2 className="h-3.5 w-3.5 text-orange-600" />
+                                        </div>
+
+                                        <span className="text-sm text-slate-700">
+                                            Faster access to marketplace checkout pages
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Soft footer */}
+                                <div className="mt-6 pt-5 border-t border-orange-100">
+                                    <p className="text-sm text-slate-500">
+                                        Already have an account?
+                                        <Link
+                                            to="/auth"
+                                            className="
+                                ml-2
+                                font-medium
+                                text-orange-600
+                                hover:text-orange-700
+                                underline-offset-4
+                                hover:underline
+                            "
+                                        >
+                                            Sign in
+                                        </Link>
+
+                                        <span className="mx-2 text-slate-300">•</span>
+
+                                        <Link
+                                            to="/auth"
+                                            className="
+                                font-medium
+                                text-orange-600
+                                hover:text-orange-700
+                                underline-offset-4
+                                hover:underline
+                            "
+                                        >
+                                            Create one free
+                                        </Link>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             {/* PRODUCT DETAILS DRAWER MODAL OVERLAY */}
@@ -487,7 +516,7 @@ export default function GPTMarketplace() {
                     selectedProduct={selectedProduct}
                     setSelectedProduct={setSelectedProduct}
                     setCartCount={setCartCount}
-                    relatedProducts={ sampleProducts} // Pass the sample products as related items for demonstration
+                    relatedProducts={relatedProducts}
                 />
             )}
 
