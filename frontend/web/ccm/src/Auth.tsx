@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
     Mail,
     Lock,
@@ -7,237 +7,309 @@ import {
     Eye,
     EyeOff,
     CheckCircle2,
-    Sparkles
-} from 'lucide-react';
+} from "lucide-react";
+
+import { useAuth } from "./Providers/AuthContex";
 
 export default function AuthPage() {
-    const [isSignUp, setIsSignUp] = useState(false);
+    const {
+        authRoute,
+        changeAuthRoute,
+        login,
+        signUp,
+        forgotPassword,
+        resetPassword,
+        isLoading,
+    } = useAuth();
+
     const [showPassword, setShowPassword] = useState(false);
+
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        password: '',
-        agreeToTerms: false
+        name: "",
+        email: "",
+        password: "",
+        newPassword: "",
+        agreeToTerms: false,
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement>
+    ) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
+
+        setFormData((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === "checkbox" ? checked : value,
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log(isSignUp ? "Registering user..." : "Logging in user...", formData);
+
+        try {
+            switch (authRoute) {
+                case "login":
+                    await login(formData.email, formData.password);
+                    break;
+
+                case "signup":
+                    await signUp(
+                        formData.email,
+                        formData.password,
+                        formData.name
+                    );
+                    break;
+
+                case "forgot-password":
+                    await forgotPassword(formData.email);
+                    break;
+
+                case "reset-password":
+                    await resetPassword(formData.newPassword);
+                    break;
+            }
+        } catch (err) {
+            console.error("Auth error:", err);
+        }
     };
 
+    const isLogin = authRoute === "login";
+    const isSignUp = authRoute === "signup";
+    const isForgot = authRoute === "forgot-password";
+    const isReset = authRoute === "reset-password";
+
     return (
-        <div className="min-h-screen w-screen flex bg-slate-50 font-sans antialiased text-slate-800 selection:bg-emerald-50 selection:text-emerald-900">
+        <div className="min-h-screen w-screen flex bg-slate-50 font-sans text-slate-800">
 
-            {/* 1. LEFT SIDE: Value Proposition Hero (Hidden on Mobile) */}
-            <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-white to-slate-50 relative overflow-hidden flex-col justify-between p-12 text-slate-800 border-r border-slate-200/60">
 
-                {/* Soft background ambient glows */}
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-teal-500/5 rounded-full blur-3xl pointer-events-none" />
+            {/* ================= LEFT HERO ================= */}
+            <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-emerald-100  to-slate-50 relative overflow-hidden flex-col justify-between p-12 text-slate-800 border-r border-slate-200/60">
 
-                {/* Brand Header */}
-                <div className="relative z-10">
-                    <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-xl bg-emerald-600 flex items-center justify-center font-black text-white text-sm shadow-sm shadow-emerald-600/10">
-                            S
-                        </div>
-                        <span className="font-extrabold text-base tracking-tight text-slate-900">SokoAI</span>
+                <div className="flex items-center gap-2.5">
+                    <div className="h-8 w-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">
+                        S
                     </div>
+                    <span className="font-bold text-slate-900">SokoAI</span>
                 </div>
 
-                {/* Core Value Stack */}
-                <div className="relative z-10 max-w-sm my-auto space-y-6">
-                    <h1 className="text-3xl font-black tracking-tight leading-tight text-slate-900">
-                        The smartest way  <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">to find deals & shop online ...</span>
+                <div className="max-w-sm space-y-6">
+                    <h1 className="text-3xl font-black">
+                        Smarter shopping starts here
                     </h1>
-
-                    {/* Consumer-Focused Stats Grid */}
-                    <div className="grid grid-cols-2 gap-6 pt-6 border-t border-slate-200/80">
-                        <div>
-                            <span className="text-2xl font-black font-mono text-emerald-600 block tracking-tight">Real-Time</span>
-                            <span className="text-[11px] text-slate-500 font-medium leading-normal block mt-1">Price Comparison & Smart Matching</span>
-                        </div>
-                        <div>
-                            <span className="text-2xl font-black font-mono text-emerald-600 block tracking-tight">Intelligence</span>
-                            <span className="text-[11px] text-slate-500 font-medium leading-normal block mt-1">Shopping Assistance & Clarity</span>
-                        </div>
-                    </div>
+                    <p className="text-sm text-slate-500">
+                        AI-powered discovery, comparison, and deals in one place.
+                    </p>
                 </div>
 
-                {/* Footer Note */}
-                <div className="relative z-10 text-xs text-slate-500 font-medium flex items-center gap-2">
-                    <div className="h-5 w-5 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                    </div>
-                    <span>Free personal account. Unbiased price tracking.</span>
+                <div className="text-xs text-slate-500 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Secure, fast authentication system
                 </div>
             </div>
 
-            {/* 2. RIGHT SIDE: Form Container */}
-            <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-8 bg-slate-50 relative">
+            {/* ================= RIGHT FORM ================= */}
+            <div className="flex-1 flex items-center justify-center p-6">
 
-                {/* Mobile Logo Header */}
-                <div className="absolute top-6 left-6 lg:hidden flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-emerald-600 flex items-center justify-center font-black text-white text-xs">
-                        S
-                    </div>
-                    <span className="font-bold text-sm tracking-tight text-slate-900">SokoAI</span>
-                </div>
+                <div className="w-full max-w-[400px] bg-white border border-slate-200 rounded-2xl p-6 shadow-lg">
 
-                {/* Interactive Form Card Wrapper */}
-                <div className="w-full max-w-[380px] space-y-5 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200/60 shadow-xl shadow-slate-200/40">
-
-                    {/* Header Segment */}
-                    <div className="space-y-1">
-                        <h2 className="text-lg font-bold tracking-tight text-slate-900">
-                            {isSignUp ? 'Create your profile' : 'Hello ! Welcome '}
+                    {/* HEADER */}
+                    <div className="mb-5">
+                        <h2 className="text-lg font-bold">
+                            {isLogin && "Welcome back"}
+                            {isSignUp && "Create account"}
+                            {isForgot && "Recover account"}
+                            {isReset && "Reset password"}
                         </h2>
-                        <p className="text-xs text-slate-500 font-medium leading-normal">
-                            {isSignUp
-                                ? 'Sign up to unlock full features.'
-                                : 'Log in to continue .'
-                            }
+
+                        <p className="text-xs text-slate-500">
+                            {isLogin && "Login to continue"}
+                            {isSignUp && "Join SokoAI today"}
+                            {isForgot && "Enter your email to continue"}
+                            {isReset && "Set a new secure password"}
                         </p>
                     </div>
 
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-3.5">
+                    {/* FORM */}
+                    <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Full Name Input (Sign-Up Only) */}
+                        {/* ================= NAME ================= */}
                         {isSignUp && (
-                            <div className="space-y-1.5 transition-all">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Full Name</label>
-                                <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all">
-                                    <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                                        <User className="h-4 w-4 stroke-[1.8]" />
-                                    </span>
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    Full Name
+                                </label>
+
+                                <div className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 hover:border-slate-300">
+
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-600 transition">
+                                        <User className="h-4 w-4" />
+                                    </div>
+
                                     <input
-                                        type="text"
                                         name="name"
-                                        required
                                         value={formData.name}
-                                        onChange={handleInputChange}
+                                        onChange={handleChange}
                                         placeholder="John Doe"
-                                        className="w-full pl-10 pr-4 py-2.5 bg-transparent text-xs font-medium text-slate-900 placeholder-slate-400 outline-none"
+                                        className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
                                     />
                                 </div>
                             </div>
                         )}
 
-                        {/* Email Input */}
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Email Address</label>
-                            <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all">
-                                <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                                    <Mail className="h-4 w-4 stroke-[1.8]" />
-                                </span>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    required
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    placeholder="name@example.com"
-                                    className="w-full pl-10 pr-4 py-2.5 bg-transparent text-xs font-medium text-slate-900 placeholder-slate-400 outline-none"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Password Input */}
-                        <div className="space-y-1.5">
-                            <div className="flex items-center justify-between">
-                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Password</label>
-                                {!isSignUp && (
-                                    <a href="#" className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 tracking-tight transition-colors">
-                                        Forgot password?
-                                    </a>
-                                )}
-                            </div>
-                            <div className="relative flex items-center rounded-xl bg-slate-50 border border-slate-200 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/10 transition-all">
-                                <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                                    <Lock className="h-4 w-4 stroke-[1.8]" />
-                                </span>
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    name="password"
-                                    required
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    placeholder="••••••••"
-                                    className="w-full pl-10 pr-10 py-2.5 bg-transparent text-xs font-medium text-slate-900 placeholder-slate-400 outline-none"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-3.5 text-slate-400 hover:text-slate-600 transition-colors"
-                                >
-                                    {showPassword ? <EyeOff className="h-4 w-4 stroke-[1.8]" /> : <Eye className="h-4 w-4 stroke-[1.8]" />}
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Terms Checkbox (Sign-Up Only) */}
-                        {isSignUp && (
-                            <div className="flex items-start gap-2.5 pt-0.5">
-                                <input
-                                    type="checkbox"
-                                    id="agreeToTerms"
-                                    name="agreeToTerms"
-                                    required
-                                    checked={formData.agreeToTerms}
-                                    onChange={handleInputChange}
-                                    className="mt-0.5 h-3.5 w-3.5 accent-emerald-600 border-slate-300 rounded focus:ring-emerald-500/20 focus:ring-offset-0 transition cursor-pointer"
-                                />
-                                <label htmlFor="agreeToTerms" className="text-[11px] text-slate-400 font-medium leading-tight cursor-pointer select-none">
-                                    I agree to the <a href="#" className="text-slate-600 font-semibold hover:underline">Terms of Service</a> and <a href="#" className="text-slate-600 font-semibold hover:underline">Privacy Policy</a>.
+                        {/* ================= EMAIL ================= */}
+                        {!isReset && (
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    Email Address
                                 </label>
+
+                                <div className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 hover:border-slate-300">
+
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-600 transition">
+                                        <Mail className="h-4 w-4" />
+                                    </div>
+
+                                    <input
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        placeholder="email@example.com"
+                                        className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+                                    />
+                                </div>
                             </div>
                         )}
 
-                        {/* Action Submit Button */}
+                        {/* ================= PASSWORD ================= */}
+                        {(isLogin || isSignUp) && (
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                        Password
+                                    </label>
+
+                                    {isLogin && (
+                                        <button
+                                            type="button"
+                                            onClick={() => changeAuthRoute("forgot-password")}
+                                            className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 transition"
+                                        >
+                                            Forgot?
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 hover:border-slate-300">
+
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-600 transition">
+                                        <Lock className="h-4 w-4" />
+                                    </div>
+
+                                    <input
+                                        type={showPassword ? "text" : "password"}
+                                        name="password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        placeholder="••••••••"
+                                        className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((s) => !s)}
+                                        className="text-slate-400 hover:text-slate-600 transition"
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= RESET PASSWORD ================= */}
+                        {isReset && (
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    New Password
+                                </label>
+
+                                <div className="group flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 shadow-sm transition-all focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/10 hover:border-slate-300">
+
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500 group-focus-within:bg-emerald-50 group-focus-within:text-emerald-600 transition">
+                                        <Lock className="h-4 w-4" />
+                                    </div>
+
+                                    <input
+                                        type="password"
+                                        name="newPassword"
+                                        value={formData.newPassword}
+                                        onChange={handleChange}
+                                        placeholder="Enter new password"
+                                        className="w-full bg-transparent text-sm text-slate-900 placeholder-slate-400 outline-none"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ================= SUBMIT ================= */}
                         <button
-                            type="submit"
-                            className="w-full mt-2 bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white text-xs font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/10"
+                            disabled={isLoading}
+                            className="w-full relative overflow-hidden bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white py-3 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
                         >
-                            <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
-                            {isSignUp ? (
-                                <Sparkles className="h-3.5 w-3.5 stroke-[2.2]" />
-                            ) : (
-                                <ArrowRight className="h-3.5 w-3.5 stroke-[2.2]" />
-                            )}
+                            <span className="relative z-10">
+                                {isLogin && "Login"}
+                                {isSignUp && "Create account"}
+                                {isForgot && "Send reset link"}
+                                {isReset && "Reset password"}
+                            </span>
+
+                            <ArrowRight className="h-4 w-4 relative z-10" />
+
+                            {/* subtle glow effect */}
+                            <div className="absolute inset-0 opacity-0 hover:opacity-100 transition bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0" />
                         </button>
                     </form>
 
 
+                    {/* NAVIGATION BETWEEN STATES */}
+                    <div className="mt-4 text-xs text-center text-slate-500 space-y-2">
 
-                    {/* Toggle View Link */}
-                    <div className="text-center pt-1">
-                        <p className="text-xs text-slate-400 font-medium">
-                            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsSignUp(!isSignUp);
-                                    setFormData({ name: '', email: '', password: '', agreeToTerms: false });
-                                }}
-                                className="text-emerald-600 font-bold hover:text-emerald-700 hover:underline outline-none transition-colors"
-                            >
-                                {isSignUp ? 'Sign In' : 'Sign up for free'}
+                        {isLogin && (
+                            <>
+                                <button onClick={() => changeAuthRoute("signup")} className="text-emerald-600">
+                                    Create account
+                                </button>
+
+                                <button onClick={() => changeAuthRoute("forgot-password")} className="block text-slate-500">
+                                    Forgot password?
+                                </button>
+                            </>
+                        )}
+
+                        {isSignUp && (
+                            <button onClick={() => changeAuthRoute("login")} className="text-emerald-600">
+                                Already have an account? Login
                             </button>
-                        </p>
+                        )}
+
+                        {isForgot && (
+                            <button onClick={() => changeAuthRoute("login")} className="text-emerald-600">
+                                Back to login
+                            </button>
+                        )}
+
+                        {isReset && (
+                            <button onClick={() => changeAuthRoute("login")} className="text-emerald-600">
+                                Back to login
+                            </button>
+                        )}
                     </div>
 
                 </div>
             </div>
-
         </div>
     );
 }

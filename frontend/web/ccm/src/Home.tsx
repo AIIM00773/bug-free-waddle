@@ -18,8 +18,8 @@ import {
     HelpCircle,
     Sparkles,
     X,
-    BellDot,
-    CheckCircle2
+    CheckCircle2,
+    UserPlus2
 } from 'lucide-react';
 import ProductDetailsModal from './Components/ProductDetails';
 import { useAuth } from './Providers/AuthContex';
@@ -44,7 +44,14 @@ export default function GPTMarketplace() {
     const [cartCount, setCartCount] = useState(0);
 
     // Pulled structural tracking flags out of your refactored provider context hook
-    const { isAuthenticated, remindAlertActive } = useAuth();
+
+    const {
+        isAuthenticated, remindAlertActive,
+        changeAuthRoute,
+        isLoading,
+    } = useAuth();
+
+
     const [localHideReminder, setLocalHideReminder] = useState(false);
 
     // Synchronize local manual dismiss tracking state whenever the context timer cycles
@@ -138,40 +145,71 @@ export default function GPTMarketplace() {
                     ))}
                 </div>
 
+
                 <div className="p-3 border-t border-slate-200/60 bg-slate-50/50 shrink-0">
+
                     {isAuthenticated ? (
                         <div className="space-y-1">
-                            <Link to="/cart" className="block">
-                                <button className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition group">
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                        <ShoppingCart className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition shrink-0" />
-                                        <span className="truncate">Shopping Cart</span>
-                                    </div>
-                                    {cartCount > 0 && (
-                                        <span className="bg-slate-200 group-hover:bg-emerald-600 group-hover:text-white transition text-slate-700 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full">
-                                            {cartCount}
-                                        </span>
-                                    )}
-                                </button>
+
+                            {/* CART */}
+                            <Link
+                                to="/cart"
+                                className="flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition group"
+                            >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                    <ShoppingCart className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition shrink-0" />
+                                    <span className="truncate">Shopping Cart</span>
+                                </div>
+
+                                {cartCount > 0 && (
+                                    <span className="bg-slate-200 group-hover:bg-emerald-600 group-hover:text-white transition text-slate-700 text-[10px] font-bold font-mono px-2 py-0.5 rounded-full">
+                                        {cartCount}
+                                    </span>
+                                )}
                             </Link>
 
-                            <Link to="/profile" className="block">
-                                <button className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/50 hover:text-slate-900 transition group min-w-0">
-                                    <User2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition shrink-0" />
-                                    <span className="truncate">Account Profile</span>
-                                </button>
+                            {/* PROFILE */}
+                            <Link
+                                to="/profile"
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition group"
+                            >
+                                <User2 className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition shrink-0" />
+                                <span className="truncate">Account Profile</span>
                             </Link>
+
                         </div>
                     ) : (
-                        <Link to="/auth" className="block">
-                            <button className="w-full flex items-center justify-center gap-2 px-3 py-4 bg-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-50 hover:text-emerald-500 transition shadow-xs active:scale-[0.98]">
-                                <LogIn className="h-3.5 w-3.5 text-slate-400" />
-                                <span>Sign In to Account</span>
-                            </button>
-                        </Link>
+                        <div className="grid grid-cols-2 gap-3">
+
+                            {/* SIGN IN */}
+                            <Link
+                                to="/auth"
+                                onClick={() => changeAuthRoute("login")}
+                                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 active:scale-[0.98] transition"
+                            >
+                                <LogIn className="h-3.5 w-3.5 text-slate-300" />
+                                <span>Sign In</span>
+                            </Link>
+
+                            {/* SIGN UP */}
+                            <Link
+                                to="/auth"
+                                onClick={() => changeAuthRoute("signup")}
+                                className="flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98] transition"
+                            >
+                                <UserPlus2 className="h-3.5 w-3.5 text-white/80" />
+                                <span>Sign Up</span>
+                            </Link>
+
+                        </div>
                     )}
+
                 </div>
+
+
+
             </aside>
+
 
             {/* RIGHT MAIN WORKSPACE */}
             <div className="flex-1 flex flex-col h-full bg-slate-50 relative overflow-hidden">
@@ -207,38 +245,61 @@ export default function GPTMarketplace() {
                                 <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-20 animate-fadeIn flex flex-col divide-y divide-slate-100">
                                     <div className="px-2 pb-1.5 space-y-0.5">
                                         {!isAuthenticated && (
-                                            <Link to="/auth" onClick={() => setActionsOpen(false)} className="w-full">
+                                            <Link to="/auth" onClick={() => { setActionsOpen(false); changeAuthRoute("login") }} className="w-full">
                                                 <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
                                                     <LogIn className="h-4 w-4 text-slate-400" />
-                                                    <span>Sign In / Register</span>
+                                                    <span>Sign In</span>
                                                 </button>
                                             </Link>
                                         )}
 
-                                        <Link to="/cart" onClick={() => setActionsOpen(false)} className="w-full">
-                                            <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center justify-between group">
-                                                <div className="flex items-center gap-2.5">
-                                                    <ShoppingBag className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition" />
-                                                    <span>View Shopping Cart</span>
-                                                </div>
-                                                {cartCount > 0 && (
-                                                    <span className="bg-emerald-600 text-white font-bold font-mono text-[10px] px-2 py-0.5 rounded-full shadow-xs">
-                                                        {cartCount}
-                                                    </span>
-                                                )}
-                                            </button>
-                                        </Link>
+                                        {
+                                            !isAuthenticated && (
+                                                <Link to="/auth" onClick={() => { setActionsOpen(false); changeAuthRoute("signup") }} className="w-full">
+                                                    <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                                        <UserPlus2 className="h-4 w-4 text-slate-400" />
+                                                        <span>Sign Up</span>
+                                                    </button>
+                                                </Link>
+
+                                            )
+                                        }
+
+                                        {isAuthenticated && (
+                                            <Link to="/cart" onClick={() => setActionsOpen(false)} className="w-full">
+                                                <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center justify-between group">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <ShoppingBag className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition" />
+                                                        <span>View Shopping Cart</span>
+                                                    </div>
+                                                    {cartCount > 0 && (
+                                                        <span className="bg-emerald-600 text-white font-bold font-mono text-[10px] px-2 py-0.5 rounded-full shadow-xs">
+                                                            {cartCount}
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </Link>
+
+                                        )}
+
                                     </div>
 
                                     <div className="px-2 pt-1.5 space-y-0.5">
-                                        <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
-                                            <Settings className="h-4 w-4 text-slate-400" />
-                                            <span>Preferences</span>
-                                        </button>
-                                        <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
-                                            <HelpCircle className="h-4 w-4 text-slate-400" />
-                                            <span>Help & Support</span>
-                                        </button>
+
+                                        {isAuthenticated && (
+                                            <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                                <Settings className="h-4 w-4 text-slate-400" />
+                                                <span>Preferences</span>
+                                            </button>
+                                        )}
+
+                                        <Link to={"/support"}>
+                                            <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                                <HelpCircle className="h-4 w-4 text-slate-400" />
+                                                <span>Help & Support</span>
+                                            </button>
+                                        </Link>
+
                                     </div>
                                 </div>
                             </>
@@ -365,7 +426,7 @@ export default function GPTMarketplace() {
 
                 {/* ==========================================================FLOATING SHOPPER BENEFITS CARD ========================================================== */}
                 {remindAlertActive && !localHideReminder && !isAuthenticated && (
-                    <div className="absolute bottom-22 right-6 w-full max-w-lg z-50 animate-slideUp">
+                    <div className="absolute bottom-30 right-6 w-full max-w-lg z-50 animate-slideUp border border-emerald-300 rounded-3xl shadow-lg bg-white p-4 ">
                         <div
                             className="
                 relative
@@ -475,15 +536,8 @@ export default function GPTMarketplace() {
                                         Already have an account?
                                         <Link
                                             to="/auth"
-                                            className="
-                                ml-2
-                                font-medium
-                                text-orange-600
-                                hover:text-orange-700
-                                underline-offset-4
-                                hover:underline
-                            "
-                                        >
+                                            className=" ml-2 font-medium text-orange-600 hover:text-orange-700 underline-offset-4 hover:underline"
+                                            onClick={() => changeAuthRoute("login")} >
                                             Sign in
                                         </Link>
 
@@ -491,14 +545,8 @@ export default function GPTMarketplace() {
 
                                         <Link
                                             to="/auth"
-                                            className="
-                                font-medium
-                                text-orange-600
-                                hover:text-orange-700
-                                underline-offset-4
-                                hover:underline
-                            "
-                                        >
+                                            className=" font-medium text-orange-600 hover:text-orange-700 underline-offset-4 hover:underline"
+                                            onClick={() => changeAuthRoute("signup")}>
                                             Create one free
                                         </Link>
                                     </p>
