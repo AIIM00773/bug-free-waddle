@@ -12,6 +12,7 @@ import ProfilePage from "./Profile"; // (if you have a profile page, otherwise r
 import HelpSupportPage from "./HelpAndSupport";
 import AboutPage from "./Aboutus";
 import { AuthProvider } from "./Providers/AuthContex"; // (if you have an auth context, otherwise remove this import)
+import { ConversationProvider } from "./Providers/ConversationContext";
 
 const router = createBrowserRouter([
   {
@@ -23,7 +24,7 @@ const router = createBrowserRouter([
     element: <App />,
   },
 
-    {
+  {
     path: "/shop",
     element: <ShopPage />,
   },
@@ -40,12 +41,12 @@ const router = createBrowserRouter([
     element: <ProfilePage />,
   },
   {
-    path:"/support",
-    element: <HelpSupportPage /> 
+    path: "/support",
+    element: <HelpSupportPage />
   },
   {
-    path:"/about",
-    element:<AboutPage />
+    path: "/about",
+    element: <AboutPage />
   }
 
 ]);
@@ -53,7 +54,9 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <ConversationProvider>
+        <RouterProvider router={router} />
+      </ConversationProvider>
     </AuthProvider>
   </StrictMode>
 );
@@ -61,47 +64,3 @@ createRoot(document.getElementById("root")!).render(
 
 
 
-
-
-// import { StrictMode } from 'react'
-// import { createRoot } from 'react-dom/client'
-// import { createBrowserRouter, RouterProvider } from 'react-router-dom'
-// import './index.css'
-// import App from './App.tsx'
-// import CustomAdminDashboard from './Admin.tsx'
-// import ErrorPage from './ErrorPage.tsx'
-// import { AdminAuthProvider } from './contex/AdminContex/AuthContext.tsx'
-// import { WorkerProvider } from './contex/AdminContex/WorkerContext.tsx'
-// import { MarketplaceProvider } from './contex/AdminContex/MarketplaceContex.tsx'
-// import { DatabaseProvider } from './contex/AdminContex/DatabaseContext.tsx'
-// // 1. Define your client-side routes mapping URLs to your components
-// const router = createBrowserRouter([
-//   {
-//     path: "/",
-//     element: <App />, // Your main layout or landing page
-//   },
-//   {
-//     path: "/admin-valid",
-
-//     element: <AdminAuthProvider>
-//       <MarketplaceProvider>
-//         <WorkerProvider>
-//           <DatabaseProvider>
-//           <CustomAdminDashboard />,
-//           </DatabaseProvider>
-//         </WorkerProvider>
-//       </MarketplaceProvider>
-//     </AdminAuthProvider>
-//   },
-//   {
-//     path: "*",
-//     element: <ErrorPage />
-//   }
-// ]);
-
-// // 2. Render the RouterProvider instead of nesting <App /> directly
-// createRoot(document.getElementById('root')!).render(
-//   <StrictMode>
-//     <RouterProvider router={router} />
-//   </StrictMode>,
-// )
