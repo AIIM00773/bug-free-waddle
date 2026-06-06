@@ -213,7 +213,7 @@ export default function GPTMarketplace() {
                     <div className="max-w-2xl mx-auto w-full pointer-events-auto">
                         <form
                             onSubmit={handleSend}
-                            className="bg-white border border-slate-200 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-1.5 pl-4 flex items-center gap-3 transition-all duration-200 shadow-sm"
+                            className="bg-white border border-orange-400 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-1.5 pl-4 flex items-center gap-3 transition-all duration-200 shadow-sm"
                         >
                             <input
                                 type="text"
