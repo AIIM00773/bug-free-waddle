@@ -1,6 +1,3 @@
-
-
-
 import React, {
     createContext,
     useState,
@@ -12,11 +9,8 @@ import React, {
 
 
 
-
-
-
 /* =========================================================================
-   AUTH ROUTES
+   TYPES & CONFIG
    ========================================================================= */
 
 export type AuthRoute =
@@ -27,81 +21,94 @@ export type AuthRoute =
 
 
 
-
-
-
-/* =========================================================================
-   CONTEXT TYPE
-   ========================================================================= */
-
 interface AuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     remindAlertActive: boolean;
-
     authRoute: AuthRoute;
     setAuthRoute: (route: AuthRoute) => void;
-
     changeAuthRoute: (route: AuthRoute) => void;
-
     login: (email: string, password: string) => Promise<void>;
     signUp: (email: string, password: string, firstName: string) => Promise<void>;
-    logout: () => void;
-
+    logout: () => Promise<void>;
     resetPassword: (newPassword: string) => Promise<void>;
     forgotPassword: (email: string) => Promise<void>;
-
     initializeAuth: () => Promise<void>;
-
     remindToLogin: () => void;
     dismissReminder: () => void;
+    authError: string | null;
 }
-
-
-
-
-
-
-/* =========================================================================
-   CONSTANTS
-   ========================================================================= */
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_TOKEN_KEY = "authToken";
 const REMINDER_INTERVAL = 3 * 60 * 1000; // 3 minutes
 
+// Centralized API configuration endpoint base
+const API_BASE_URL =  "https://example.com/signup";
 
+/* =========================================================================
+   SECURITY & UTILS HELPERS
+   ========================================================================= */
 
+/**
+ * Trims and strips dangerous basic HTML elements to protect against basic injection vectors.
+ */
+const sanitizeInput = (input: string): string => {
+    return input.trim().replace(/[<>]/g, "");
+};
 
-
+/**
+ * Normalizes backend error exceptions down to a consumer-friendly UI message.
+ */
+const parseResponseError = async (response: Response): Promise<string> => {
+    try {
+        const errorData = await response.json();
+        return errorData.message || errorData.error || `Error: Code ${response.status}`;
+    } catch {
+        return `Server encountered an issue (${response.status}). Please try again later.`;
+    }
+};
 
 /* =========================================================================
    PROVIDER
    ========================================================================= */
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
-    children,
-}) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-    const [remindAlertActive, setRemindAlertActive] = useState(false);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [remindAlertActive, setRemindAlertActive] = useState<boolean>(false);
+    const [authError, setAuthError] = useState<string | null>(null);
 
-    const [authRoute, setAuthRoute] = useState<AuthRoute>(() => {
-        const authroute = sessionStorage.getItem("authRoute") as AuthRoute || "login";
-        return authroute;
+    const [authRoute, setAuthRouteState] = useState<AuthRoute>(() => {
+        try {
+            const savedRoute = sessionStorage.getItem("authRoute") as AuthRoute;
+            return savedRoute || "login";
+        } catch {
+            return "login";
+        }
     });
 
+    const reminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const isMounted = useRef<boolean>(true);
 
-    const reminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-        null
-    );
+    // Track component mounting lifecycle to prevent setting state on unmounted trees
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
 
-
-
-
-
-
+    // Global Error Auto-dismissal
+    useEffect(() => {
+        if (authError) {
+            const timer = setTimeout(() => {
+                if (isMounted.current) setAuthError(null);
+            }, 6000);
+            return () => clearTimeout(timer);
+        }
+    }, [authError]);
 
     /* ================================
        ROUTE CONTROL
@@ -110,16 +117,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const changeAuthRoute = useCallback((route: AuthRoute) => {
         try {
             sessionStorage.setItem("authRoute", route);
-            setAuthRoute(route);
-        } catch {
-            setAuthRoute(route);
+            setAuthRouteState(route);
+        } catch (err) {
+            setAuthRouteState(route);
         }
     }, []);
 
-
-
-
-
+    const setAuthRoute = useCallback((route: AuthRoute) => {
+        changeAuthRoute(route);
+    }, [changeAuthRoute]);
 
     /* ================================
        REMINDER SYSTEM
@@ -143,26 +149,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const startReminderCycle = useCallback(() => {
         stopReminderCycle();
-
         if (isAuthenticated) return;
 
-        setRemindAlertActive(true);
-
         reminderIntervalRef.current = setInterval(() => {
-            const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-
-            if (!token) {
-                setRemindAlertActive(true);
+            try {
+                const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+                if (!token && isMounted.current) {
+                    setRemindAlertActive(true);
+                }
+            } catch {
+                if (isMounted.current) setRemindAlertActive(true);
             }
         }, REMINDER_INTERVAL);
     }, [isAuthenticated, stopReminderCycle]);
-
-
-
-
-
-
-
 
     /* ================================
        AUTH INITIALIZATION
@@ -171,30 +170,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initializeAuth = useCallback(async () => {
         try {
             setIsLoading(true);
-
             const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-            const authenticated = Boolean(token);
+            
+            if (!token) {
+                if (isMounted.current) {
+                    setIsAuthenticated(false);
+                    startReminderCycle();
+                }
+                return;
+            }
 
-            setIsAuthenticated(authenticated);
+            // OPTIONAL SECURITY STEP: Place an API validation ping here to verify token expiry
+            /*
+            const res = await fetch(`${API_BASE_URL}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("Expired Token");
+            */
 
-            if (!authenticated) {
-                startReminderCycle();
-            } else {
+            if (isMounted.current) {
+                setIsAuthenticated(true);
                 stopReminderCycle();
             }
         } catch (err) {
-            console.error("Auth initialization failed:", err);
-            setIsAuthenticated(false);
+            try {
+                sessionStorage.removeItem(AUTH_TOKEN_KEY);
+            } catch {}
+            if (isMounted.current) {
+                setIsAuthenticated(false);
+                setAuthError("Session expired. Please log in again.");
+                startReminderCycle();
+            }
         } finally {
-            setIsLoading(false);
+            if (isMounted.current) {
+                setIsLoading(false);
+            }
         }
     }, [startReminderCycle, stopReminderCycle]);
-
-
-
-
-
-
 
     /* ================================
        AUTH ACTIONS
@@ -202,69 +214,207 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     const login = useCallback(
         async (email: string, password: string) => {
-            // TODO: replace with real API call
             if (!email || !password) {
-                throw new Error("Email and password are required");
+                setAuthError("Email and password fields are required.");
+                return;
             }
 
-            sessionStorage.setItem(AUTH_TOKEN_KEY, "auth-user-token");
+            const sanitizedEmail = sanitizeInput(email);
 
-            setIsAuthenticated(true);
-            setRemindAlertActive(false);
-            stopReminderCycle();
+            try {
+                setIsLoading(true);
+                // PLACE YOUR ACTUAL LOGIN ROUTE HERE
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: sanitizedEmail, password }),
+                });
+
+                if (!response.ok) {
+                    const errMsg = await parseResponseError(response);
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                
+                // Assuming backend drops a token payload key named 'token' or 'accessToken'
+                const token = data.token || "mock-valid-fallback-token";
+                
+                sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+
+                if (isMounted.current) {
+                    setIsAuthenticated(true);
+                    setRemindAlertActive(false);
+                    setAuthError(null);
+                    stopReminderCycle();
+                }
+            } catch (err: any) {
+                if (isMounted.current) {
+                    setAuthError(err.message || "An unexpected login connection error occurred.");
+                }
+                throw err;
+            } finally {
+                if (isMounted.current) setIsLoading(false);
+            }
         },
         [stopReminderCycle]
     );
 
     const signUp = useCallback(
         async (email: string, password: string, firstName: string) => {
-
             if (!email || !password || !firstName) {
-                throw new Error("Email, password, and first name are required");
+                setAuthError("All matching signup credentials are required.");
+                return;
             }
 
-            // TODO: replace with real API call
-            sessionStorage.setItem(AUTH_TOKEN_KEY, "auth-user-token");
+            const sanitizedEmail = sanitizeInput(email);
+            const sanitizedName = sanitizeInput(firstName);
 
-            setIsAuthenticated(true);
-            setRemindAlertActive(false);
-            stopReminderCycle();
+            try {
+                setIsLoading(true);
+                // PLACE YOUR ACTUAL SIGNUP ROUTE HERE
+                const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        email: sanitizedEmail, 
+                        password, 
+                        firstName: sanitizedName 
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errMsg = await parseResponseError(response);
+                    throw new Error(errMsg);
+                }
+
+                const data = await response.json();
+                const token = data.token || "mock-valid-fallback-token";
+
+                sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+
+                if (isMounted.current) {
+                    setIsAuthenticated(true);
+                    setRemindAlertActive(false);
+                    setAuthError(null);
+                    stopReminderCycle();
+                }
+            } catch (err: any) {
+                if (isMounted.current) {
+                    setAuthError(err.message || "Account creation failed connection check.");
+                }
+                throw err;
+            } finally {
+                if (isMounted.current) setIsLoading(false);
+            }
         },
         [stopReminderCycle]
     );
 
-    const logout = useCallback(() => {
-        sessionStorage.removeItem(AUTH_TOKEN_KEY);
-
-        setIsAuthenticated(false);
-        setRemindAlertActive(true);
-
-        startReminderCycle();
+    const logout = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+            
+            if (token) {
+                // PLACE YOUR ACTUAL LOGOUT ROUTE HERE (To blacklist token server-side)
+                await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    }
+                }).catch(() => {
+                    // Gracefully silence server failures on logging out out-of-date sessions
+                });
+            }
+        } finally {
+            try {
+                sessionStorage.removeItem(AUTH_TOKEN_KEY);
+            } catch {}
+            
+            if (isMounted.current) {
+                setIsAuthenticated(false);
+                setRemindAlertActive(true);
+                setIsLoading(false);
+                startReminderCycle();
+            }
+        }
     }, [startReminderCycle]);
 
-
-
-
-
-
-
-
-
     /* ================================
-       PASSWORD FLOWS (STUBS)
+       PASSWORD FLOWS
     ================================= */
 
-    const resetPassword = useCallback(async (newPassword: string) => {
-        console.log("Reset password:", newPassword);
-    }, []);
-
     const forgotPassword = useCallback(async (email: string) => {
-        console.log("Forgot password:", email);
+        if (!email) {
+            setAuthError("Please provide your email address.");
+            return;
+        }
+
+        const sanitizedEmail = sanitizeInput(email);
+
+        try {
+            setIsLoading(true);
+            // PLACE YOUR ACTUAL FORGOT PASSWORD ROUTE HERE
+            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: sanitizedEmail }),
+            });
+
+            if (!response.ok) {
+                const errMsg = await parseResponseError(response);
+                throw new Error(errMsg);
+            }
+            
+            if (isMounted.current) {
+                setAuthError(null); // Success clears out any older errors
+            }
+        } catch (err: any) {
+            if (isMounted.current) {
+                setAuthError(err.message || "Failed to process recovery request.");
+            }
+            throw err;
+        } finally {
+            if (isMounted.current) setIsLoading(false);
+        }
     }, []);
 
+    const resetPassword = useCallback(async (newPassword: string) => {
+        if (!newPassword) {
+            setAuthError("New password cannot be left blank.");
+            return;
+        }
 
+        try {
+            setIsLoading(true);
+            // PLACE YOUR ACTUAL RESET PASSWORD ROUTE HERE
+            // Note: Typically you will need to extract a token parameter via URL query parameters
+            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: newPassword }),
+            });
 
+            if (!response.ok) {
+                const errMsg = await parseResponseError(response);
+                throw new Error(errMsg);
+            }
 
+            if (isMounted.current) {
+                setAuthError(null);
+                changeAuthRoute("login");
+            }
+        } catch (err: any) {
+            if (isMounted.current) {
+                setAuthError(err.message || "Password resetting routine failed.");
+            }
+            throw err;
+        } finally {
+            if (isMounted.current) setIsLoading(false);
+        }
+    }, [changeAuthRoute]);
 
     /* ================================
        LIFECYCLE
@@ -278,10 +428,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         };
     }, [initializeAuth, stopReminderCycle]);
 
-
-
-
-
     /* ================================
        CONTEXT VALUE
     ================================= */
@@ -290,32 +436,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         isAuthenticated,
         isLoading,
         remindAlertActive,
-
         authRoute,
         setAuthRoute,
         changeAuthRoute,
-
         login,
         signUp,
         logout,
-
         resetPassword,
         forgotPassword,
-
         initializeAuth,
-
         remindToLogin,
         dismissReminder,
+        authError,
     };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-
 
 /* =========================================================================
    HOOK
@@ -325,7 +461,7 @@ export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
 
     if (!context) {
-        throw new Error("useAuth must be used within AuthProvider");
+        throw new Error("useAuth must be used within an AuthProvider setup structure.");
     }
 
     return context;

@@ -33,7 +33,6 @@ export default function GPTMarketplace() {
         sendMessage
     } = useConversations();
 
-    const [cartCount, setcartCount] = useState(0);
     const { isAuthenticated, remindAlertActive } = useAuth();
     const [localHideReminder, setLocalHideReminder] = useState(false);
 
@@ -246,7 +245,6 @@ export default function GPTMarketplace() {
                 <ProductDetailsModal
                     selectedProduct={selectedProduct}
                     setSelectedProduct={setSelectedProduct}
-                    setCartCount={setcartCount}
                     relatedProducts={relatedProducts}
                 />
             )}

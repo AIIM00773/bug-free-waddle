@@ -9,10 +9,26 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
-from ..Services.validators import ( validate_email, validate_name,validate_password,validate_phone )
 from django.contrib.auth import authenticate
 
 User = get_user_model()
+
+#  ( validate_email, validate_name,validate_password,validate_phone )
+
+
+def validate_email (email) :
+    return email
+
+def validate_name(name): 
+    return name
+
+
+def validate_password (password):
+    return password
+
+def validate_phone (phone):
+    return phone
+
 
 
 

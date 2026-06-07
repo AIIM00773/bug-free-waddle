@@ -21,7 +21,6 @@ import type { Product } from '../Constants/productTypes';
 interface ProductModalProps {
     selectedProduct: Product | null;
     setSelectedProduct: (product: Product | null) => void;
-    setCartCount: React.Dispatch<React.SetStateAction<number>>;
     relatedProducts?: Product[];
 }
 
@@ -31,7 +30,6 @@ interface ProductModalProps {
 export default function ProductDetailsModal({
     selectedProduct,
     setSelectedProduct,
-    setCartCount,
     relatedProducts = [],
 }: ProductModalProps) {
 
@@ -320,7 +318,6 @@ export default function ProductDetailsModal({
                     <button
                         onClick={() => {
                             if (selectedProduct.inStock !== false) {
-                                setCartCount(prev => prev + 1);
                                 setSelectedProduct(null);
                             }
                         }}

@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator
-from inventory.models import Product 
+from apps.inventory.models import Product 
 
 class User(AbstractUser):
     # ---------------------------------------------------------
@@ -16,23 +16,16 @@ class User(AbstractUser):
         editable=False,
         db_index=True
     )
+    
     email = models.EmailField(
         unique=True,
         db_index=True
     )
+    
     phone = models.CharField(
-        max_length=200,
+        max_length=15,
         null=True,
         blank=True
-    )
-
-    # ---------------------------------------------------------
-    # PROFILE / MEDIA
-    # ---------------------------------------------------------
-    profile_image = models.ImageField(
-        upload_to="users/profile_images/",
-        blank=True,
-        null=True
     )
 
     # ---------------------------------------------------------
@@ -43,6 +36,7 @@ class User(AbstractUser):
         blank=True,
         null=True        
     )
+    
     country = models.CharField(
         max_length=100,
         blank=True,
@@ -71,6 +65,10 @@ class User(AbstractUser):
         null=True
     )
 
+
+
+
+
     # ---------------------------------------------------------
     # PERSONAL
     # ---------------------------------------------------------
@@ -80,16 +78,19 @@ class User(AbstractUser):
         ("other", "Other"),
         ("prefer_not_to_say", "Prefer Not To Say"),
     )
+    
     gender = models.CharField(
         max_length=30,
         choices=GENDER_CHOICES,
         blank=True,
         null=True
     )
+    
     date_of_birth = models.DateField(
         blank=True,
         null=True
     )
+    
 
     # ---------------------------------------------------------
     # ACCOUNT TYPE / STATUS ROLES
@@ -115,6 +116,8 @@ class User(AbstractUser):
         default=False
     )
 
+
+
     # ---------------------------------------------------------
     # VERIFICATION LIFECYCLES
     # ---------------------------------------------------------
@@ -124,6 +127,8 @@ class User(AbstractUser):
     is_phone_verified = models.BooleanField(
         default=False
     )
+
+
 
     # ---------------------------------------------------------
     # ONBOARDING & PERSONALIZATION
@@ -139,6 +144,10 @@ class User(AbstractUser):
         blank=True,
         null=True
     )
+
+
+
+
 
     # ---------------------------------------------------------
     # SECURITY & COMPLIANCE BOUNDS
@@ -161,6 +170,9 @@ class User(AbstractUser):
         blank=True,
         null=True
     )
+
+
+
 
     # ---------------------------------------------------------
     # TIMESTAMPS
