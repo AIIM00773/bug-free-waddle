@@ -25,11 +25,13 @@ SECRET_KEY = "django-insecure-#)p%x5144#6qzg)%@0aj-)5ejp6e0zv%dwz(qfu@bb7-x52p)h
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 from datetime import timedelta
 
 # Application definition
+
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -39,37 +41,21 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     
+    # Third-party apps
+    "corsheaders",  # <-- ADDED FOR CORS
     "rest_framework",
     "rest_framework_simplejwt", 
     "rest_framework_simplejwt.token_blacklist",
-
+    
+    # Local apps
     "apps.users", 
     "apps.inventory",
-    
-
-
-
 ]
-
-REST_FRAMEWORK={
-    "DEFAULT_AUTHENTICATION_CLASSSES":[
-        "rest_fremework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-        
-    ]
-}
-
-
-SIMPLE_JWT={
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=120),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
-    "ROTATE_REFRESH_TOKENS":True,
-    "BLACKLIST_AFTER_ROTATION":True,
-}
 
 
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # <-- MUST BE AT THE VERY TOP
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -78,6 +64,35 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+# CORS Configuration — Adjust the ports if your React dev server uses a different one
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+# If you're sending credentials like cookies or HTTP Basic auth, uncomment this line:
+# CORS_ALLOW_CREDENTIALS = True
+
+REST_FRAMEWORK = {
+    # FIXED TYPOS: Corrected 'CLASSSES' spelling and 'rest_fremework' path string
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ]
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=14),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": False,
+}
+
+
 
 
 
@@ -159,5 +174,4 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 AUTH_USER_MODEL = "users.User"

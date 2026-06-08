@@ -1,17 +1,16 @@
+
 import React, {
     createContext,
-    useState,
-    useEffect,
     useCallback,
-    useRef,
     useContext,
+    useEffect,
+    useRef,
+    useState,
 } from "react";
 
-
-
-/* =========================================================================
-   TYPES & CONFIG
-   ========================================================================= */
+/* ==========================================================================
+   TYPES
+   ========================================================================== */
 
 export type AuthRoute =
     | "login"
@@ -19,449 +18,624 @@ export type AuthRoute =
     | "forgot-password"
     | "reset-password";
 
-
-
-interface AuthContextType {
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    remindAlertActive: boolean;
-    authRoute: AuthRoute;
-    setAuthRoute: (route: AuthRoute) => void;
-    changeAuthRoute: (route: AuthRoute) => void;
-    login: (email: string, password: string) => Promise<void>;
-    signUp: (email: string, password: string, firstName: string) => Promise<void>;
-    logout: () => Promise<void>;
-    resetPassword: (newPassword: string) => Promise<void>;
-    forgotPassword: (email: string) => Promise<void>;
-    initializeAuth: () => Promise<void>;
-    remindToLogin: () => void;
-    dismissReminder: () => void;
-    authError: string | null;
+export interface AuthUser {
+    id: number;
+    email: string;
+    first_name: string;
+    last_name: string;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+interface AuthContextType {
+    user: AuthUser | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    authError: string | null;
 
-const AUTH_TOKEN_KEY = "authToken";
-const REMINDER_INTERVAL = 3 * 60 * 1000; // 3 minutes
+    authRoute: AuthRoute;
 
-// Centralized API configuration endpoint base
-const API_BASE_URL =  "https://example.com/signup";
+    setAuthRoute: (route: AuthRoute) => void;
+    changeAuthRoute: (route: AuthRoute) => void;
 
-/* =========================================================================
-   SECURITY & UTILS HELPERS
-   ========================================================================= */
+    login: (
+        phone: string,
+        password: string
+    ) => Promise<void>;
 
-/**
- * Trims and strips dangerous basic HTML elements to protect against basic injection vectors.
- */
-const sanitizeInput = (input: string): string => {
-    return input.trim().replace(/[<>]/g, "");
+    signUp: (
+        email: string,
+        password: string,
+        first_name: string,
+        last_name: string,
+        phone: string | null,
+    ) => Promise<void>;
+
+    logout: () => Promise<void>;
+
+    forgotPassword: (
+        email: string
+    ) => Promise<void>;
+
+    resetPassword: (
+        password: string
+    ) => Promise<void>;
+
+    initializeAuth: () => Promise<void>;
+    refreshAccessToken: () => Promise<boolean>;
+}
+
+/* ==========================================================================
+   CONFIG
+   ========================================================================== */
+
+const API_BASE_URL = "http://127.0.0.1:8000";
+
+const ENDPOINTS = {
+    LOGIN: `${API_BASE_URL}/api/users/login/`,
+    REGISTER: `${API_BASE_URL}/api/users/register/`,
+    REFRESH: `${API_BASE_URL}/auth/api/token/refresh/`,
+    LOGOUT: `${API_BASE_URL}/api/users/logout/`,
+
+    FORGOT_PASSWORD: `${API_BASE_URL}/users/api/auth/forgot-password/`,
+    RESET_PASSWORD: `${API_BASE_URL}/users/api/auth/reset-password/`,
+    VALIDATE_TOKEN: `${API_BASE_URL}/api/users/validate-token/`,
 };
 
-/**
- * Normalizes backend error exceptions down to a consumer-friendly UI message.
- */
-const parseResponseError = async (response: Response): Promise<string> => {
+const ACCESS_TOKEN_KEY = "access_token";
+const REFRESH_TOKEN_KEY = "refresh_token";
+const AUTH_ROUTE_KEY = "auth_route";
+
+/* ==========================================================================
+   CONTEXT
+   ========================================================================== */
+
+const AuthContext = createContext<AuthContextType | undefined>(
+    undefined
+);
+
+/* ==========================================================================
+   HELPERS
+   ========================================================================== */
+
+const sanitizeInput = (value: string) =>
+    value.trim().replace(/[<>]/g, "");
+
+// const emailRegex =  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const parseResponseError = async (
+    response: Response
+): Promise<string> => {
     try {
-        const errorData = await response.json();
-        return errorData.message || errorData.error || `Error: Code ${response.status}`;
+        const data = await response.json();
+
+        if (typeof data === "string") {
+            return data;
+        }
+
+        if (data.detail) {
+            return data.detail;
+        }
+
+        const errors = Object.values(data)
+            .flat()
+            .join(", ");
+
+        return errors || "Request failed.";
     } catch {
-        return `Server encountered an issue (${response.status}). Please try again later.`;
+        return "Unexpected server error.";
     }
 };
 
-/* =========================================================================
+/* ==========================================================================
    PROVIDER
-   ========================================================================= */
+   ========================================================================== */
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [remindAlertActive, setRemindAlertActive] = useState<boolean>(false);
-    const [authError, setAuthError] = useState<string | null>(null);
+export const AuthProvider: React.FC<{
+    children: React.ReactNode;
+}> = ({ children }) => {
+    const [user, setUser] =
+        useState<AuthUser | null>(null);
 
-    const [authRoute, setAuthRouteState] = useState<AuthRoute>(() => {
-        try {
-            const savedRoute = sessionStorage.getItem("authRoute") as AuthRoute;
-            return savedRoute || "login";
-        } catch {
-            return "login";
-        }
-    });
+    const [isAuthenticated, setIsAuthenticated] =
+        useState(false);
 
-    const reminderIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const isMounted = useRef<boolean>(true);
+    const [isLoading, setIsLoading] =
+        useState(true);
 
-    // Track component mounting lifecycle to prevent setting state on unmounted trees
-    useEffect(() => {
-        isMounted.current = true;
-        return () => {
-            isMounted.current = false;
-        };
-    }, []);
+    const [authError, setAuthError] =
+        useState<string | null>(null);
 
-    // Global Error Auto-dismissal
-    useEffect(() => {
-        if (authError) {
-            const timer = setTimeout(() => {
-                if (isMounted.current) setAuthError(null);
-            }, 6000);
-            return () => clearTimeout(timer);
-        }
-    }, [authError]);
+    const [authRoute, setAuthRouteState] =
+        useState<AuthRoute>(() => {
+            const saved =
+                sessionStorage.getItem(
+                    AUTH_ROUTE_KEY
+                ) as AuthRoute | null;
 
-    /* ================================
-       ROUTE CONTROL
-    ================================= */
+            return saved || "login";
+        });
 
-    const changeAuthRoute = useCallback((route: AuthRoute) => {
-        try {
-            sessionStorage.setItem("authRoute", route);
+    const mountedRef = useRef(true);
+
+    /* ======================================================
+       ROUTES
+    ====================================================== */
+
+    const changeAuthRoute = useCallback(
+        (route: AuthRoute) => {
+            sessionStorage.setItem(
+                AUTH_ROUTE_KEY,
+                route
+            );
+
             setAuthRouteState(route);
-        } catch (err) {
-            setAuthRouteState(route);
-        }
-    }, []);
+        },
+        []
+    );
 
-    const setAuthRoute = useCallback((route: AuthRoute) => {
-        changeAuthRoute(route);
-    }, [changeAuthRoute]);
+    const setAuthRoute = useCallback(
+        (route: AuthRoute) => {
+            changeAuthRoute(route);
+        },
+        [changeAuthRoute]
+    );
 
-    /* ================================
-       REMINDER SYSTEM
-    ================================= */
+    /* ======================================================
+       TOKENS
+    ====================================================== */
 
-    const dismissReminder = useCallback(() => {
-        setRemindAlertActive(false);
-    }, []);
+    const saveTokens = (
+        access: string,
+        refresh: string
+    ) => {
+        sessionStorage.setItem(
+            ACCESS_TOKEN_KEY,
+            access
+        );
 
-    const remindToLogin = useCallback(() => {
-        if (isAuthenticated) return;
-        setRemindAlertActive(true);
-    }, [isAuthenticated]);
+        sessionStorage.setItem(
+            REFRESH_TOKEN_KEY,
+            refresh
+        );
+    };
 
-    const stopReminderCycle = useCallback(() => {
-        if (reminderIntervalRef.current) {
-            clearInterval(reminderIntervalRef.current);
-            reminderIntervalRef.current = null;
-        }
-    }, []);
+    const clearTokens = () => {
+        sessionStorage.removeItem(
+            ACCESS_TOKEN_KEY
+        );
 
-    const startReminderCycle = useCallback(() => {
-        stopReminderCycle();
-        if (isAuthenticated) return;
+        sessionStorage.removeItem(
+            REFRESH_TOKEN_KEY
+        );
+    };
 
-        reminderIntervalRef.current = setInterval(() => {
+    /* ======================================================
+       REFRESH TOKEN
+    ====================================================== */
+
+    const refreshAccessToken =
+        useCallback(async (): Promise<boolean> => {
             try {
-                const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-                if (!token && isMounted.current) {
-                    setRemindAlertActive(true);
+                const refresh =
+                    sessionStorage.getItem(
+                        REFRESH_TOKEN_KEY
+                    );
+
+                if (!refresh) {
+                    return false;
                 }
+
+                const response =
+                    await fetch(
+                        ENDPOINTS.REFRESH,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
+                            body: JSON.stringify({
+                                refresh,
+                            }),
+                        }
+                    );
+
+                if (!response.ok) {
+                    return false;
+                }
+
+                const data =
+                    await response.json();
+
+                sessionStorage.setItem(
+                    ACCESS_TOKEN_KEY,
+                    data.tokens.access
+                );
+
+                sessionStorage.setItem(
+                    REFRESH_TOKEN_KEY,
+                    data.tokens.refresh
+                );
+
+                return true;
             } catch {
-                if (isMounted.current) setRemindAlertActive(true);
+                return false;
             }
-        }, REMINDER_INTERVAL);
-    }, [isAuthenticated, stopReminderCycle]);
+        }, []);
 
-    /* ================================
-       AUTH INITIALIZATION
-    ================================= */
 
-    const initializeAuth = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-            
-            if (!token) {
-                if (isMounted.current) {
-                    setIsAuthenticated(false);
-                    startReminderCycle();
-                }
-                return;
-            }
 
-            // OPTIONAL SECURITY STEP: Place an API validation ping here to verify token expiry
-            /*
-            const res = await fetch(`${API_BASE_URL}/auth/me`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Expired Token");
-            */
 
-            if (isMounted.current) {
-                setIsAuthenticated(true);
-                stopReminderCycle();
-            }
-        } catch (err) {
+
+    /* ======================================================
+       INIT
+    ====================================================== */
+
+    const initializeAuth =
+        useCallback(async () => {
             try {
-                sessionStorage.removeItem(AUTH_TOKEN_KEY);
-            } catch {}
-            if (isMounted.current) {
-                setIsAuthenticated(false);
-                setAuthError("Session expired. Please log in again.");
-                startReminderCycle();
-            }
-        } finally {
-            if (isMounted.current) {
-                setIsLoading(false);
-            }
-        }
-    }, [startReminderCycle, stopReminderCycle]);
+                setIsLoading(true);
 
-    /* ================================
-       AUTH ACTIONS
-    ================================= */
+                const access =
+                    sessionStorage.getItem(
+                        ACCESS_TOKEN_KEY
+                    );
+
+                if (!access) {
+                    setIsAuthenticated(false);
+                    setUser(null);
+                    return;
+                }
+
+                let response = await fetch(
+                    ENDPOINTS.VALIDATE_TOKEN,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${access}`,
+                        },
+                    }
+                );
+
+                if (!response.ok) {
+                    const refreshed =
+                        await refreshAccessToken();
+
+                    if (!refreshed) {
+                        clearTokens();
+
+                        setUser(null);
+                        setIsAuthenticated(
+                            false
+                        );
+
+                        return;
+                    }
+
+                    const newAccess =
+                        sessionStorage.getItem(
+                            ACCESS_TOKEN_KEY
+                        );
+
+                    response = await fetch(
+                        ENDPOINTS.VALIDATE_TOKEN,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${newAccess}`,
+                            },
+                        }
+                    );
+                }
+
+                if (!response.ok) {
+                    throw new Error();
+                }
+
+                const data =
+                    await response.json();
+
+                if (!mountedRef.current) {
+                    return;
+                }
+
+                setUser(data.user);
+                setIsAuthenticated(true);
+            } catch {
+                clearTokens();
+
+                setUser(null);
+                setIsAuthenticated(false);
+            } finally {
+                if (mountedRef.current) {
+                    setIsLoading(false);
+                }
+            }
+        }, [refreshAccessToken]);
+
+
+
+
+
+
+    /* ======================================================
+       LOGIN
+    ====================================================== */
 
     const login = useCallback(
-        async (email: string, password: string) => {
-            if (!email || !password) {
-                setAuthError("Email and password fields are required.");
-                return;
+        async (
+            phone: string,
+            password: string,
+        ) => {
+            setAuthError(null);
+
+            if (!phone) {
+                throw new Error(
+                    "Please enter your Phone number ."
+                );
             }
 
-            const sanitizedEmail = sanitizeInput(email);
-
-            try {
-                setIsLoading(true);
-                // PLACE YOUR ACTUAL LOGIN ROUTE HERE
-                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            const response = await fetch(
+                ENDPOINTS.LOGIN,
+                {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: sanitizedEmail, password }),
-                });
-
-                if (!response.ok) {
-                    const errMsg = await parseResponseError(response);
-                    throw new Error(errMsg);
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        phone:
+                            sanitizeInput(
+                                phone
+                            ),
+                        password,
+                    }),
                 }
+            );
 
-                const data = await response.json();
-                
-                // Assuming backend drops a token payload key named 'token' or 'accessToken'
-                const token = data.token || "mock-valid-fallback-token";
-                
-                sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-
-                if (isMounted.current) {
-                    setIsAuthenticated(true);
-                    setRemindAlertActive(false);
-                    setAuthError(null);
-                    stopReminderCycle();
-                }
-            } catch (err: any) {
-                if (isMounted.current) {
-                    setAuthError(err.message || "An unexpected login connection error occurred.");
-                }
-                throw err;
-            } finally {
-                if (isMounted.current) setIsLoading(false);
+            if (!response.ok) {
+                throw new Error(
+                    await parseResponseError(
+                        response
+                    )
+                );
             }
+
+            const data =
+                await response.json();
+
+            saveTokens(
+                data.tokens.access,
+                data.tokens.refresh
+            );
+
+            setUser(data.user);
+            setIsAuthenticated(true);
         },
-        [stopReminderCycle]
+        []
     );
+
+
+
+
+    /* ======================================================
+       SIGNUP
+    ====================================================== */
 
     const signUp = useCallback(
-        async (email: string, password: string, firstName: string) => {
-            if (!email || !password || !firstName) {
-                setAuthError("All matching signup credentials are required.");
-                return;
-            }
+        async (email: string, password: string, first_name: string, last_name: string, phone: null | string) => {
+            setAuthError(null);
 
-            const sanitizedEmail = sanitizeInput(email);
-            const sanitizedName = sanitizeInput(firstName);
-
-            try {
-                setIsLoading(true);
-                // PLACE YOUR ACTUAL SIGNUP ROUTE HERE
-                const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+            const response = await fetch(
+                ENDPOINTS.REGISTER,
+                {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        email: sanitizedEmail, 
-                        password, 
-                        firstName: sanitizedName 
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        email:
+                            sanitizeInput(
+                                email
+                            ),
+                        password,
+                        first_name:
+                            sanitizeInput(
+                                first_name
+                            ),
+                        last_name:
+                            sanitizeInput(
+                                last_name
+                            ),
+
+                        phone: phone ? phone : ""
+
+
                     }),
-                });
-
-                if (!response.ok) {
-                    const errMsg = await parseResponseError(response);
-                    throw new Error(errMsg);
                 }
+            );
 
-                const data = await response.json();
-                const token = data.token || "mock-valid-fallback-token";
-
-                sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-
-                if (isMounted.current) {
-                    setIsAuthenticated(true);
-                    setRemindAlertActive(false);
-                    setAuthError(null);
-                    stopReminderCycle();
-                }
-            } catch (err: any) {
-                if (isMounted.current) {
-                    setAuthError(err.message || "Account creation failed connection check.");
-                }
-                throw err;
-            } finally {
-                if (isMounted.current) setIsLoading(false);
+            if (!response.ok) {
+                throw new Error(
+                    await parseResponseError(
+                        response
+                    )
+                );
             }
+
+            const data =
+                await response.json();
+
+            saveTokens(
+                data.tokens.access,
+                data.tokens.refresh
+            );
+
+            setUser(data.user);
+            setIsAuthenticated(true);
         },
-        [stopReminderCycle]
+        []
     );
 
-    const logout = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
-            
-            if (token) {
-                // PLACE YOUR ACTUAL LOGOUT ROUTE HERE (To blacklist token server-side)
-                await fetch(`${API_BASE_URL}/auth/logout`, {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "Authorization": `Bearer ${token}`
-                    }
-                }).catch(() => {
-                    // Gracefully silence server failures on logging out out-of-date sessions
-                });
-            }
-        } finally {
+    /* ======================================================
+       LOGOUT
+    ====================================================== */
+
+    const logout = useCallback(
+        async () => {
             try {
-                sessionStorage.removeItem(AUTH_TOKEN_KEY);
-            } catch {}
-            
-            if (isMounted.current) {
+                const refresh =
+                    sessionStorage.getItem(
+                        REFRESH_TOKEN_KEY
+                    );
+
+                await fetch(
+                    ENDPOINTS.LOGOUT,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+                        body: JSON.stringify({
+                            refresh,
+                        }),
+                    }
+                );
+            } catch {
+            } finally {
+                clearTokens();
+
+                setUser(null);
+
                 setIsAuthenticated(false);
-                setRemindAlertActive(true);
-                setIsLoading(false);
-                startReminderCycle();
+
+                changeAuthRoute(
+                    "login"
+                );
             }
-        }
-    }, [startReminderCycle]);
+        },
+        [changeAuthRoute]
+    );
 
-    /* ================================
-       PASSWORD FLOWS
-    ================================= */
+    /* ======================================================
+       PASSWORDS
+    ====================================================== */
 
-    const forgotPassword = useCallback(async (email: string) => {
-        if (!email) {
-            setAuthError("Please provide your email address.");
-            return;
-        }
-
-        const sanitizedEmail = sanitizeInput(email);
-
-        try {
-            setIsLoading(true);
-            // PLACE YOUR ACTUAL FORGOT PASSWORD ROUTE HERE
-            const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: sanitizedEmail }),
-            });
+    const forgotPassword =
+        useCallback(async (email: string) => {
+            const response = await fetch(
+                ENDPOINTS.FORGOT_PASSWORD,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+                    },
+                    body: JSON.stringify({
+                        email,
+                    }),
+                }
+            );
 
             if (!response.ok) {
-                const errMsg = await parseResponseError(response);
-                throw new Error(errMsg);
+                throw new Error(
+                    await parseResponseError(
+                        response
+                    )
+                );
             }
-            
-            if (isMounted.current) {
-                setAuthError(null); // Success clears out any older errors
-            }
-        } catch (err: any) {
-            if (isMounted.current) {
-                setAuthError(err.message || "Failed to process recovery request.");
-            }
-            throw err;
-        } finally {
-            if (isMounted.current) setIsLoading(false);
-        }
-    }, []);
+        }, []);
 
-    const resetPassword = useCallback(async (newPassword: string) => {
-        if (!newPassword) {
-            setAuthError("New password cannot be left blank.");
-            return;
-        }
+    const resetPassword =
+        useCallback(
+            async (password: string) => {
+                const response =
+                    await fetch(
+                        ENDPOINTS.RESET_PASSWORD,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type":
+                                    "application/json",
+                            },
+                            body: JSON.stringify({
+                                password,
+                            }),
+                        }
+                    );
 
-        try {
-            setIsLoading(true);
-            // PLACE YOUR ACTUAL RESET PASSWORD ROUTE HERE
-            // Note: Typically you will need to extract a token parameter via URL query parameters
-            const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ password: newPassword }),
-            });
+                if (!response.ok) {
+                    throw new Error(
+                        await parseResponseError(
+                            response
+                        )
+                    );
+                }
 
-            if (!response.ok) {
-                const errMsg = await parseResponseError(response);
-                throw new Error(errMsg);
-            }
+                changeAuthRoute(
+                    "login"
+                );
+            },
+            [changeAuthRoute]
+        );
 
-            if (isMounted.current) {
-                setAuthError(null);
-                changeAuthRoute("login");
-            }
-        } catch (err: any) {
-            if (isMounted.current) {
-                setAuthError(err.message || "Password resetting routine failed.");
-            }
-            throw err;
-        } finally {
-            if (isMounted.current) setIsLoading(false);
-        }
-    }, [changeAuthRoute]);
-
-    /* ================================
-       LIFECYCLE
-    ================================= */
+    /* ======================================================
+       EFFECTS
+    ====================================================== */
 
     useEffect(() => {
+        mountedRef.current = true;
+
         initializeAuth();
 
         return () => {
-            stopReminderCycle();
+            mountedRef.current = false;
         };
-    }, [initializeAuth, stopReminderCycle]);
+    }, [initializeAuth]);
 
-    /* ================================
-       CONTEXT VALUE
-    ================================= */
+    /* ======================================================
+       VALUE
+    ====================================================== */
 
     const value: AuthContextType = {
+        user,
         isAuthenticated,
         isLoading,
-        remindAlertActive,
+        authError,
         authRoute,
+
         setAuthRoute,
         changeAuthRoute,
+
         login,
         signUp,
         logout,
-        resetPassword,
+
         forgotPassword,
+        resetPassword,
+
         initializeAuth,
-        remindToLogin,
-        dismissReminder,
-        authError,
+        refreshAccessToken,
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-/* =========================================================================
+/* ==========================================================================
    HOOK
-   ========================================================================= */
+   ========================================================================== */
 
-export const useAuth = (): AuthContextType => {
-    const context = useContext(AuthContext);
+export const useAuth = () => {
+    const context =
+        useContext(AuthContext);
 
     if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider setup structure.");
+        throw new Error(
+            "useAuth must be used within AuthProvider"
+        );
     }
 
     return context;

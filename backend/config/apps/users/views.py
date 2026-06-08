@@ -1,14 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
-
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-
 from django.contrib.auth import authenticate
 
 User = get_user_model()
@@ -17,29 +13,67 @@ User = get_user_model()
 
 
 def validate_email (email) :
-    return email
+    if email:
+        return email
+    return None
+
 
 def validate_name(name): 
-    return name
+    if name:
+        return name
+    return None
 
 
 def validate_password (password):
-    return password
+    if password :
+        return password
+    return None
+
 
 def validate_phone (phone):
-    return phone
+    if phone :
+        return phone
+    return None
 
 
 
 
+class ValidateAuth (APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self,request,*args,**kwargs):
+        
+        user = self.request.user
+        
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+
+        return Response(
+            {
+                "message": "Your authentication   has been  successfully validated .",
+
+                "user": {
+                    "uuid": str(user.unique_uuid),
+                    "phone": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                },
+
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            },
+
+            status=status.HTTP_201_CREATED,
+        )
 class UserRegistrationView(APIView):
-
     permission_classes = [permissions.AllowAny]
-
     @transaction.atomic
     def post(self, request, *args, **kwargs):
 
         data = request.data
+        print(data)
 
         first_name = (data.get("first_name") or "").strip().capitalize()
         last_name = (data.get("last_name") or "").strip().capitalize()
@@ -48,9 +82,10 @@ class UserRegistrationView(APIView):
         phone = ( data.get("phone") or "").strip()
 
 
+
         # Required fields
         if not all([first_name, email, password, phone]):
-
+            print("[ERROR] Some fields are Missing ............~~~ ")
             return Response(
                 {
                     "error": (
@@ -167,18 +202,6 @@ class UserRegistrationView(APIView):
 
 
 
-
-
-    def get(self, request, *args, **kwargs):
-
-        return Response(
-            {
-                "message": (
-                    "User registration endpoint."
-                )
-            },
-            status=status.HTTP_200_OK,
-        )
 
 
 
