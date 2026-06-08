@@ -7,7 +7,8 @@ import {
     MoreVertical,
     Settings,
     HelpCircle,
-    UserPlus2
+    UserPlus2,
+    User2Icon
 } from 'lucide-react';
 import { useAuth } from '../Providers/AuthContex';
 import SokoLogo from '../Constants/Logo';
@@ -16,7 +17,7 @@ export default function HomeHeader() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [actionsOpen, setActionsOpen] = useState(false);
     const [cartCount, setcartCount] = useState(0);
-    useEffect(()=>{setcartCount(0)},[])
+    useEffect(() => { setcartCount(0) }, [])
 
     const {
         isAuthenticated,
@@ -94,10 +95,19 @@ export default function HomeHeader() {
 
                             <div className="px-2 pt-1.5 space-y-0.5">
                                 {isAuthenticated && (
-                                    <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
-                                        <Settings className="h-4 w-4 text-slate-400" />
-                                        <span>Preferences</span>
-                                    </button>
+                                    <div className=''>
+                                        <Link to={"/profile"} className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                            <User2Icon className="h-4 w-4 text-slate-400" />
+                                            <span>Profile</span>
+                                        </Link>
+
+                                        <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                            <Settings className="h-4 w-4 text-slate-400" />
+                                            <span>Preferences</span>
+                                        </button>
+                                    </div>
+
+
                                 )}
                                 <Link to="/support" onClick={() => setActionsOpen(false)} className="w-full">
                                     <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">

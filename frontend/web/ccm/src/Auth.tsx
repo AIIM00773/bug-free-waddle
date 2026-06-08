@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
 import {
-    Mail,
-    Lock,
-    User,
     ArrowRight,
     Eye,
     EyeOff,
@@ -13,6 +10,9 @@ import {
 
 import { useAuth } from "./Providers/AuthContex";
 import { useNavigate } from "react-router-dom";
+
+
+
 
 export default function AuthPage() {
     const {
@@ -212,6 +212,12 @@ export default function AuthPage() {
 
     /* ================= UI ================= */
 
+    if(isAuthenticated) return null 
+    if (isLoading) return(
+        <div className="flex flex-row items-center justify-center ">
+            <Loader2 /> 
+        </div>
+    )
     return (
         <div className="min-h-screen w-screen flex bg-slate-50 text-slate-800">
 

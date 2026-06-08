@@ -24,6 +24,10 @@ export default function GPTMarketplace() {
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
+    const [ShowauthAlertBox, setShowauthAlertBox] = useState(false);
+
+
+
     // Global Conversation Orchestration Hook
     const {
         activeId,
@@ -33,20 +37,21 @@ export default function GPTMarketplace() {
         sendMessage
     } = useConversations();
 
-    const { isAuthenticated, remindAlertActive } = useAuth();
-    const [localHideReminder, setLocalHideReminder] = useState(false);
+    const { isAuthenticated } = useAuth();
+
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            setShowauthAlertBox(true)
+        }
+    }, [isAuthenticated])
+
 
     // Default ensure sidebar stays mounted gracefully on viewport load
-    useEffect(() => { 
-        setSidebarOpen(true); 
+    useEffect(() => {
+        setSidebarOpen(true);
     }, []);
 
-    // Synchronize local manual dismiss tracking state
-    useEffect(() => {
-        if (remindAlertActive) {
-            setLocalHideReminder(false);
-        }
-    }, [remindAlertActive]);
 
     // Populate related recommendations when an item card focuses from global data structures
     useEffect(() => {
@@ -67,7 +72,7 @@ export default function GPTMarketplace() {
 
         const dynamicPromptValue = input;
         setInput(""); // Wipe instantly to provide responsive UI feedback
-        
+
         await sendMessage(dynamicPromptValue);
     };
 
@@ -110,9 +115,8 @@ export default function GPTMarketplace() {
                         <div className="max-w-3xl mx-auto px-4 md:px-6 pt-24 space-y-8 pb-36">
                             {currentMessages.map((msg) => (
                                 <div key={msg.id} className="flex gap-4 items-start text-xs md:text-sm animate-fadeIn">
-                                    <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-xs font-bold ${
-                                        msg.sender === 'user' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-600 text-white'
-                                    }`}>
+                                    <div className={`h-8 w-8 rounded-xl flex items-center justify-center shrink-0 shadow-xs text-xs font-bold ${msg.sender === 'user' ? 'bg-slate-200 text-slate-700' : 'bg-emerald-600 text-white'
+                                        }`}>
                                         {msg.sender === 'user' ? <User className="h-4 w-4" /> : 'AI'}
                                     </div>
 
@@ -201,11 +205,13 @@ export default function GPTMarketplace() {
                                     <span>{error}</span>
                                 </div>
                             )}
-                            
+
                             <div ref={chatEndRef} />
                         </div>
                     )}
                 </div>
+
+
 
                 {/* BOTTOM FIXED CHAT CONTAINER */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent pt-6 pb-4 px-4 shrink-0 z-10 pointer-events-none">
@@ -234,11 +240,14 @@ export default function GPTMarketplace() {
                 </div>
 
                 {/* FLOATING SHOPPER BENEFITS CARD */}
-                {remindAlertActive && !localHideReminder && !isAuthenticated && (
+                {ShowauthAlertBox && (
+
                     <AuthAlertComponent />
+
                 )}
 
             </div>
+
 
             {/* PRODUCT DETAILS DRAWER MODAL OVERLAY */}
             {selectedProduct && (

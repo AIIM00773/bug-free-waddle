@@ -5,10 +5,10 @@ import { useAuth } from '../Providers/AuthContex'; // Check if it needs a 't' at
 
 export default function AuthAlertComponent() {
     const [isVisible, setIsVisible] = useState(true);
-    const { changeAuthRoute } = useAuth();
+    const { changeAuthRoute, isAuthenticated,isLoading } = useAuth();
 
     // Don't render anything if the user closed the reminder
-    if (!isVisible) return null;
+    if (!isVisible || !isLoading || isAuthenticated) return null;
 
     return (
         <div className="absolute top-2 right-1 w-full max-w-md z-50 animate-slideUp pointer-events-auto border border-[0.5px] border-orange-500 rounded-[5px]  ">

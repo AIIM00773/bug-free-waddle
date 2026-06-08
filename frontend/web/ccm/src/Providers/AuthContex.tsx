@@ -19,11 +19,14 @@ export type AuthRoute =
     | "reset-password";
 
 export interface AuthUser {
-    id: number;
+    id: string | any | null;
+    phone: string | any | null
     email: string;
     first_name: string;
     last_name: string;
 }
+
+
 
 interface AuthContextType {
     user: AuthUser | null;
