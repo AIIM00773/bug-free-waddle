@@ -9,7 +9,7 @@ import ShopPage from "./Home";
 import AuthPage from "./Auth"; 
 import ProfilePage from "./Profile"; 
 import AboutPage from "./Aboutus";
-import GlobalErrorBoundary from "./Components/GlobalErrorBoundary"; // <-- Import error component
+import GlobalErrorBoundary from "./Components/GlobalErrorBoundary"; 
 
 import { AuthProvider } from "./Providers/AuthContex"; 
 import { ConversationProvider } from "./Providers/ConversationContext";

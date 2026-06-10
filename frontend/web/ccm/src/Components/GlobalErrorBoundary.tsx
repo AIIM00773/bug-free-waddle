@@ -1,13 +1,10 @@
 
-
-import React, { useState } from 'react';
 import { useRouteError, isRouteErrorResponse, useNavigate } from "react-router-dom";
-import { AlertTriangle, Home, RefreshCw } from "lucide-react";
+import { AlertTriangle, Home } from "lucide-react";
 
 export default function GlobalErrorBoundary() {
     const error = useRouteError();
     const navigate = useNavigate();
-    const [NODE_ENV,setNODE_ENV]=useState("production")
 
     // Determine specific errors safely
     let errorTitle = "Unexpected System Error";
