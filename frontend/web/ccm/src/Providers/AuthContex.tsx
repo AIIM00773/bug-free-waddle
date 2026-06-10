@@ -23,16 +23,16 @@ export interface AuthUser {
     email: string;
     first_name: string;
     last_name: string;
-    dob: any|null;
-    gender:string |null;
-    country:string|null;
+    dob: any | null;
+    gender: string | null;
+    country: string | null;
 
     is_merchant: boolean;
     search_allowance: number | any | null;
     is_on_free_tier: boolean;
     current_tier_use: number;
     free_tier_search_limit: number;
-    eligible: boolean | null ;
+    eligible: boolean | null;
 }
 
 interface AuthContextType {
@@ -51,11 +51,13 @@ interface AuthContextType {
         last_name: string,
         phone: string | null
     ) => Promise<void>;
+
     logout: () => Promise<void>;
     forgotPassword: (email: string) => Promise<void>;
     resetPassword: (password: string) => Promise<void>;
     initializeAuth: () => Promise<void>;
     refreshAccessToken: () => Promise<boolean>;
+    initRefreshToken: () => any;
 }
 
 /* ==========================================================================
@@ -112,6 +114,8 @@ const parseResponseError = async (response: Response): Promise<string> => {
     }
 };
 
+
+
 /* ==========================================================================
    PROVIDER
    ========================================================================== */
@@ -122,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
     const [authError, setAuthError] = useState<string | null>(null);
     const [authRoute, setAuthRouteState] = useState<AuthRoute>(() => {
-        const saved = sessionStorage.getItem(AUTH_ROUTE_KEY) as AuthRoute | null;
+        const saved = localStorage.getItem(AUTH_ROUTE_KEY) as AuthRoute | null;
         return saved || "login";
     });
 
@@ -133,35 +137,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ====================================================== */
 
     const changeAuthRoute = useCallback((route: AuthRoute) => {
-        sessionStorage.setItem(AUTH_ROUTE_KEY, route);
+        localStorage.setItem(AUTH_ROUTE_KEY, route);
         setAuthRouteState(route);
     }, []);
+
 
     const setAuthRoute = useCallback((route: AuthRoute) => {
         changeAuthRoute(route);
     }, [changeAuthRoute]);
+
 
     /* ======================================================
        TOKENS
     ====================================================== */
 
     const saveTokens = (access: string, refresh: string) => {
-        sessionStorage.setItem(ACCESS_TOKEN_KEY, access);
-        sessionStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+        localStorage.setItem(ACCESS_TOKEN_KEY, access);
+        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
     };
 
     const clearTokens = () => {
-        sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-        sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
     };
 
     /* ======================================================
        REFRESH TOKEN
     ====================================================== */
 
-    const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+    const refreshAccessToken = async (): Promise<boolean> => {
         try {
-            const refresh = sessionStorage.getItem(REFRESH_TOKEN_KEY);
+            const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
             if (!refresh) return false;
 
             const response = await fetch(ENDPOINTS.REFRESH, {
@@ -173,19 +179,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!response.ok) return false;
 
             const data = await response.json();
-            
+
             // Handles both structures: data.tokens.access or top-level data.access
             const newAccess = data.tokens?.access || data.access;
             const newRefresh = data.tokens?.refresh || data.refresh;
 
-            if (newAccess) sessionStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
-            if (newRefresh) sessionStorage.setItem(REFRESH_TOKEN_KEY, newRefresh);
+            if (newAccess) localStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
+            if (newRefresh) localStorage.setItem(REFRESH_TOKEN_KEY, newRefresh);
 
             return true;
         } catch {
             return false;
         }
-    }, []);
+    };
+
+
+
+
+
+    const initRefreshToken = () => {
+        refreshAccessToken()
+    }
+
+
 
     /* ======================================================
        INIT
@@ -194,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = useCallback(async () => {
         try {
             setIsLoading(true);
-            const access = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+            const access = localStorage.getItem(ACCESS_TOKEN_KEY);
 
             if (!access) {
                 setIsAuthenticated(false);
@@ -216,7 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     return;
                 }
 
-                const newAccess = sessionStorage.getItem(ACCESS_TOKEN_KEY);
+                const newAccess = localStorage.getItem(ACCESS_TOKEN_KEY);
                 response = await fetch(ENDPOINTS.VALIDATE_TOKEN, {
                     headers: { Authorization: `Bearer ${newAccess}` },
                 });
@@ -239,7 +255,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setIsLoading(false);
             }
         }
-    }, [refreshAccessToken]);
+    }, []);
+
+
 
     /* ======================================================
        LOGIN
@@ -322,7 +340,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = useCallback(async () => {
         try {
-            const refresh = sessionStorage.getItem(REFRESH_TOKEN_KEY);
+            const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
             if (refresh) {
                 await fetch(ENDPOINTS.LOGOUT, {
                     method: "POST",
@@ -401,6 +419,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         resetPassword,
         initializeAuth,
         refreshAccessToken,
+        initRefreshToken
     };
 
     return (

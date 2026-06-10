@@ -77,7 +77,7 @@ export default function HomeHeader() {
                                 )}
 
                                 {isAuthenticated && (
-                                    <Link to="/cart" onClick={() => setActionsOpen(false)} className="w-full">
+                                    <Link to="/profile/?tab=cart" onClick={() => setActionsOpen(false)} className="w-full">
                                         <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-700 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center justify-between group">
                                             <div className="flex items-center gap-2.5">
                                                 <ShoppingBag className="h-4 w-4 text-slate-400 group-hover:text-emerald-600 transition" />
@@ -101,10 +101,10 @@ export default function HomeHeader() {
                                             <span>Profile</span>
                                         </Link>
 
-                                        <button className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
+                                        <Link to={"/profile?tab=Settings"} className="w-full px-3 py-2 hover:bg-slate-50 text-slate-600 hover:text-slate-900 rounded-xl transition text-xs font-semibold flex items-center gap-2.5">
                                             <Settings className="h-4 w-4 text-slate-400" />
-                                            <span>Preferences</span>
-                                        </button>
+                                            <span>Preferences & Settings </span>
+                                        </Link>
                                     </div>
 
 

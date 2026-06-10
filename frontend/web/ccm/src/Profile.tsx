@@ -16,9 +16,13 @@ import {
     Edit3,
     SearchCode,
     Zap,
-    Lock
+    Lock,
+    Loader2,
+    ShieldAlert,
+    LifeBuoy // 1. Added explicit icon for user support channels
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+
 import SokoLogo from './Constants/Logo';
 import { useAuth } from './Providers/AuthContex';
 import ShoppingCartView from './Components/ProfileComponents/Cart';
@@ -28,18 +32,22 @@ import PersonalizedAlertsView from './Components/ProfileComponents/Alert';
 import PaymentMethodsView from './Components/ProfileComponents/PaymentMethords';
 import ShippingAddressesView from './Components/ProfileComponents/Addresses';
 import SettingsPreferencesView from './Components/ProfileComponents/SettingsPreferencesView';
-
-type ActiveTab = 'profile' | 'cart' | 'orders' | 'reviews' | 'offers' | 'wallet' | 'addresses' | 'security';
+import UserSupportView
+ from './Components/ProfileComponents/Support';
+// 3. Appended 'support' to the structural route union signature
+type ActiveTab = 'profile' | 'cart' | 'orders' | 'reviews' | 'alerts' | 'payments' | 'addresses' | 'Settings' | 'support';
 
 export default function ProfilePage() {
-    const [activeTab, setActiveTab] = useState<ActiveTab>('profile');
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = (searchParams.get('tab') as ActiveTab) || 'profile';
+
     const [cartCount] = useState(0);
-    const { user } = useAuth(); 
+    const { user, isAuthenticated, isLoading } = useAuth();
 
     const [profileNotEditable, setProfileNotEditable] = useState<boolean>(true);
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
-    // Readjusted form state to sync directly with your context user payload
     const [profileForm, setProfileForm] = useState({
         firstName: user?.first_name || '',
         lastName: user?.last_name || '',
@@ -55,7 +63,7 @@ export default function ProfilePage() {
         current_tier_use: user?.search_allowance?.current_tier_use || 0
     });
 
-    // Keep form state in sync if context updates asynchronously
+
     useEffect(() => {
         if (user) {
             setProfileForm({
@@ -75,8 +83,8 @@ export default function ProfilePage() {
         }
     }, [user]);
 
-    // Dynamic calculation metric instead of a static number fallback
-    const usagePercentage = profileForm.free_tier_search_limit > 0 
+
+    const usagePercentage = profileForm.free_tier_search_limit > 0
         ? Math.min((profileForm.current_tier_use / profileForm.free_tier_search_limit) * 100, 100)
         : 0;
 
@@ -85,23 +93,62 @@ export default function ProfilePage() {
         setProfileForm(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleTabChange = (tabId: ActiveTab) => {
+        setSearchParams({ tab: tabId });
+        setIsMobileNavOpen(false);
+    };
+
     const navItems = [
         { id: 'profile', label: 'Personal Details', icon: User, category: 'Account' },
         { id: 'cart', label: 'My Shopping Cart', icon: ShoppingCart, category: 'Account', badge: cartCount },
         { id: 'orders', label: 'My Order Pipelines', icon: FileText, category: 'Account' },
         { id: 'reviews', label: 'My Reviews', icon: SquarePen, category: 'Account' },
-        { id: 'offers', label: 'Personalised Alerts', icon: Bell, category: 'Preferences' },
-        { id: 'wallet', label: 'Payment Routes', icon: CreditCard, category: 'Preferences' },
+        { id: 'alerts', label: 'Personalised Alerts', icon: Bell, category: 'Preferences' },
+        { id: 'payments', label: 'Payment Routes', icon: CreditCard, category: 'Preferences' },
         { id: 'addresses', label: 'Shipping Addresses', icon: MapPin, category: 'Preferences' },
-        { id: 'security', label: 'Security Keys', icon: ShieldCheck, category: 'Preferences' },
+        { id: 'Settings', label: 'Settings & Preferences', icon: ShieldCheck, category: 'Preferences' },
+        { id: 'support', label: 'Customer Support', icon: LifeBuoy, category: 'Preferences' }, // 4. Integrated Support into Navigation Grid Array
     ] as const;
 
+
     const currentTabLabel = navItems.find(item => item.id === activeTab)?.label || 'Dashboard';
+
+
+
+    if (isLoading) {
+        return (
+            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl shadow-2xs">
+                <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
+                <p className="mt-3 text-sm font-semibold text-slate-500">Syncing session credentials...</p>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        return (
+            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl shadow-2xs text-center">
+                <div className="p-3.5 bg-rose-50 rounded-2xl text-rose-600 mb-4">
+                    <ShieldAlert className="h-6 w-6 stroke-[1.75]" />
+                </div>
+                <h3 className="text-base font-bold text-slate-900">Authentication Required</h3>
+                <p className="mt-1 text-xs text-slate-400 max-w-xs mx-auto">
+                    Your secure session has expired or is invalid. Please sign in to access your profile settings.
+                </p>
+                <Link
+                    to="/auth"
+                    className="mt-5 inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-2.5 text-xs font-semibold transition-colors"
+                >
+                    Return to Login
+                </Link>
+            </div>
+        );
+    }
+
 
     return (
         <div className="min-h-screen w-full bg-slate-50/50 text-slate-800 font-sans antialiased">
 
-            {/* 1. GLOBAL NAVIGATION HEADER */}
+            {/* GLOBAL NAVIGATION HEADER */}
             <header className="h-20 bg-white border-b border-slate-100 flex items-center px-4 sm:px-6 lg:px-12 sticky top-0 z-40 select-none">
                 <div className="w-full flex items-center justify-between gap-4">
                     <div className="flex items-center gap-10 shrink-0">
@@ -124,7 +171,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                         <button
-                            onClick={() => setActiveTab('cart')}
+                            onClick={() => handleTabChange('cart')}
                             className={`relative p-2.5 rounded-full transition-colors ${activeTab === 'cart' ? 'bg-slate-950 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
                         >
                             <ShoppingBag className="h-5 w-5 stroke-[1.75]" />
@@ -158,7 +205,7 @@ export default function ProfilePage() {
                 </button>
             </div>
 
-            {/* 2. LAYOUT BODY CONTAINER */}
+            {/* LAYOUT BODY CONTAINER */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 md:py-10 grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8 items-start">
 
                 {/* DESKTOP + MOBILE SLIDE-OVER SIDEBAR CONTAINER */}
@@ -188,10 +235,7 @@ export default function ProfilePage() {
                             return (
                                 <button
                                     key={item.id}
-                                    onClick={() => {
-                                        setActiveTab(item.id);
-                                        setIsMobileNavOpen(false);
-                                    }}
+                                    onClick={() => handleTabChange(item.id)}
                                     className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all text-left ${isSelected
                                         ? 'bg-slate-950 text-white shadow-sm'
                                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -259,7 +303,7 @@ export default function ProfilePage() {
                                 </button>
                             </div>
 
-                            {/* --- REMAPPED SEARCH METRICS ALIGNMENT MODULE --- */}
+                            {/* --- SEARCH METRICS ALIGNMENT MODULE --- */}
                             <div className="border border-slate-100 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2.5">
@@ -271,8 +315,7 @@ export default function ProfilePage() {
                                             <p className="text-[11px] text-slate-400">Tracks operations remaining in your structural quota loop.</p>
                                         </div>
                                     </div>
-                                    
-                                    {/* Dynamic Subscription Tier Badge */}
+
                                     {profileForm.is_on_free_tier ? (
                                         <span className="inline-flex items-center text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full uppercase tracking-wider">
                                             Free Tier Account
@@ -284,28 +327,25 @@ export default function ProfilePage() {
                                     )}
                                 </div>
 
-                                {/* Quota Status Bar indicator layout */}
                                 <div className="space-y-1.5">
                                     <div className="flex items-center justify-between text-xs font-semibold">
                                         <span className="text-slate-500">Usage Limit Counter</span>
                                         <span className="font-mono text-slate-900">
-                                            {profileForm.is_on_free_tier 
+                                            {profileForm.is_on_free_tier
                                                 ? `${profileForm.current_tier_use} / ${profileForm.free_tier_search_limit} Queries`
                                                 : `${profileForm.current_tier_use} / Unlimited (∞)`
                                             }
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                                        <div 
+                                        <div
                                             style={{ width: `${profileForm.is_on_free_tier ? usagePercentage : 100}%` }}
-                                            className={`h-full transition-all duration-500 ${
-                                                !profileForm.eligible ? 'bg-rose-500' : usagePercentage > 80 ? 'bg-amber-500' : 'bg-blue-600'
-                                            }`}
+                                            className={`h-full transition-all duration-500 ${!profileForm.eligible ? 'bg-rose-500' : usagePercentage > 80 ? 'bg-amber-500' : 'bg-blue-600'
+                                                }`}
                                         />
                                     </div>
                                 </div>
 
-                                {/* Dynamic Warning Notice UI */}
                                 {!profileForm.eligible && (
                                     <div className="flex items-start gap-3 p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-800">
                                         <Lock size={16} className="shrink-0 mt-0.5 text-rose-600" />
@@ -392,26 +432,15 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* TAB VALUE 2: INDEPENDENT CART COMPONENT */}
+                    {/* CONDITIONALLY RENDERED SUB-VIEWS */}
                     {activeTab === 'cart' && <ShoppingCartView />}
-
-                    {/* TAB VALUE 3: ORDERS */}
                     {activeTab === 'orders' && <OrderPipelinesView />}
-
-                    {/* TAB VALUE 4: REVIEWS */}
                     {activeTab === 'reviews' && <ReviewsSubmissionsView />}
-
-                    {/* TAB VALUE 5: ALERTS */}
-                    {activeTab === 'offers' && <PersonalizedAlertsView />}
-
-                    {/* TAB VALUE 6: WALLET */}
-                    {activeTab === 'wallet' && <PaymentMethodsView />}
-
-                    {/* TAB VALUE 7: SHIPPING ADDRESSES */}
+                    {activeTab === 'alerts' && <PersonalizedAlertsView />}
+                    {activeTab === 'payments' && <PaymentMethodsView />}
                     {activeTab === 'addresses' && <ShippingAddressesView />}
-
-                    {/* TAB VALUE 8: SECURITY */}
-                    {activeTab === 'security' && <SettingsPreferencesView />}
+                    {activeTab === 'Settings' && <SettingsPreferencesView />}
+                    {activeTab === 'support' && <UserSupportView />} {/* 5. Mounted support render guard slot */}
 
                 </main>
             </div>
