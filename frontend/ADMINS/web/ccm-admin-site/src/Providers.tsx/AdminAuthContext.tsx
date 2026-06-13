@@ -1,240 +1,324 @@
-import { createContext, useContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
+import {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useCallback,
+} from "react";
+import type { ReactNode } from "react";
 
-// ==========================================
-// 1. HARDENED PRODUCTION TYPE DEFINITIONS
-// ==========================================
-export type AdminRole =
-    | 'SuperAdmin'
-    | 'SecOps'
-    | 'DataEngineer'
-    | 'CustomerService'
-    | 'SecurityAnalyzer'
-    | 'Sales'
-    | 'Marketing';
+const STORAGE_KEY = "soko_ai_admin_user";
+const TOKEN_KEY = "soko_ai_admin_token";
 
+const API_BASE = "http://127.0.0.1:8000";
+
+// ======================================================
+// TYPES (MATCH BACKEND RESPONSE)
+// ======================================================
 
 export interface AdminUser {
+    id: number;
     username: string;
-    role: AdminRole;
-    establishedAt: string;
-    email?: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    is_active: boolean;
+    is_staff: boolean;
 }
 
+export interface AuthTokens {
+    access: string;
+    refresh: string;
+}
 
+interface LoginResponse {
+    access: string;
+    refresh: string;
+    user: AdminUser;
+    mfa_required?: boolean;
+}
+
+interface RefreshResponse {
+    access: string;
+}
 
 interface AdminAuthContextType {
     isAuthenticated: boolean;
+    isLoading: boolean;
     isMfaRequired: boolean;
+
     adminUser: AdminUser | null;
-    sessionToken: string | null;
+    sessionToken: AuthTokens | null;
+
     authError: string | null;
-    isProcessing: boolean;
-    initiateFirstStep: (username: string, password: string) => Promise<boolean>;
-    verifyMfaToken: (token: string) => Promise<boolean>;
-    terminateAdminSession: () => void;
-    clearAuthErrors: () => void;
+
+    login: (username: string, password: string) => Promise<boolean>;
+    logout: () => void;
+
+    refreshAuth: () => Promise<void>;
+    clearAuthError: () => void;
+
+    getAccessToken: () => string | null;
+    getRefreshToken: () => string | null;
 }
 
+// ======================================================
+// CONTEXT
+// ======================================================
 
+const AdminAuthContext = createContext<
+    AdminAuthContextType | undefined
+>(undefined);
 
-const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
+// ======================================================
+// PROVIDER
+// ======================================================
 
-const STORAGE_KEY = 'soko_ai_admin_payload';
-const TOKEN_KEY = 'soko_ai_admin_token';
-
-// ==========================================
-// 2. BACKEND API PLACEHOLDER CONFIGURATION
-// ==========================================
-
-
-// TODO: Swap out this mock structure with your real Axios/Fetch client module configuration:
-// import api from '../Services/apiClient'; 
-const api = {
-    post: async (url: string, data: any): Promise<any> => {
-        await new Promise((resolve) => setTimeout(resolve, 800)); // Network simulation delay loop
-
-        if (url.includes('/step-one/')) {
-            if (data.username.trim().toLowerCase() === 'admin' && data.password === 'admin') {
-                return { data: { mfa_required: true, status: 'awaiting_token' } };
-            }
-            throw new Error('Invalid administrative operator credentials.');
-        }
-
-        if (url.includes('/step-two/')) {
-            if (data.token === '0000') {
-                return {
-                    data: {
-                        token: `sk_admin_live_${btoa(data.username + Date.now())}`,
-                        user: {
-                            username: data.username,
-                            role: 'SuperAdmin',
-                            establishedAt: new Date().toISOString()
-                        }
-                    }
-                };
-            }
-            throw new Error('Multi-Factor verification hash failed. Trace signature mismatched.');
-        }
-    }
-};
-
-
-
-
-// ==========================================
-// 3. CORE AUTH PROVIDER IMPLEMENTATION
-// ==========================================
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-    const [sessionToken, setSessionToken] = useState<string | null>(() => {
-        try {
-            return sessionStorage.getItem(TOKEN_KEY);
-        } catch {
-            return null; // Prevents crash if browser disables sessionStorage privacy loops
-        }
-    });
 
-    const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+    const [sessionToken, setSessionToken] = useState<AuthTokens | null>(() => {
         try {
-            const saved = sessionStorage.getItem(STORAGE_KEY);
-            return saved ? JSON.parse(saved) : null;
+            const stored = sessionStorage.getItem(TOKEN_KEY);
+            return stored ? JSON.parse(stored) : null;
         } catch {
             return null;
         }
     });
 
-    const [isMfaRequired, setIsMfaRequired] = useState<boolean>(false);
-    const [isProcessing, setIsProcessing] = useState<boolean>(false);
+    const [adminUser, setAdminUser] = useState<AdminUser | null>(() => {
+        try {
+            const stored = sessionStorage.getItem(STORAGE_KEY);
+            return stored ? JSON.parse(stored) : null;
+        } catch {
+            return null;
+        }
+    });
+
+    const [isLoading, setIsLoading] = useState(true);
+    const [isMfaRequired, setIsMfaRequired] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
-    const [stashedUsername, setStashedUsername] = useState<string | null>(null);
 
-    // Synchronize state loops safely against session storage changes & update network clients
-    useEffect(() => {
-        try {
-            if (sessionToken && adminUser) {
-                sessionStorage.setItem(TOKEN_KEY, sessionToken);
-                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(adminUser));
+    const isAuthenticated =
+        !!sessionToken?.access && !!adminUser && adminUser.is_active;
 
-                // --- ENDPOINT PLUG: Global Auth Header Mounting ---
-                // Automatically appends Bearer validation to every downstream request node
-                // api.defaults.headers.common['Authorization'] = `Bearer ${sessionToken}`;
-            } else {
-                sessionStorage.removeItem(TOKEN_KEY);
-                sessionStorage.removeItem(STORAGE_KEY);
+    // ======================================================
+    // HELPERS
+    // ======================================================
 
-                // --- ENDPOINT PLUG: Global Auth Header Flushing ---
-                // delete api.defaults.headers.common['Authorization'];
-            }
-        } catch (err) {
-            console.error("Storage sync failure on authentication state transaction:", err);
-        }
-    }, [sessionToken, adminUser]);
+    const clearAuthError = () => setAuthError(null);
 
-    const clearAuthErrors = () => setAuthError(null);
+    const getAccessToken = () => sessionToken?.access ?? null;
+    const getRefreshToken = () => sessionToken?.refresh ?? null;
 
-    const initiateFirstStep = async (username: string, password: string): Promise<boolean> => {
-        setIsProcessing(true);
-        setAuthError(null);
+    const persistAuth = (tokens: AuthTokens, user: AdminUser) => {
+        sessionStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
 
-        try {
-            // --- ENDPOINT PLUG: Swap with true api route payload ---
-            const response = await api.post('/api/v1/admin/auth/step-one/', {
-                username: username.trim(),
-                password
-            });
-
-            if (response.data.mfa_required) {
-                setStashedUsername(username.trim());
-                setIsMfaRequired(true);
-                return true;
-            }
-
-            return false;
-        } catch (err: any) {
-            // Gracefully maps Axios error messages vs standard system exceptions
-            const systemMessage = err.response?.data?.detail || err.message || 'A catastrophic handshake error occurred on the security route.';
-            setAuthError(systemMessage);
-            return false;
-        } finally {
-            setIsProcessing(false);
-        }
+        setSessionToken(tokens);
+        setAdminUser(user);
     };
 
-    const verifyMfaToken = async (token: string): Promise<boolean> => {
-        if (!stashedUsername) {
-            setAuthError('Authentication sequence workflow broken. Please start from step one.');
-            return false;
-        }
+    const clearAuth = () => {
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
 
-        setIsProcessing(true);
-        setAuthError(null);
-
-        try {
-            // --- ENDPOINT PLUG: Swap with true verification network profile response ---
-            const response = await api.post('/api/v1/admin/auth/step-two/', {
-                username: stashedUsername,
-                token
-            });
-
-            const { token: receivedToken, user: receivedUser } = response.data;
-
-            setSessionToken(receivedToken);
-            setAdminUser({
-                username: receivedUser.username,
-                role: receivedUser.role as AdminRole,
-                establishedAt: receivedUser.establishedAt
-            });
-
-            setIsMfaRequired(false);
-            setStashedUsername(null);
-            return true;
-        } catch (err: any) {
-            const systemMessage = err.response?.data?.detail || err.message || 'MFA validation layer timed out.';
-            setAuthError(systemMessage);
-            return false;
-        } finally {
-            setIsProcessing(false);
-        }
-    };
-
-    const terminateAdminSession = () => {
         setSessionToken(null);
         setAdminUser(null);
         setIsMfaRequired(false);
-        setStashedUsername(null);
         setAuthError(null);
+    };
+
+    // ======================================================
+    // LOGIN
+    // ======================================================
+
+    const login = async (username: string, password: string): Promise<boolean> => {
+        setIsLoading(true);
+        setAuthError(null);
+
         try {
-            sessionStorage.clear();
-        } catch (err) {
-            console.warn("Session isolation clearance caught exception:", err);
+            const response = await fetch(
+                `${API_BASE}/adm/root/auth/login/`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ username, password }),
+                }
+            );
+
+            const data: LoginResponse = await response.json();
+
+            if (!response.ok) {
+                throw new Error(
+                    (data as any)?.detail ||
+                    "Invalid username or password"
+                );
+            }
+
+            if (data.mfa_required) {
+                setIsMfaRequired(true);
+                return false;
+            }
+
+            persistAuth(
+                {
+                    access: data.access,
+                    refresh: data.refresh,
+                },
+                data.user
+            );
+
+            return true;
+        } catch (error: any) {
+            setAuthError(error?.message ?? "Authentication failed");
+            return false;
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    // ======================================================
+    // REFRESH TOKEN
+    // ======================================================
+
+    const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+        if (!sessionToken?.refresh) return false;
+
+        try {
+            const response = await fetch(
+                `${API_BASE}/api/admin/auth/token/refresh/`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        refresh: sessionToken.refresh,
+                    }),
+                }
+            );
+
+            if (!response.ok) return false;
+
+            const data: RefreshResponse = await response.json();
+
+            const updated: AuthTokens = {
+                ...sessionToken,
+                access: data.access,
+            };
+
+            setSessionToken(updated);
+            sessionStorage.setItem(TOKEN_KEY, JSON.stringify(updated));
+
+            return true;
+        } catch {
+            return false;
+        }
+    }, [sessionToken]);
+
+    // ======================================================
+    // AUTH RESTORE (/me equivalent)
+    // ======================================================
+
+    const refreshAuth = useCallback(async () => {
+        if (!sessionToken?.access) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            let response = await fetch(
+                `${API_BASE}/adm/root/auth/me/`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${sessionToken.access}`,
+                    },
+                }
+            );
+
+            if (response.status === 401) {
+                const refreshed = await refreshAccessToken();
+
+                if (!refreshed) throw new Error("Session expired");
+
+                const latest = JSON.parse(
+                    sessionStorage.getItem(TOKEN_KEY) || "{}"
+                ) as AuthTokens;
+
+                response = await fetch(
+                    `${API_BASE}/api/admin/auth/me/`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${latest.access}`,
+                        },
+                    }
+                );
+            }
+
+            if (!response.ok) throw new Error("Auth failed");
+
+            const user: AdminUser = await response.json();
+
+            setAdminUser(user);
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+        } catch {
+            clearAuth();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessionToken, refreshAccessToken]);
+
+    // ======================================================
+    // INIT
+    // ======================================================
+
+    useEffect(() => {
+        refreshAuth();
+    }, [refreshAuth]);
+
+    // ======================================================
+    // CONTEXT VALUE
+    // ======================================================
+
+    const value: AdminAuthContextType = {
+        isAuthenticated,
+        isLoading,
+        isMfaRequired,
+
+        adminUser,
+        sessionToken,
+
+        authError,
+
+        login,
+        logout: clearAuth,
+
+        refreshAuth,
+        clearAuthError,
+
+        getAccessToken,
+        getRefreshToken,
+    };
+
     return (
-        <AdminAuthContext.Provider
-            value={{
-                isAuthenticated: !!sessionToken,
-                isMfaRequired,
-                adminUser,
-                sessionToken,
-                authError,
-                isProcessing,
-                initiateFirstStep,
-                verifyMfaToken,
-                terminateAdminSession,
-                clearAuthErrors
-            }}
-        >
+        <AdminAuthContext.Provider value={value}>
             {children}
         </AdminAuthContext.Provider>
     );
 }
 
-// Custom security hook ensuring context structures are strictly called within provider barriers
+// ======================================================
+// HOOK
+// ======================================================
+
 export function useAdminAuth() {
-    const context = useContext(AdminAuthContext);
-    if (context === undefined) {
-        throw new Error('useAdminAuth must be executed within an explicit <AdminAuthProvider /> block loop.');
+    const ctx = useContext(AdminAuthContext);
+
+    if (!ctx) {
+        throw new Error("useAdminAuth must be used within AdminAuthProvider");
     }
-    return context;
+
+    return ctx;
 }

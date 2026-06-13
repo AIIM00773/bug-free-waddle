@@ -159,6 +159,8 @@ class User(AbstractUser):
         blank=True,
         null=True
     )
+    
+    mfa_required = models.BooleanField(default=False)
 
     # ---------------------------------------------------------
     # TIMESTAMPS
