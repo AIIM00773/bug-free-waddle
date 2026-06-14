@@ -1,7 +1,6 @@
-
-
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Product } from '../Constants/productTypes';
+import { EXTENSIVE_MOCK_DATABASE } from '../Constants/fakedb';
 
 // ==========================================
 // 1. TYPE DEFINITIONS & SCHEMAS
@@ -9,154 +8,34 @@ import type { Product } from '../Constants/productTypes';
 
 export interface Message {
     id: string;
-    sender: 'user' | 'assistant' |"system" | "sokoAI";
+    sender: 'user' | 'assistant' | 'system' | 'sokoAI';
     text: string;
     products?: Product[];
+    relatedProducts?: Product[]; // Added to explicitly handle your 4 related items cleanly
     timestamp: number;
-    type?:"sucess" | "inquery" | "error" | "followup"
+    type?: 'success' | 'inquiry' | 'error' | 'followup';
 }
-
-
-
 
 export interface Conversation {
     id: string;
-    uid?:string |null;
-    pinned?:boolean;
-    completed?:boolean;
+    uid?: string | null;
+    pinned?: boolean;
+    completed?: boolean;
     title: string;
     messages: Message[];
     createdAt: number;
     updatedAt: number;
-    protected?:boolean;
+    protected?: boolean;
 }
 
-
-
-export type ChatStatus = 'IDLE' | 'LOADING' | "WORKING" | "RETRYING" | 'ERROR';
+export type ChatStatus = 'IDLE' | 'LOADING' | 'WORKING' | 'RETRYING' | 'ERROR';
 
 interface ConversationState {
-    conversations: Record<string, Conversation>; // O(1) lookups instead of Arrays
+    conversations: Record<string, Conversation>;
     activeId: string | null;
     status: ChatStatus;
     error: string | null;
 }
-
-
-
-// Discriminated Unions for Strict Reducer Actions
-type ConversationAction = 
-    | { type: 'SET_ACTIVE_CONVERSATION'; payload: string | null }
-    | { type: 'CREATE_CONVERSATION'; payload: { id: string; firstMessage: Message } }
-    | { type: 'ADD_MESSAGE'; payload: { conversationId: string; message: Message } }
-    | { type: 'SET_STATUS'; payload: ChatStatus }
-    | { type: 'SET_ERROR'; payload: string | null }
-    | { type: 'DELETE_CONVERSATION'; payload: string }
-    | { type: 'CLEAR_ALL_CONVERSATIONS' };
-
-
-
-
-// ==========================================
-// 2. REDUCER IMPLEMENTATION (Pure State Machine)
-// ==========================================
-
-const initialState: ConversationState = {
-    conversations: {},
-    activeId: null,
-    status: 'IDLE',
-    error: null,
-};
-
-
-
-
-
-function conversationReducer(state: ConversationState, action: ConversationAction): ConversationState {
-    switch (action.type) {
-        case 'SET_ACTIVE_CONVERSATION':
-            return { 
-                ...state, 
-                activeId: action.payload,
-                error: null // Reset error states on context swap
-            };
-
-        case 'CREATE_CONVERSATION': {
-            const { id, firstMessage } = action.payload;
-            const now = Date.now();
-            
-            // Derive a crisp preview title from the user prompt
-            const derivedTitle = firstMessage.text.length > 30 
-                ? `${firstMessage.text.substring(0, 30)}...` 
-                : firstMessage.text;
-
-            return {
-                ...state,
-                activeId: id,
-                conversations: {
-                    ...state.conversations,
-                    [id]: {
-                        id,
-                        title: derivedTitle,
-                        messages: [firstMessage],
-                        createdAt: now,
-                        updatedAt: now,
-                    }
-                }
-            };
-        }
-
-        case 'ADD_MESSAGE': {
-            const { conversationId, message } = action.payload;
-            const existingTarget = state.conversations[conversationId];
-            
-            if (!existingTarget) return state;
-
-            return {
-                ...state,
-                conversations: {
-                    ...state.conversations,
-                    [conversationId]: {
-                        ...existingTarget,
-                        messages: [...existingTarget.messages, message],
-                        updatedAt: Date.now()
-                    }
-                }
-            };
-        }
-
-        case 'SET_STATUS':
-            return { ...state, status: action.payload };
-
-        case 'SET_ERROR':
-            return { ...state, error: action.payload, status: 'IDLE' };
-
-        case 'DELETE_CONVERSATION': {
-            const updatedConversations = { ...state.conversations };
-            delete updatedConversations[action.payload];
-            
-            return {
-                ...state,
-                conversations: updatedConversations,
-                activeId: state.activeId === action.payload ? null : state.activeId
-            };
-        }
-
-        case 'CLEAR_ALL_CONVERSATIONS':
-            return initialState;
-
-        default:
-            return state;
-    }
-}
-
-
-
-
-
-// ==========================================
-// 3. CONTEXT & INTERFACE BINDING
-// ==========================================
 
 interface ConversationContextType extends ConversationState {
     currentMessages: Message[];
@@ -164,99 +43,163 @@ interface ConversationContextType extends ConversationState {
     switchConversation: (id: string | null) => void;
     deleteConversation: (id: string) => void;
     startNewChatFrame: () => void;
+    clearAllConversations: () => void;
 }
 
+// Helper: Safely grab random elements from an array source
+const getRandomItems = (arr: Product[], count: number): Product[] => {
+    if (!arr || arr.length === 0) return [];
+    const shuffled = [...arr].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+};
 
+// Helper: Pool of realistic, dynamic AI conversational responses
+const AI_RESPONSES = [
+    "I've scanned the active marketplaces and found excellent options based on your request. Take a look at these current listings:",
+    "Here are the top-rated matching items updated live from your product feed. I've also tagged a few related alternatives below:",
+    "Found these listings matching your profile target parameters. Price points and seller data have been parsed successfully:",
+    "Here is your real-time price matching breakdown. I found 6 stellar matches and some great related context alternatives:",
+    "Soko AI pipeline analysis completed. Check out these highly relevant matching units currently available on the market right now:"
+];
+
+const INITIAL_STATE: ConversationState = {
+    conversations: {},
+    activeId: null,
+    status: 'IDLE',
+    error: null,
+};
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
 
 export function ConversationProvider({ children }: { children: React.ReactNode }) {
-    // Lazy initialization from LocalStorage for persistence across full page reloads
-    
-    const [state, dispatch] = useReducer(conversationReducer, initialState, (initial) => {
+    // ==========================================
+    // 2. STATE MANAGER (useState LocalStorage Initialization)
+    // ==========================================
+    const [state, setState] = useState<ConversationState>(() => {
         if (typeof window !== 'undefined') {
             const persisted = localStorage.getItem('soko_ai_sessions');
             if (persisted) {
                 try {
                     return JSON.parse(persisted);
                 } catch {
-                    return initial;
+                    return INITIAL_STATE;
                 }
             }
         }
-        return initial;
+        return INITIAL_STATE;
     });
-
 
     // Write-through caching synchronization layer
     useEffect(() => {
         localStorage.setItem('soko_ai_sessions', JSON.stringify(state));
     }, [state]);
 
-
     // Computed derived state properties
     const currentMessages = state.activeId ? state.conversations[state.activeId]?.messages || [] : [];
 
-    // --- CONTROLLER ACTION CREATORS ---
+    // ==========================================
+    // 3. CONTROLLER ACTIONS (State Mutators)
+    // ==========================================
 
     const switchConversation = (id: string | null) => {
-        dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: id });
+        setState(prev => ({
+            ...prev,
+            activeId: id,
+            error: null // Reset error states on context swap
+        }));
     };
 
     const startNewChatFrame = () => {
-        dispatch({ type: 'SET_ACTIVE_CONVERSATION', payload: null });
+        setState(prev => ({
+            ...prev,
+            activeId: null
+        }));
     };
 
     const deleteConversation = (id: string) => {
-        dispatch({ type: 'DELETE_CONVERSATION', payload: id });
+        setState(prev => {
+            const updatedConversations = { ...prev.conversations };
+            delete updatedConversations[id];
+            return {
+                ...prev,
+                conversations: updatedConversations,
+                activeId: prev.activeId === id ? null : prev.activeId
+            };
+        });
     };
 
-    
+    const clearAllConversations = () => {
+        setState(INITIAL_STATE);
+    };
+
     /**
-     * Complete HTTP Request/Response Lifecycle Handler (Non-Streaming execution block)
+     * Production-Ready MVP Mock Engine Handler
      */
     const sendMessage = async (text: string) => {
         if (!text.trim()) return;
 
-        let targetChatId = state.activeId;
-        const isInitialPrompt = !targetChatId;
-        const generatedUserMsgId = `user_${Date.now()}`;
-        
+        const currentActiveId = state.activeId;
+        const targetChatId = currentActiveId || `chat_${Date.now()}`;
+
         const userMessage: Message = {
-            id: generatedUserMsgId,
+            id: `user_${Date.now()}`,
             sender: 'user',
             text,
             timestamp: Date.now()
         };
 
-        // 1. Setup Session Context or append to existing array immutably
-        if (isInitialPrompt) {
-            targetChatId = `chat_${Date.now()}`;
-            dispatch({ 
-                type: 'CREATE_CONVERSATION', 
-                payload: { id: targetChatId, firstMessage: userMessage } 
-            });
-        } else {
-            dispatch({ 
-                type: 'ADD_MESSAGE', 
-                payload: { conversationId: targetChatId!, message: userMessage } 
-            });
-        }
+        // 1. Immediately inject the user's message into local state cleanly
+        setState(prev => {
+            const isInitialPrompt = !prev.activeId;
+            const now = Date.now();
 
-        // 2. Transition State to Loading for Non-Streaming Request
-        dispatch({ type: 'SET_STATUS', payload: 'LOADING' });
-        dispatch({ type: 'SET_ERROR', payload: null });
+            const derivedTitle = text.length > 30
+                ? `${text.substring(0, 30)}...`
+                : text;
+
+            let targetedConversation = prev.conversations[targetChatId];
+
+            if (isInitialPrompt || !targetedConversation) {
+                targetedConversation = {
+                    id: targetChatId,
+                    title: derivedTitle,
+                    messages: [userMessage],
+                    createdAt: now,
+                    updatedAt: now,
+                };
+            } else {
+                targetedConversation = {
+                    ...targetedConversation,
+                    messages: [...targetedConversation.messages, userMessage],
+                    updatedAt: now
+                };
+            }
+
+            return {
+                ...prev,
+                activeId: targetChatId,
+                status: 'LOADING',
+                error: null,
+                conversations: {
+                    ...prev.conversations,
+                    [targetChatId]: targetedConversation
+                }
+            };
+        });
 
         try {
-            // Simulated Axios / Fetch integration payload with your scraper backend API wrapper
-            // const response = await api.post('/api/v1/chat', { message: text, conversation_id: targetChatId });
-            
-            const responseData = await new Promise<{ text: string; products: Product[] }>((resolve) => {
+            // 2. Simulated Network Call latency 
+            const responseData = await new Promise<{ text: string; products: Product[]; related: Product[] }>((resolve) => {
                 setTimeout(() => {
+                    // Pick 6 random items for primary array, 4 separate random items for related recommendations
+                    const mainProducts = getRandomItems(EXTENSIVE_MOCK_DATABASE || [], 6);
+                    const relatedProducts = getRandomItems(EXTENSIVE_MOCK_DATABASE || [], 4);
+                    const randomText = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
+
                     resolve({
-                        text: "Here are the top live product listings aggregated matching your request parameters:",
-                        // Fallback fallback or dynamically mock items here
-                        products: [] 
+                        text: randomText,
+                        products: mainProducts,
+                        related: relatedProducts
                     });
                 }, 1000);
             });
@@ -266,21 +209,35 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
                 sender: 'assistant',
                 text: responseData.text,
                 products: responseData.products,
+                relatedProducts: responseData.related,
                 timestamp: Date.now()
             };
 
-            // 3. Dispatch success payload back down to correct collection map slot
-            dispatch({ 
-                type: 'ADD_MESSAGE', 
-                payload: { conversationId: targetChatId!, message: assistantMessage } 
+            // 3. Update active conversation map stack with incoming engine reply payload
+            setState(prev => {
+                const targetConv = prev.conversations[targetChatId];
+                if (!targetConv) return prev; // Guard condition check
+
+                return {
+                    ...prev,
+                    status: 'IDLE',
+                    conversations: {
+                        ...prev.conversations,
+                        [targetChatId]: {
+                            ...targetConv,
+                            messages: [...targetConv.messages, assistantMessage],
+                            updatedAt: Date.now()
+                        }
+                    }
+                };
             });
-            dispatch({ type: 'SET_STATUS', payload: 'IDLE' });
 
         } catch (err: any) {
-            dispatch({ 
-                type: 'SET_ERROR', 
-                payload: err?.message || 'Failed to sync with Soko AI engine. Check connectivity.' 
-            });
+            setState(prev => ({
+                ...prev,
+                status: 'ERROR',
+                error: err?.message || 'Failed to sync with Soko AI engine. Check connectivity.'
+            }));
         }
     };
 
@@ -291,14 +248,14 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
             sendMessage,
             switchConversation,
             deleteConversation,
-            startNewChatFrame
+            startNewChatFrame,
+            clearAllConversations
         }}>
             {children}
         </ConversationContext.Provider>
     );
 }
 
-// Custom hook guard statement to guarantee compile-time verification
 export function useConversations() {
     const context = useContext(ConversationContext);
     if (!context) {

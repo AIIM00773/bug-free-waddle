@@ -5,24 +5,24 @@ import "./index.css";
 import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
 
 import App from "./App";
-import ShopPage from "./Home"; 
-import AuthPage from "./Auth"; 
-import ProfilePage from "./Profile"; 
+import ShopPage from "./Home";
+import AuthPage from "./Auth";
+import ProfilePage from "./Profile";
 import AboutPage from "./Aboutus";
-import GlobalErrorBoundary from "./Components/GlobalErrorBoundary"; 
+import GlobalErrorBoundary from "./Components/GlobalErrorBoundary";
 
-import { AuthProvider } from "./Providers/AuthContex"; 
+import { AuthProvider } from "./Providers/AuthContex";
 import { ConversationProvider } from "./Providers/ConversationContext";
+import { CartProvider } from "./Providers/CartProvider";
 
-// Nested Route Topography setup for centralized error capturing
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Outlet />, // Acts as a clean structural mounting anchor for nested child components
-    errorElement: <GlobalErrorBoundary />, // Catch-all bubble net for 404, 500, and JavaScript code explosions
+    element: <Outlet />,
+    errorElement: <GlobalErrorBoundary />,
     children: [
       {
-        index: true, // Matches exactly "/"
+        index: true,
         element: <ShopPage />,
       },
       {
@@ -53,7 +53,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <ConversationProvider>
-        <RouterProvider router={router} />
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
       </ConversationProvider>
     </AuthProvider>
   </StrictMode>

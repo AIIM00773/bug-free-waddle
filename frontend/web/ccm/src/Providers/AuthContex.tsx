@@ -3,36 +3,31 @@ import React, {
     useCallback,
     useContext,
     useEffect,
-    useRef,
     useState,
+    useMemo,
 } from "react";
 
 /* ==========================================================================
    TYPES
    ========================================================================== */
 
-export type AuthRoute =
-    | "login"
-    | "signup"
-    | "forgot-password"
-    | "reset-password";
+export type AuthRoute = "login" | "signup" | "forgot-password" | "reset-password";
 
 export interface AuthUser {
-    id: string | null;
+    id: string;
     phone: string | null;
     email: string;
     first_name: string;
     last_name: string;
-    dob: any | null;
+    dob: string | null;
     gender: string | null;
     country: string | null;
-
     is_merchant: boolean;
-    search_allowance: number | any | null;
+    search_allowance: number | null;
     is_on_free_tier: boolean;
     current_tier_use: number;
     free_tier_search_limit: number;
-    eligible: boolean | null;
+    eligible: boolean;
 }
 
 interface AuthContextType {
@@ -42,7 +37,6 @@ interface AuthContextType {
     authError: string | null;
     authRoute: AuthRoute;
     setAuthRoute: (route: AuthRoute) => void;
-    changeAuthRoute: (route: AuthRoute) => void;
     login: (phone: string, password: string) => Promise<void>;
     signUp: (
         email: string,
@@ -51,17 +45,15 @@ interface AuthContextType {
         last_name: string,
         phone: string | null
     ) => Promise<void>;
-
     logout: () => Promise<void>;
     forgotPassword: (email: string) => Promise<void>;
     resetPassword: (password: string) => Promise<void>;
     initializeAuth: () => Promise<void>;
-    refreshAccessToken: () => Promise<boolean>;
-    initRefreshToken: () => any;
+    clearAuthError: () => void;
 }
 
 /* ==========================================================================
-   CONFIG
+   CONFIG & ENDPOINTS
    ========================================================================== */
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -76,100 +68,86 @@ const ENDPOINTS = {
     VALIDATE_TOKEN: `${API_BASE_URL}/api/users/validate-token/`,
 };
 
-const ACCESS_TOKEN_KEY = "access_token";
-const REFRESH_TOKEN_KEY = "refresh_token";
-const AUTH_ROUTE_KEY = "auth_route";
+// Isolated keys to avoid collisions with admin workspace tokens on localhost
+const ACCESS_TOKEN_KEY = "soko_user_access_token";
+const REFRESH_TOKEN_KEY = "soko_user_refresh_token";
+const AUTH_ROUTE_KEY = "soko_user_auth_route";
 
 /* ==========================================================================
-   CONTEXT
+   UTILITY HELPERS
+   ========================================================================== */
+
+const sanitizeInput = (value: string): string => {
+    return value.trim().replace(/[<>]/g, "");
+};
+
+const parseResponseError = async (response: Response): Promise<string> => {
+    try {
+        const data = await response.json();
+        if (typeof data === "string") return data;
+        if (data.detail) return data.detail;
+        
+        // Handle Django Rest Framework dictionary validation arrays
+        if (data && typeof data === "object") {
+            const errors = Object.values(data)
+                .flat()
+                .filter((val) => typeof val === "string")
+                .join(", ");
+            return errors || "Validation challenge intercept dropped.";
+        }
+        return "Request validation rejected.";
+    } catch {
+        return `Server responded with status code: ${response.status}`;
+    }
+};
+
+/* ==========================================================================
+   CONTEXT INITIALIZATION
    ========================================================================== */
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 /* ==========================================================================
-   HELPERS
-   ========================================================================== */
-
-const sanitizeInput = (value: string) => value.trim().replace(/[<>]/g, "");
-
-const parseResponseError = async (response: Response): Promise<string> => {
-    try {
-        const data = await response.json();
-
-        if (typeof data === "string") {
-            return data;
-        }
-
-        if (data.detail) {
-            return data.detail;
-        }
-
-        const errors = Object.values(data)
-            .flat()
-            .join(", ");
-
-        return errors || "Request failed.";
-    } catch {
-        return "Unexpected server error.";
-    }
-};
-
-
-
-/* ==========================================================================
-   PROVIDER
+   PROVIDER ENGINE
    ========================================================================== */
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<AuthUser | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
     const [authError, setAuthError] = useState<string | null>(null);
+    
     const [authRoute, setAuthRouteState] = useState<AuthRoute>(() => {
-        const saved = localStorage.getItem(AUTH_ROUTE_KEY) as AuthRoute | null;
-        return saved || "login";
+        try {
+            const saved = localStorage.getItem(AUTH_ROUTE_KEY) as AuthRoute | null;
+            return saved && ["login", "signup", "forgot-password", "reset-password"].includes(saved) 
+                ? saved 
+                : "login";
+        } catch {
+            return "login";
+        }
     });
 
-    const mountedRef = useRef(true);
+    const clearAuthError = useCallback(() => setAuthError(null), []);
 
-    /* ======================================================
-       ROUTES
-    ====================================================== */
-
-    const changeAuthRoute = useCallback((route: AuthRoute) => {
-        localStorage.setItem(AUTH_ROUTE_KEY, route);
+    const setAuthRoute = useCallback((route: AuthRoute) => {
+        try {
+            localStorage.setItem(AUTH_ROUTE_KEY, route);
+        } catch (err) {
+            console.warn("Storage write stream blocked:", err);
+        }
         setAuthRouteState(route);
     }, []);
 
-
-    const setAuthRoute = useCallback((route: AuthRoute) => {
-        changeAuthRoute(route);
-    }, [changeAuthRoute]);
-
-
     /* ======================================================
-       TOKENS
-    ====================================================== */
+       TOKEN ROTATION MUTATION HANDLERS
+       ====================================================== */
 
-    const saveTokens = (access: string, refresh: string) => {
-        localStorage.setItem(ACCESS_TOKEN_KEY, access);
-        localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
-    };
+    const refreshAccessToken = useCallback(async (): Promise<boolean> => {
+        const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
+        if (!refresh) return false;
 
-    const clearTokens = () => {
-        localStorage.removeItem(ACCESS_TOKEN_KEY);
-        localStorage.removeItem(REFRESH_TOKEN_KEY);
-    };
-
-    /* ======================================================
-       REFRESH TOKEN
-    ====================================================== */
-
-    const refreshAccessToken = async (): Promise<boolean> => {
         try {
-            const refresh = localStorage.getItem(REFRESH_TOKEN_KEY);
-            if (!refresh) return false;
-
             const response = await fetch(ENDPOINTS.REFRESH, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -179,8 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (!response.ok) return false;
 
             const data = await response.json();
-
-            // Handles both structures: data.tokens.access or top-level data.access
             const newAccess = data.tokens?.access || data.access;
             const newRefresh = data.tokens?.refresh || data.refresh;
 
@@ -191,152 +167,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {
             return false;
         }
-    };
-
-
-
-
-
-    const initRefreshToken = () => {
-        refreshAccessToken()
-    }
-
-
-
-    /* ======================================================
-       INIT
-    ====================================================== */
-
-    const initializeAuth = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            const access = localStorage.getItem(ACCESS_TOKEN_KEY);
-
-            if (!access) {
-                setIsAuthenticated(false);
-                setUser(null);
-                return;
-            }
-
-            let response = await fetch(ENDPOINTS.VALIDATE_TOKEN, {
-                headers: { Authorization: `Bearer ${access}` },
-            });
-
-            if (!response.ok) {
-                const refreshed = await refreshAccessToken();
-
-                if (!refreshed) {
-                    clearTokens();
-                    setUser(null);
-                    setIsAuthenticated(false);
-                    return;
-                }
-
-                const newAccess = localStorage.getItem(ACCESS_TOKEN_KEY);
-                response = await fetch(ENDPOINTS.VALIDATE_TOKEN, {
-                    headers: { Authorization: `Bearer ${newAccess}` },
-                });
-            }
-
-            if (!response.ok) throw new Error();
-
-            const data = await response.json();
-
-            if (!mountedRef.current) return;
-
-            setUser(data.user);
-            setIsAuthenticated(true);
-        } catch {
-            clearTokens();
-            setUser(null);
-            setIsAuthenticated(false);
-        } finally {
-            if (mountedRef.current) {
-                setIsLoading(false);
-            }
-        }
     }, []);
-
-
-
-    /* ======================================================
-       LOGIN
-    ====================================================== */
-
-    const login = useCallback(async (phone: string, password: string) => {
-        setAuthError(null);
-
-        if (!phone) {
-            throw new Error("Please enter your phone number.");
-        }
-
-        const response = await fetch(ENDPOINTS.LOGIN, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                phone: sanitizeInput(phone),
-                password,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorMsg = await parseResponseError(response);
-            setAuthError(errorMsg);
-            throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        const access = data.tokens?.access || data.access;
-        const refresh = data.tokens?.refresh || data.refresh;
-
-        saveTokens(access, refresh);
-        setUser(data.user);
-        setIsAuthenticated(true);
-    }, []);
-
-    /* ======================================================
-       SIGNUP
-    ====================================================== */
-
-    const signUp = useCallback(async (
-        email: string,
-        password: string,
-        first_name: string,
-        last_name: string,
-        phone: string | null
-    ) => {
-        setAuthError(null);
-
-        const response = await fetch(ENDPOINTS.REGISTER, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: sanitizeInput(email),
-                password,
-                first_name: sanitizeInput(first_name),
-                last_name: sanitizeInput(last_name),
-                phone: phone ? sanitizeInput(phone) : "",
-            }),
-        });
-
-        if (!response.ok) {
-            const errorMsg = await parseResponseError(response);
-            setAuthError(errorMsg);
-            throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        const access = data.tokens?.access || data.access;
-        const refresh = data.tokens?.refresh || data.refresh;
-
-        saveTokens(access, refresh);
-        setUser(data.user);
-        setIsAuthenticated(true);
-    }, []);
-
-    /* ======================================================
-       LOGOUT
-    ====================================================== */
 
     const logout = useCallback(async () => {
         try {
@@ -348,21 +179,148 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     body: JSON.stringify({ refresh }),
                 });
             }
-        } catch {
-            // Silently fail if server logout endpoint drops
+        } catch (err) {
+            console.warn("Server side session revocation dropped silently:", err);
         } finally {
-            clearTokens();
+            localStorage.removeItem(ACCESS_TOKEN_KEY);
+            localStorage.removeItem(REFRESH_TOKEN_KEY);
             setUser(null);
             setIsAuthenticated(false);
-            changeAuthRoute("login");
+            setAuthRoute("login");
+            clearAuthError();
         }
-    }, [changeAuthRoute]);
+    }, [setAuthRoute, clearAuthError]);
 
     /* ======================================================
-       PASSWORDS
-    ====================================================== */
+       AUTHENTICATION CORE INTERFACE HANDSHAKES
+       ====================================================== */
+
+    const initializeAuth = useCallback(async () => {
+        setIsLoading(true);
+        const access = localStorage.getItem(ACCESS_TOKEN_KEY);
+
+        if (!access) {
+            setIsAuthenticated(false);
+            setUser(null);
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            let response = await fetch(ENDPOINTS.VALIDATE_TOKEN, {
+                headers: { Authorization: `Bearer ${access}` },
+            });
+
+            if (response.status === 401) {
+                const refreshed = await refreshAccessToken();
+                if (!refreshed) {
+                    await logout();
+                    return;
+                }
+
+                const newAccess = localStorage.getItem(ACCESS_TOKEN_KEY);
+                response = await fetch(ENDPOINTS.VALIDATE_TOKEN, {
+                    headers: { Authorization: `Bearer ${newAccess}` },
+                });
+            }
+
+            if (!response.ok) throw new Error("Token resolution verification invalid");
+
+            const data = await response.json();
+            setUser(data.user);
+            setIsAuthenticated(true);
+        } catch {
+            await logout();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [refreshAccessToken, logout]);
+
+    const login = useCallback(async (phone: string, password: string) => {
+        clearAuthError();
+        const cleanPhone = sanitizeInput(phone);
+
+        if (!cleanPhone) {
+            throw new Error("Please enter a valid phone verification routing string.");
+        }
+
+        try {
+            const response = await fetch(ENDPOINTS.LOGIN, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone: cleanPhone, password }),
+            });
+
+            if (!response.ok) {
+                const errorMsg = await parseResponseError(response);
+                setAuthError(errorMsg);
+                throw new Error(errorMsg);
+            }
+
+            const data = await response.json();
+            const access = data.tokens?.access || data.access;
+            const refresh = data.tokens?.refresh || data.refresh;
+
+            if (access && refresh) {
+                localStorage.setItem(ACCESS_TOKEN_KEY, access);
+                localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+                setUser(data.user);
+                setIsAuthenticated(true);
+            } else {
+                throw new Error("Missing authentication credentials in server response.");
+            }
+        } catch (error: any) {
+            if (!authError) setAuthError(error?.message || "Authentication attempt aborted.");
+            throw error;
+        }
+    }, [authError, clearAuthError]);
+
+    const signUp = useCallback(async (
+        email: string,
+        password: string,
+        first_name: string,
+        last_name: string,
+        phone: string | null
+    ) => {
+        clearAuthError();
+
+        try {
+            const response = await fetch(ENDPOINTS.REGISTER, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: sanitizeInput(email),
+                    password,
+                    first_name: sanitizeInput(first_name),
+                    last_name: sanitizeInput(last_name),
+                    phone: phone ? sanitizeInput(phone) : "",
+                }),
+            });
+
+            if (!response.ok) {
+                const errorMsg = await parseResponseError(response);
+                setAuthError(errorMsg);
+                throw new Error(errorMsg);
+            }
+
+            const data = await response.json();
+            const access = data.tokens?.access || data.access;
+            const refresh = data.tokens?.refresh || data.refresh;
+
+            if (access && refresh) {
+                localStorage.setItem(ACCESS_TOKEN_KEY, access);
+                localStorage.setItem(REFRESH_TOKEN_KEY, refresh);
+                setUser(data.user);
+                setIsAuthenticated(true);
+            }
+        } catch (error: any) {
+            if (!authError) setAuthError(error?.message || "Registration trace rejected.");
+            throw error;
+        }
+    }, [authError, clearAuthError]);
 
     const forgotPassword = useCallback(async (email: string) => {
+        clearAuthError();
         const response = await fetch(ENDPOINTS.FORGOT_PASSWORD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -370,11 +328,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (!response.ok) {
-            throw new Error(await parseResponseError(response));
+            const errorMsg = await parseResponseError(response);
+            setAuthError(errorMsg);
+            throw new Error(errorMsg);
         }
-    }, []);
+    }, [clearAuthError]);
 
     const resetPassword = useCallback(async (password: string) => {
+        clearAuthError();
         const response = await fetch(ENDPOINTS.RESET_PASSWORD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -382,61 +343,67 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (!response.ok) {
-            throw new Error(await parseResponseError(response));
+            const errorMsg = await parseResponseError(response);
+            setAuthError(errorMsg);
+            throw new Error(errorMsg);
         }
 
-        changeAuthRoute("login");
-    }, [changeAuthRoute]);
+        setAuthRoute("login");
+    }, [setAuthRoute, clearAuthError]);
 
     /* ======================================================
-       EFFECTS
-    ====================================================== */
+       INITIALIZATION RUNTIME DEPLOYMENT
+       ====================================================== */
 
     useEffect(() => {
-        mountedRef.current = true;
         initializeAuth();
-        return () => {
-            mountedRef.current = false;
-        };
     }, [initializeAuth]);
 
-    /* ======================================================
-       VALUE
-    ====================================================== */
-
-    const value: AuthContextType = {
+    const contextValue: AuthContextType = useMemo(() => ({
         user,
         isAuthenticated,
         isLoading,
         authError,
         authRoute,
         setAuthRoute,
-        changeAuthRoute,
         login,
         signUp,
         logout,
         forgotPassword,
         resetPassword,
         initializeAuth,
-        refreshAccessToken,
-        initRefreshToken
-    };
+        clearAuthError
+    }), [
+        user,
+        isAuthenticated,
+        isLoading,
+        authError,
+        authRoute,
+        setAuthRoute,
+        login,
+        signUp,
+        logout,
+        forgotPassword,
+        resetPassword,
+        initializeAuth,
+        clearAuthError
+    ]);
 
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );
 };
 
 /* ==========================================================================
-   HOOK
+   HOOKS EXTRACTION
    ========================================================================== */
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
+        throw new Error("useAuth operations hook execution requires instantiation inside an AuthProvider element layout container.");
     }
     return context;
 };

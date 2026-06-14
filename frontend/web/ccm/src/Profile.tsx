@@ -19,12 +19,14 @@ import {
     Lock,
     Loader2,
     ShieldAlert,
-    LifeBuoy // 1. Added explicit icon for user support channels
+    LifeBuoy
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useCart } from './Providers/CartProvider';
+import { useAuth } from './Providers/AuthContex';
+
 
 import SokoLogo from './Constants/Logo';
-import { useAuth } from './Providers/AuthContex';
 import ShoppingCartView from './Components/ProfileComponents/Cart';
 import OrderPipelinesView from './Components/ProfileComponents/Orders';
 import ReviewsSubmissionsView from './Components/ProfileComponents/Reviews';
@@ -32,37 +34,35 @@ import PersonalizedAlertsView from './Components/ProfileComponents/Alert';
 import PaymentMethodsView from './Components/ProfileComponents/PaymentMethords';
 import ShippingAddressesView from './Components/ProfileComponents/Addresses';
 import SettingsPreferencesView from './Components/ProfileComponents/SettingsPreferencesView';
-import UserSupportView
- from './Components/ProfileComponents/Support';
-// 3. Appended 'support' to the structural route union signature
+import UserSupportView from './Components/ProfileComponents/Support';
+
 type ActiveTab = 'profile' | 'cart' | 'orders' | 'reviews' | 'alerts' | 'payments' | 'addresses' | 'Settings' | 'support';
 
 export default function ProfilePage() {
-
     const [searchParams, setSearchParams] = useSearchParams();
     const activeTab = (searchParams.get('tab') as ActiveTab) || 'profile';
 
-    const [cartCount] = useState(0);
-    const { user, isAuthenticated, isLoading } = useAuth();
+    // Hook this up to a real state or a CartContext later if needed
+    const {totalItems} = useCart();
+    const { user, isAuthenticated, isLoading, logout } = useAuth();
 
     const [profileNotEditable, setProfileNotEditable] = useState<boolean>(true);
     const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
     const [profileForm, setProfileForm] = useState({
-        firstName: user?.first_name || '',
-        lastName: user?.last_name || '',
-        nickname: user?.last_name || '',
-        dob: user?.dob || '',
-        gender: user?.gender || '',
-        country: user?.country || 'Kenya',
-        phone: user?.phone || '',
-        email: user?.email || '',
-        eligible: user?.search_allowance?.eligible !== undefined ? user.search_allowance.eligible : true,
-        is_on_free_tier: user?.search_allowance?.is_on_free_tier !== undefined ? user.search_allowance.is_on_free_tier : true,
-        free_tier_search_limit: user?.search_allowance?.free_tier_search_limit || 20,
-        current_tier_use: user?.search_allowance?.current_tier_use || 0
+        firstName: '',
+        lastName: '',
+        nickname: '',
+        dob: '',
+        gender: '',
+        country: 'Kenya',
+        phone: '',
+        email: '',
+        eligible: true,
+        is_on_free_tier: true,
+        free_tier_search_limit: 20,
+        current_tier_use: 0
     });
-
 
     useEffect(() => {
         if (user) {
@@ -75,14 +75,13 @@ export default function ProfilePage() {
                 country: user?.country || 'Kenya',
                 phone: user?.phone || '',
                 email: user?.email || '',
-                eligible: user?.search_allowance?.eligible !== undefined ? user.search_allowance.eligible : true,
-                is_on_free_tier: user?.search_allowance?.is_on_free_tier !== undefined ? user.search_allowance.is_on_free_tier : true,
-                free_tier_search_limit: user?.search_allowance?.free_tier_search_limit || 20,
-                current_tier_use: user?.search_allowance?.current_tier_use || 0
+                eligible: true,
+                is_on_free_tier: true,
+                free_tier_search_limit: user?.search_allowance|| 20,
+                current_tier_use: 0
             });
         }
     }, [user]);
-
 
     const usagePercentage = profileForm.free_tier_search_limit > 0
         ? Math.min((profileForm.current_tier_use / profileForm.free_tier_search_limit) * 100, 100)
@@ -100,43 +99,40 @@ export default function ProfilePage() {
 
     const navItems = [
         { id: 'profile', label: 'Personal Details', icon: User, category: 'Account' },
-        { id: 'cart', label: 'My Shopping Cart', icon: ShoppingCart, category: 'Account', badge: cartCount },
+        { id: 'cart', label: 'My Shopping Cart', icon: ShoppingCart, category: 'Account', badge: totalItems },
         { id: 'orders', label: 'My Order Pipelines', icon: FileText, category: 'Account' },
         { id: 'reviews', label: 'My Reviews', icon: SquarePen, category: 'Account' },
         { id: 'alerts', label: 'Personalised Alerts', icon: Bell, category: 'Preferences' },
         { id: 'payments', label: 'Payment Routes', icon: CreditCard, category: 'Preferences' },
         { id: 'addresses', label: 'Shipping Addresses', icon: MapPin, category: 'Preferences' },
         { id: 'Settings', label: 'Settings & Preferences', icon: ShieldCheck, category: 'Preferences' },
-        { id: 'support', label: 'Customer Support', icon: LifeBuoy, category: 'Preferences' }, // 4. Integrated Support into Navigation Grid Array
+        { id: 'support', label: 'Customer Support', icon: LifeBuoy, category: 'Preferences' },
     ] as const;
-
 
     const currentTabLabel = navItems.find(item => item.id === activeTab)?.label || 'Dashboard';
 
-
-
     if (isLoading) {
         return (
-            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl shadow-2xs">
-                <Loader2 className="h-8 w-8 text-blue-600 animate-spin" />
-                <p className="mt-3 text-sm font-semibold text-slate-500">Syncing session credentials...</p>
+            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl">
+                <Loader2 className="h-8 w-8 text-slate-900 animate-spin" />
+                <p className="mt-3 text-xs font-semibold text-slate-500">Syncing session credentials...</p>
             </div>
         );
     }
 
     if (!isAuthenticated) {
         return (
-            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl shadow-2xs text-center">
+            <div className="w-full min-h-[400px] flex flex-col items-center justify-center p-8 bg-white border border-slate-200/60 rounded-2xl text-center">
                 <div className="p-3.5 bg-rose-50 rounded-2xl text-rose-600 mb-4">
                     <ShieldAlert className="h-6 w-6 stroke-[1.75]" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900">Authentication Required</h3>
                 <p className="mt-1 text-xs text-slate-400 max-w-xs mx-auto">
-                    Your secure session has expired or is invalid. Please sign in to access your profile settings.
+                    Your secure session has expired or is invalid. Please sign in to access your account workspace.
                 </p>
                 <Link
                     to="/auth"
-                    className="mt-5 inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-2.5 text-xs font-semibold transition-colors"
+                    className="mt-5 inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white rounded-xl px-5 py-2.5 text-xs font-semibold transition-colors shadow-sm"
                 >
                     Return to Login
                 </Link>
@@ -144,10 +140,9 @@ export default function ProfilePage() {
         );
     }
 
-
     return (
         <div className="min-h-screen w-full bg-slate-50/50 text-slate-800 font-sans antialiased">
-
+            
             {/* GLOBAL NAVIGATION HEADER */}
             <header className="h-20 bg-white border-b border-slate-100 flex items-center px-4 sm:px-6 lg:px-12 sticky top-0 z-40 select-none">
                 <div className="w-full flex items-center justify-between gap-4">
@@ -175,9 +170,9 @@ export default function ProfilePage() {
                             className={`relative p-2.5 rounded-full transition-colors ${activeTab === 'cart' ? 'bg-slate-950 text-white' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
                         >
                             <ShoppingBag className="h-5 w-5 stroke-[1.75]" />
-                            {cartCount > 0 && (
-                                <span className={`absolute top-1.5 right-1.5 font-mono text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center transition-colors ${activeTab === 'cart' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'}`}>
-                                    {cartCount}
+                            {totalItems > 0 && (
+                                <span className={`absolute -top-0.5 -right-0.5 font-mono text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center transition-colors ${activeTab === 'cart' ? 'bg-emerald-500 text-white' : 'bg-slate-900 text-white'}`}>
+                                    {totalItems}
                                 </span>
                             )}
                         </button>
@@ -185,7 +180,7 @@ export default function ProfilePage() {
                         <div className="h-8 w-px bg-slate-200 hidden sm:block mx-1"></div>
 
                         {user?.is_merchant === false && (
-                            <button className="hidden sm:inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white rounded-full px-5 py-2.5 text-sm font-semibold transition-colors">
+                            <button className="hidden sm:inline-flex items-center bg-slate-900 hover:bg-slate-800 text-white rounded-full px-5 py-2.5 text-sm font-semibold transition-colors shadow-sm">
                                 Start Selling
                             </button>
                         )}
@@ -207,7 +202,7 @@ export default function ProfilePage() {
 
             {/* LAYOUT BODY CONTAINER */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 md:py-10 grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8 items-start">
-
+                
                 {/* DESKTOP + MOBILE SLIDE-OVER SIDEBAR CONTAINER */}
                 <aside className={`
                     fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 p-5 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:z-0 md:w-auto md:bg-transparent md:border-none md:p-0
@@ -239,18 +234,26 @@ export default function ProfilePage() {
                                     className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl text-sm font-semibold transition-all text-left ${isSelected
                                         ? 'bg-slate-950 text-white shadow-sm'
                                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
-                                        }`}
+                                    }`}
                                 >
                                     <div className="flex items-center gap-3 min-w-0">
                                         <IconComponent className="h-4 w-4 shrink-0" />
                                         <span className="truncate">{item.label}</span>
                                     </div>
+                                    {'badge' in item && (item.badge ?? 0) > 0 && (
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isSelected ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                            {item.badge}
+                                        </span>
+                                    )}
                                 </button>
                             );
                         })}
 
                         <div className="pt-3 mt-3 border-t border-slate-100 space-y-1">
-                            <button className="w-full flex items-center gap-3 px-3.5 py-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50/40 rounded-xl text-sm font-semibold transition-all text-left group">
+                            <button 
+                                className="w-full flex items-center gap-3 px-3.5 py-3 text-slate-500 hover:text-rose-600 hover:bg-rose-50/40 rounded-xl text-sm font-semibold transition-all text-left group" 
+                                onClick={() => logout()}
+                            >
                                 <LogOut className="h-4 w-4 text-slate-400 group-hover:text-rose-500 transition-colors" />
                                 <span>Sign Out Session</span>
                             </button>
@@ -262,12 +265,13 @@ export default function ProfilePage() {
                     <div
                         onClick={() => setIsMobileNavOpen(false)}
                         className="fixed inset-0 bg-slate-900/20 backdrop-blur-xs z-40 md:hidden"
+                        aria-hidden="true"
                     />
                 )}
 
-                {/* WORKSPACE AREA */}
+                {/* WORKSPACE MAIN HOUSING AREA */}
                 <main className="md:col-span-3 bg-white border border-slate-200/60 rounded-2xl p-5 sm:p-6 lg:p-8 shadow-2xs min-h-[520px]">
-
+                    
                     {/* TAB VALUE 1: PERSONAL PROFILE */}
                     {activeTab === 'profile' && (
                         <div className="space-y-6 animate-fadeIn">
@@ -276,11 +280,11 @@ export default function ProfilePage() {
                                 <p className="text-xs text-slate-400 mt-1">Configure structural identity credentials for checkout generation vectors.</p>
                             </div>
 
-                            {/* Avatar File Workspace */}
+                            {/* Avatar File Workspace Header */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-slate-100 rounded-2xl bg-slate-50/40">
                                 <div className="flex items-center gap-4">
                                     <div className="relative h-14 w-14 flex items-center justify-center rounded-full bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                                        <span className='font-extrabold text-2xl text-blue-600'>
+                                        <span className='font-extrabold text-2xl text-slate-900'>
                                             {profileForm.firstName ? profileForm.firstName.charAt(0).toUpperCase() : 'U'}
                                         </span>
                                     </div>
@@ -295,15 +299,15 @@ export default function ProfilePage() {
                                     onClick={() => setProfileNotEditable(!profileNotEditable)}
                                     className={`py-2 px-4 rounded-xl text-xs font-semibold flex items-center gap-2 cursor-pointer transition-colors self-start sm:self-center ${!profileNotEditable
                                         ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-                                        : 'bg-blue-600 text-white hover:bg-blue-700'
-                                        }`}
+                                        : 'bg-slate-900 text-white hover:bg-slate-800'
+                                    }`}
                                 >
                                     <Edit3 size={14} />
                                     {profileNotEditable ? "Edit Profile" : "Lock Fields"}
                                 </button>
                             </div>
 
-                            {/* --- SEARCH METRICS ALIGNMENT MODULE --- */}
+                            {/* SEARCH METRICS ALLOCATION MODULE */}
                             <div className="border border-slate-100 rounded-2xl p-5 bg-white space-y-4 shadow-2xs">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2.5">
@@ -340,8 +344,7 @@ export default function ProfilePage() {
                                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                                         <div
                                             style={{ width: `${profileForm.is_on_free_tier ? usagePercentage : 100}%` }}
-                                            className={`h-full transition-all duration-500 ${!profileForm.eligible ? 'bg-rose-500' : usagePercentage > 80 ? 'bg-amber-500' : 'bg-blue-600'
-                                                }`}
+                                            className={`h-full transition-all duration-500 ${!profileForm.eligible ? 'bg-rose-500' : usagePercentage > 80 ? 'bg-amber-500' : 'bg-slate-900'}`}
                                         />
                                     </div>
                                 </div>
@@ -357,7 +360,7 @@ export default function ProfilePage() {
                                 )}
                             </div>
 
-                            {/* Form Layer Grid */}
+                            {/* Form Input Layer Grid */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-slate-600">First Name</label>
@@ -367,7 +370,7 @@ export default function ProfilePage() {
                                         value={profileForm.firstName}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -378,7 +381,7 @@ export default function ProfilePage() {
                                         value={profileForm.lastName}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -389,7 +392,7 @@ export default function ProfilePage() {
                                         value={profileForm.email}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -400,7 +403,7 @@ export default function ProfilePage() {
                                         value={profileForm.phone}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -411,7 +414,7 @@ export default function ProfilePage() {
                                         value={profileForm.dob}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     />
                                 </div>
                                 <div className="space-y-1.5">
@@ -421,7 +424,7 @@ export default function ProfilePage() {
                                         value={profileForm.country}
                                         onChange={handleInputChange}
                                         disabled={profileNotEditable}
-                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-blue-600/80 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
+                                        className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 text-sm text-slate-800 disabled:text-slate-500 focus:outline-none focus:bg-white focus:border-slate-300 transition-all"
                                     >
                                         <option value="Kenya">Kenya</option>
                                         <option value="Uganda">Uganda</option>
@@ -432,7 +435,7 @@ export default function ProfilePage() {
                         </div>
                     )}
 
-                    {/* CONDITIONALLY RENDERED SUB-VIEWS */}
+                    {/* CONDITIONALLY RENDERED SEGMENT VIEWS */}
                     {activeTab === 'cart' && <ShoppingCartView />}
                     {activeTab === 'orders' && <OrderPipelinesView />}
                     {activeTab === 'reviews' && <ReviewsSubmissionsView />}
@@ -440,7 +443,7 @@ export default function ProfilePage() {
                     {activeTab === 'payments' && <PaymentMethodsView />}
                     {activeTab === 'addresses' && <ShippingAddressesView />}
                     {activeTab === 'Settings' && <SettingsPreferencesView />}
-                    {activeTab === 'support' && <UserSupportView />} {/* 5. Mounted support render guard slot */}
+                    {activeTab === 'support' && <UserSupportView />}
 
                 </main>
             </div>

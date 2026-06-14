@@ -55,6 +55,7 @@ INSTALLED_APPS = [
 
 
 
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # <-- MUST BE AT THE VERY TOP
     "django.middleware.security.SecurityMiddleware",
@@ -72,6 +73,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    
 ]
 
 # If you're sending credentials like cookies or HTTP Basic auth, uncomment this line:
