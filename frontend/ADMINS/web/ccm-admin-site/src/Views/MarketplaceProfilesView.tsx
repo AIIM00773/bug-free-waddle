@@ -14,8 +14,8 @@ import {
   Radio,
   Trash2
 } from 'lucide-react';
-import { useMarketplaces } from '../Providers.tsx/MarketplacesContex';
-import type { Marketplace } from '../Providers.tsx/MarketplacesContex';
+import { useMarketplaces } from '../Providers.tsx/MarketplaceProfilesContex';
+import type { Marketplace } from '../Providers.tsx/MarketplaceProfilesContex';
 export default function MarketplaceProfilesView() {
   const {
     filteredMarkets,

@@ -9,7 +9,6 @@ import type { ReactNode } from "react";
 
 const STORAGE_KEY = "soko_ai_admin_user";
 const TOKEN_KEY = "soko_ai_admin_token";
-
 const API_BASE = "http://127.0.0.1:8000";
 
 // ======================================================
@@ -46,18 +45,13 @@ interface AdminAuthContextType {
     isAuthenticated: boolean;
     isLoading: boolean;
     isMfaRequired: boolean;
-
     adminUser: AdminUser | null;
     sessionToken: AuthTokens | null;
-
     authError: string | null;
-
     login: (username: string, password: string) => Promise<boolean>;
     logout: () => void;
-
     refreshAuth: () => Promise<void>;
     clearAuthError: () => void;
-
     getAccessToken: () => string | null;
     getRefreshToken: () => string | null;
 }
@@ -66,16 +60,13 @@ interface AdminAuthContextType {
 // CONTEXT
 // ======================================================
 
-const AdminAuthContext = createContext<
-    AdminAuthContextType | undefined
->(undefined);
+const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 // ======================================================
 // PROVIDER
 // ======================================================
 
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-
     const [sessionToken, setSessionToken] = useState<AuthTokens | null>(() => {
         try {
             const stored = sessionStorage.getItem(TOKEN_KEY);
@@ -98,38 +89,34 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const [isMfaRequired, setIsMfaRequired] = useState(false);
     const [authError, setAuthError] = useState<string | null>(null);
 
-    const isAuthenticated =
-        !!sessionToken?.access && !!adminUser && adminUser.is_active;
+    const isAuthenticated = !!sessionToken?.access && !!adminUser && adminUser.is_active;
 
     // ======================================================
     // HELPERS
     // ======================================================
 
     const clearAuthError = () => setAuthError(null);
-
     const getAccessToken = () => sessionToken?.access ?? null;
     const getRefreshToken = () => sessionToken?.refresh ?? null;
 
     const persistAuth = (tokens: AuthTokens, user: AdminUser) => {
         sessionStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-
         setSessionToken(tokens);
         setAdminUser(user);
     };
 
-    const clearAuth = () => {
+    const logout = useCallback(() => {
         sessionStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(STORAGE_KEY);
-
         setSessionToken(null);
         setAdminUser(null);
         setIsMfaRequired(false);
         setAuthError(null);
-    };
+    }, []);
 
     // ======================================================
-    // LOGIN
+    // CORE ASYNCHRONOUS ENGINE OPERATIONS
     // ======================================================
 
     const login = async (username: string, password: string): Promise<boolean> => {
@@ -137,24 +124,16 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
 
         try {
-            const response = await fetch(
-                `${API_BASE}/adm/root/auth/login/`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ username, password }),
-                }
-            );
+            const response = await fetch(`${API_BASE}/adm/root/auth/login/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password }),
+            });
 
             const data: LoginResponse = await response.json();
 
             if (!response.ok) {
-                throw new Error(
-                    (data as any)?.detail ||
-                    "Invalid username or password"
-                );
+                throw new Error((data as any)?.detail || "Invalid username or password");
             }
 
             if (data.mfa_required) {
@@ -162,14 +141,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
                 return false;
             }
 
-            persistAuth(
-                {
-                    access: data.access,
-                    refresh: data.refresh,
-                },
-                data.user
-            );
-
+            persistAuth({ access: data.access, refresh: data.refresh }, data.user);
             return true;
         } catch (error: any) {
             setAuthError(error?.message ?? "Authentication failed");
@@ -179,125 +151,94 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    // ======================================================
-    // REFRESH TOKEN
-    // ======================================================
-
-    const refreshAccessToken = useCallback(async (): Promise<boolean> => {
-        if (!sessionToken?.refresh) return false;
-
+    const refreshAccessToken = useCallback(async (currentRefreshToken: string): Promise<string | null> => {
         try {
-            const response = await fetch(
-                `${API_BASE}/api/admin/auth/token/refresh/`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        refresh: sessionToken.refresh,
-                    }),
-                }
-            );
+            const response = await fetch(`${API_BASE}/adm/root/auth/token/refresh/`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ refresh: currentRefreshToken }),
+            });
 
-            if (!response.ok) return false;
+            if (!response.ok) return null;
 
             const data: RefreshResponse = await response.json();
-
-            const updated: AuthTokens = {
-                ...sessionToken,
-                access: data.access,
-            };
-
-            setSessionToken(updated);
-            sessionStorage.setItem(TOKEN_KEY, JSON.stringify(updated));
-
-            return true;
+            return data.access;
         } catch {
-            return false;
+            return null;
         }
-    }, [sessionToken]);
-
-    // ======================================================
-    // AUTH RESTORE (/me equivalent)
-    // ======================================================
+    }, []);
 
     const refreshAuth = useCallback(async () => {
-        if (!sessionToken?.access) {
+        // Read directly from storage to get the fresh tokens for bootstrap initialization execution
+        let tokenData: AuthTokens | null = null;
+        try {
+            const stored = sessionStorage.getItem(TOKEN_KEY);
+            if (stored) tokenData = JSON.parse(stored);
+        } catch {
+            tokenData = null;
+        }
+
+        if (!tokenData?.access) {
             setIsLoading(false);
             return;
         }
 
         try {
-            let response = await fetch(
-                `${API_BASE}/adm/root/auth/me/`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${sessionToken.access}`,
-                    },
+            let response = await fetch(`${API_BASE}/adm/root/auth/me/`, {
+                headers: { Authorization: `Bearer ${tokenData.access}` },
+            });
+
+            if (response.status === 401 && tokenData.refresh) {
+                const newAccessToken = await refreshAccessToken(tokenData.refresh);
+
+                if (!newAccessToken) {
+                    throw new Error("Session refresh window expired");
                 }
-            );
 
-            if (response.status === 401) {
-                const refreshed = await refreshAccessToken();
+                const updatedTokens: AuthTokens = {
+                    ...tokenData,
+                    access: newAccessToken,
+                };
 
-                if (!refreshed) throw new Error("Session expired");
+                setSessionToken(updatedTokens);
+                sessionStorage.setItem(TOKEN_KEY, JSON.stringify(updatedTokens));
 
-                const latest = JSON.parse(
-                    sessionStorage.getItem(TOKEN_KEY) || "{}"
-                ) as AuthTokens;
-
-                response = await fetch(
-                    `${API_BASE}/api/admin/auth/me/`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${latest.access}`,
-                        },
-                    }
-                );
+                response = await fetch(`${API_BASE}/adm/root/auth/me/`, {
+                    headers: { Authorization: `Bearer ${newAccessToken}` },
+                });
             }
 
-            if (!response.ok) throw new Error("Auth failed");
+            if (!response.ok) throw new Error("Profile structure sync validation failed");
 
             const user: AdminUser = await response.json();
-
             setAdminUser(user);
             sessionStorage.setItem(STORAGE_KEY, JSON.stringify(user));
         } catch {
-            clearAuth();
+            logout();
         } finally {
             setIsLoading(false);
         }
-    }, [sessionToken, refreshAccessToken]);
+    }, [refreshAccessToken, logout]);
 
     // ======================================================
-    // INIT
+    // INITIALIZATION LOCK
     // ======================================================
 
     useEffect(() => {
         refreshAuth();
     }, [refreshAuth]);
 
-    // ======================================================
-    // CONTEXT VALUE
-    // ======================================================
-
     const value: AdminAuthContextType = {
         isAuthenticated,
         isLoading,
         isMfaRequired,
-
         adminUser,
         sessionToken,
-
         authError,
-
         login,
-        logout: clearAuth,
-
+        logout,
         refreshAuth,
         clearAuthError,
-
         getAccessToken,
         getRefreshToken,
     };
@@ -315,10 +256,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
 export function useAdminAuth() {
     const ctx = useContext(AdminAuthContext);
-
     if (!ctx) {
-        throw new Error("useAdminAuth must be used within AdminAuthProvider");
+        throw new Error("useAdminAuth must be used within an initialized AdminAuthProvider engine wrapper");
     }
-
     return ctx;
 }

@@ -12,8 +12,8 @@ import {
   X,
   PackagePlus
 } from 'lucide-react';
-import { useCatalog } from '../Providers.tsx/CatalogContext';
-import type { Product } from '../Providers.tsx/CatalogContext';
+import { useCatalog } from '../Providers.tsx/ProductCatalogContext';
+import type { Product } from '../Providers.tsx/ProductCatalogContext';
 
 export default function ProductCatalogView() {
   const {

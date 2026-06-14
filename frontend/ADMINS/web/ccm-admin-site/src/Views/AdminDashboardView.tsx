@@ -1,91 +1,90 @@
-import React, { useState } from 'react';
-import { 
-  Layers, 
-  ShoppingBag, 
-  Globe, 
-  Coins, 
+import { useState } from 'react';
+import {
+  ShoppingBag,
+  Globe,
   Store,
   Users,
-  TrendingUp, 
-  AlertCircle, 
-  CheckCircle, 
-  Activity, 
-  ArrowUpRight, 
-  Sliders, 
-  RefreshCw 
+  TrendingUp,
+  AlertCircle,
+  CheckCircle,
+  Activity,
+  ArrowUpRight,
+  Sliders,
+  RefreshCw
 } from 'lucide-react';
 
-interface SystemMetric {
-  title: string;
-  count: number;
-  change: string;
-  isPositive: boolean;
-  icon: React.ComponentType<{ className?: string; size?: number }>;
-  colorClass: string;
-}
+import { useAdminAuth } from '../Providers.tsx/AdminAuthAndProfileContext';
+import { useCatalog } from '../Providers.tsx/ProductCatalogContext';
+import { useMarketplaces } from '../Providers.tsx/MarketplaceProfilesContex';
 
-interface PipelineStatus {
-  marketplace: string;
-  country: string;
-  status: 'operational' | 'error' | 'syncing';
-  lastScraped: string;
-  itemsParsed: number;
-}
+
+
 
 export default function AdminDashboardView() {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { markets, isLoading: marketsLoading } = useMarketplaces();
+  const { products, isLoading: catalogLoading } = useCatalog();
+  const { adminUser } = useAdminAuth();
 
-  // Metrics categorized exactly matching your layout hierarchy
-  const systemMetrics: SystemMetric[] = [
-    { 
-      title: 'Marketplace Profiles', 
-      count: 6, 
-      change: '2 Regions Active', 
-      isPositive: true, 
-      icon: Globe, 
-      colorClass: 'bg-slate-50 text-slate-600 border-slate-200' 
+  
+  // Build lightweight UI metric tiles from provider state
+  const systemMetrics = [
+    {
+      title: 'Marketplaces',
+      count: markets.length,
+      change: `${Math.floor(Math.random() * 10) + 1}%`,
+      icon: Globe,
+      colorClass: 'border-sky-100 text-sky-500'
     },
-    { 
-      title: 'Taxonomy Matrices', 
-      count: 184, 
-      change: '+8 new classifications', 
-      isPositive: true, 
-      icon: Layers, 
-      colorClass: 'bg-slate-50 text-slate-600 border-slate-200' 
+    {
+      title: 'Products',
+      count: products.length,
+      change: `${Math.floor(Math.random() * 10) + 1}%`,
+      icon: ShoppingBag,
+      colorClass: 'border-amber-100 text-amber-500'
     },
-    { 
-      title: 'Currency Ledger', 
-      count: 3, 
-      change: 'Anchor: KES', 
-      isPositive: true, 
-      icon: Coins, 
-      colorClass: 'bg-slate-50 text-slate-600 border-slate-200' 
+    {
+      title: 'Active Pipelines',
+      count: markets.filter((m) => m.is_running).length,
+      change: `${Math.floor(Math.random() * 10) + 1}%`,
+      icon: Activity,
+      colorClass: 'border-emerald-100 text-emerald-500'
     },
-    { 
-      title: 'Product Catalog', 
-      count: 14280, 
-      change: '+12.4% parsed tracking', 
-      isPositive: true, 
-      icon: ShoppingBag, 
-      colorClass: 'bg-slate-50 text-slate-600 border-slate-200' 
+    {
+      title: 'Platform Admins',
+      count: adminUser ? 1 : 0,
+      change: '0%',
+      icon: Users,
+      colorClass: 'border-violet-100 text-violet-500'
     }
   ];
 
-  const pipelines: PipelineStatus[] = [
-    { marketplace: 'Jumia Kenya', country: 'Kenya', status: 'operational', lastScraped: '4 mins ago', itemsParsed: 4120 },
-    { marketplace: 'Kilimall', country: 'Kenya', status: 'operational', lastScraped: '18 mins ago', itemsParsed: 2890 },
-    { marketplace: 'Jumia Uganda', country: 'Uganda', status: 'syncing', lastScraped: 'In Progress', itemsParsed: 1105 },
-    { marketplace: 'Copia', country: 'Kenya', status: 'error', lastScraped: '2 hours ago', itemsParsed: 0 },
-  ];
+  // Map marketplaces into the pipeline list UI
+  const pipelines = (markets || []).map((m) => ({
+    marketplace: m.title,
+    country: m.region_boundary,
+    itemsParsed: m.is_running ? 1200 : 0,
+    status: m.is_running ? 'operational' : m.is_suspended ? 'error' : m.is_active ? 'syncing' : 'error',
+    lastScraped: m.is_running ? 'Just now' : '2m ago'
+  }));
+
 
   const triggerPipelineSync = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1200);
   };
 
+
+  if(marketsLoading || catalogLoading) return(
+    <div>
+      <p>loading...</p>
+
+    </div>
+  )
+
   return (
     <div className="space-y-6 animate-fadeIn p-0.5">
-      
+
       {/* TOP HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
         <div className="space-y-0.5">
@@ -94,7 +93,7 @@ export default function AdminDashboardView() {
             Real-time infrastructure system telemetry, ingestion trackers, and relational data architecture logs.
           </p>
         </div>
-        
+
         {/* ACTIONS METACTRL */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
@@ -105,7 +104,7 @@ export default function AdminDashboardView() {
           >
             <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
           </button>
-          
+
         </div>
       </div>
 
@@ -114,8 +113,8 @@ export default function AdminDashboardView() {
         {systemMetrics.map((metric, idx) => {
           const Icon = metric.icon;
           return (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs flex flex-col justify-between space-y-3 hover:border-slate-300 transition-all duration-150"
             >
               <div className="flex items-start justify-between">
@@ -142,7 +141,7 @@ export default function AdminDashboardView() {
 
       {/* MID-LEVEL TELEMETRY BREAKDOWN SPLIT */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-        
+
         {/* LEFT COLUMN: ACTIVE BACKGROUND INGESTION PIPELINES */}
         <div className="lg:col-span-3 bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
@@ -166,7 +165,7 @@ export default function AdminDashboardView() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-6">
                   <div className="text-right space-y-0.5 hidden sm:block">
                     <p className="text-xs font-mono font-medium text-slate-700">
@@ -205,7 +204,7 @@ export default function AdminDashboardView() {
             <Sliders size={14} className="text-slate-400" />
             <h3 className="text-xs font-semibold text-slate-900">Data Engine Records</h3>
           </div>
-          
+
           <p className="text-xs leading-relaxed text-slate-400 font-medium">
             Quick links to access relational cluster tables, partner profiles, and model validation entities.
           </p>
