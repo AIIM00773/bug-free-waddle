@@ -10,7 +10,10 @@ import {
     UserPlus2,
     User2Icon,
     Sparkles,
-    BrainCircuit
+    BrainCircuit,
+    X,
+    Lock,
+    AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '../Providers/AuthContex';
 import { useConversations } from '../Providers/ConversationContext';
@@ -22,9 +25,15 @@ export default function HomeHeader() {
     const [cartCount, setCartCount] = useState(0);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Context Layer Bindings
+    // Context Layer Bindings - Pulling separated error metrics 
     const { isAuthenticated, setAuthRoute } = useAuth();
-    const { searchType, changeChatType } = useConversations();
+    const {
+        searchType,
+        changeChatType,
+        chatTypeSwitchErrorMessage,
+        conversationErrorMessage,
+        clearConversationErrorMessage
+    } = useConversations();
 
     useEffect(() => {
         setCartCount(0);
@@ -45,8 +54,33 @@ export default function HomeHeader() {
 
     return (
         <header className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-slate-50 via-slate-50/85 to-transparent flex items-center px-6 justify-between z-20 select-none">
-            {/* Left Section */}
-            <div className="flex items-center gap-6">
+
+            {/* FLOATING CONVERSATION BACKEND ERROR ALERT PANEL */}
+            {conversationErrorMessage && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-start gap-3.5 max-w-md w-[calc(100%-2rem)] p-4 rounded-xl border border-red-200 bg-white shadow-xl shadow-red-900/5 animate-in fade-in slide-in-from-top-5 duration-300">
+                    <div className="p-2 rounded-xl bg-red-50 text-red-600 mt-0.5 shrink-0 border border-red-100">
+                        <AlertTriangle className="h-4 w-4 stroke-[2.2]" />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-red-600">
+                            Conversation Sync Error
+                        </span>
+                        <p className="text-xs md:text-sm font-semibold leading-relaxed text-slate-900 break-words">
+                            {conversationErrorMessage}
+                        </p>
+                    </div>
+                    <button
+                        onClick={clearConversationErrorMessage}
+                        className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition shrink-0 cursor-pointer active:scale-95"
+                        title="Dismiss error"
+                    >
+                        <X size={14} className="stroke-[2.5]" />
+                    </button>
+                </div>
+            )}
+
+            {/* Left Section Container */}
+            <div className="flex items-center gap-6 relative">
                 <div className="flex items-center gap-3">
                     {!sidebarOpen && (
                         <button
@@ -59,37 +93,62 @@ export default function HomeHeader() {
                     <SokoLogo />
                 </div>
 
-                {/* Search Mode Toggle Engine - Leverages Production Provider State Mutators */}
-                <div className="hidden md:inline-flex p-1 bg-slate-100/60 border border-slate-200/40 backdrop-blur-sm rounded-xl shadow-xs transition-all">
-                    <button
-                        type="button"
-                        onClick={() => changeChatType('intelligent_search')}
-                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
-                        ${searchType === 'intelligent_search'
-                                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
-                            }`}
-                    >
-                        <Sparkles className={`h-3.5 w-3.5 transition-colors ${searchType === 'intelligent_search' ? 'text-amber-500' : 'text-slate-400'}`} />
-                        Intelligent
-                    </button>
+                {/* Search Mode Toggle Shell Container */}
+                <div className="relative hidden md:inline-flex flex-col items-center">
+                    <div className="p-1 bg-slate-100/60 border border-slate-200/40 backdrop-blur-sm rounded-xl shadow-xs transition-all inline-flex">
+                        <button
+                            type="button"
+                            onClick={() => changeChatType('intelligent_search')}
+                            className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                            ${searchType === 'intelligent_search'
+                                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
+                                }`}
+                        >
+                            <Sparkles className={`h-3.5 w-3.5 transition-colors ${searchType === 'intelligent_search' ? 'text-amber-500' : 'text-slate-400'}`} />
+                            Intelligent
+                        </button>
 
-                    <button
-                        type="button"
-                        onClick={() => changeChatType('direct_search')}
-                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
-                        ${searchType === 'direct_search'
-                                ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
-                                : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
-                            }`}
-                    >
-                        <BrainCircuit className={`h-3.5 w-3.5 transition-colors ${searchType === 'direct_search' ? 'text-indigo-500' : 'text-slate-400'}`} />
-                        Direct 
-                    </button>
+                        <button
+                            type="button"
+                            onClick={() => changeChatType('direct_search')}
+                            className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                            ${searchType === 'direct_search'
+                                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
+                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
+                                }`}
+                        >
+                            <BrainCircuit className={`h-3.5 w-3.5 transition-colors ${searchType === 'direct_search' ? 'text-indigo-500' : 'text-slate-400'}`} />
+                            Direct
+                        </button>
+                    </div>
+
+                    {/* CONTEXT SEARCH TYPE SWITCH MODAL OVERLAY */}
+                    {chatTypeSwitchErrorMessage && (
+                        <div className="absolute top-12 left-0 z-50 flex items-start gap-3 max-w-sm w-120  p-3.5 rounded-xl border border-red-100 bg-white shadow-xl shadow-slate-900/5 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="p-1.5 rounded-lg bg-red-50 text-red-500 shrink-0 mt-0.5">
+                                <Lock className="h-3.5 w-3.5 stroke-[2.2]" />
+                            </div>
+                            <div className="flex-1 flex flex-col gap-0.5 min-w-0">
+                                <span className="text-[9px] font-sm  uppercase tracking-wider text-red-500">
+                                    Locked 
+                                </span>
+                                <p className="text-[10px] leading-relaxed text-red-600 font-bold ">
+                                    {chatTypeSwitchErrorMessage}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => changeChatType("direct_search")}
+                                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-md transition shrink-0 cursor-pointer"
+                            >
+                                <X size={12} className="stroke-[2.5]" />
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Right Section / Actions Dropdown */}
+            {/* Right Section / Actions Dropdown Menu */}
             <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setActionsOpen(!actionsOpen)}
@@ -104,7 +163,7 @@ export default function HomeHeader() {
 
                 {actionsOpen && (
                     <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl py-2 z-30 animate-fadeIn flex flex-col divide-y divide-slate-100">
-                        {/* Auth / Cart Section */}
+                        {/* Auth / Cart Section Routing links */}
                         <div className="px-2 pb-1.5 space-y-0.5">
                             {!isAuthenticated && (
                                 <>

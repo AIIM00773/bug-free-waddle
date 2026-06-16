@@ -3,13 +3,15 @@ import {
     ArrowUp,
     User,
     Sparkles,
-    Loader2,
     AlertCircle,
     Star,
     MapPin,
     RefreshCw,
     CornerDownLeft,
-    WifiOff
+    WifiOff,
+    Loader2,
+    Database,
+    Globe
 } from 'lucide-react';
 
 import ProductDetailsModal from './Components/ProductDetails';
@@ -33,7 +35,6 @@ function TypingResponseBlock({
     onCardClick,
     getMerchantStyles,
     onLayoutResize,
-
 }: {
     messageId: string;
     text: string;
@@ -48,7 +49,6 @@ function TypingResponseBlock({
     const [showProducts, setShowProducts] = useState(!!isStreamed);
     const [visibleCardsCount, setVisibleCardsCount] = useState(isStreamed ? (products?.length || 0) : 0);
 
-    // Text Character Streaming Lifecycle
     useEffect(() => {
         if (isStreamed) {
             setDisplayedText(text);
@@ -78,7 +78,6 @@ function TypingResponseBlock({
         return () => clearInterval(interval);
     }, [text, isStreamed, onLayoutResize]);
 
-    // Product Listing Stagger Cascade Animation Loop
     useEffect(() => {
         if (isStreamed) {
             setVisibleCardsCount(products?.length || 0);
@@ -113,7 +112,6 @@ function TypingResponseBlock({
                     {displayedText}
                 </p>
             </div>
-
 
             {products && products.length > 0 && showProducts && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-3">
@@ -170,49 +168,53 @@ function TypingResponseBlock({
     );
 }
 
-
-
 // ==========================================================
-// 2. COMPONENTIZED SYSTEM STATUS MONITORS
+// 2. WORKING / LOADING RUNTIME STATUS MONITOR (NEAT BENTO INDICATOR)
 // ==========================================================
-function LoadingStatusBlock({ status }: { status: 'LOADING' | 'WORKING' | 'RETRYING'  }) {
+function LoadingStatusBlock({ status }: { status: 'LOADING' | 'WORKING' | 'RETRYING' }) {
     const config = {
         LOADING: {
-            title: "Initializing Workspace",
-            description: "Setting up your secure cross-marketplace aggregate channel context...",
-            style: "text-slate-500 bg-slate-100/60 border-slate-200"
+            title: "Initializing Canvas",
+            description: "Opening isolated session pipeline data maps...",
+            icon: <Database className="h-4 w-4 text-slate-500" />,
+            style: "border-slate-200 bg-slate-50 text-slate-700"
         },
         WORKING: {
-            title: "Compiling Jumia & Marketplace Data",
-            description: "Scanning scrapers and analyzing regional Kenyan e-commerce storefront prices...",
-            style: "text-emerald-700 bg-emerald-50/40 border-emerald-100"
+            title: "Compiling Marketplace Nodes",
+            description: "Scraping items from Jumia, Kilimall & SkyGarden listings...",
+            icon: <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />,
+            style: "border-emerald-500/20 bg-emerald-50/40 text-emerald-900"
         },
         RETRYING: {
-            title: "Re-establishing Connection Mesh",
-            description: "Upstream pipeline timeout reached. Re-routing query packet parameters across regional clusters...",
-            style: "text-amber-700 bg-amber-50/40 border-amber-100 animate-pulse"
+            title: "Pipeline Network Recovery",
+            description: "Connection unstable. Re-routing payload queries across clusters...",
+            icon: <Globe className="h-4 w-4 text-amber-600 animate-bounce" />,
+            style: "border-amber-500/30 bg-amber-50/60 text-amber-900 animate-pulse"
         }
     };
 
     const active = config[status];
 
     return (
-        <div className={`p-4 rounded-2xl border backdrop-blur-xs flex gap-4 items-start max-w-xl animate-fadeIn ${active.style}`}>
-            <div className="p-2 rounded-xl bg-white/80 shadow-xs mt-0.5 shrink-0">
-                <Loader2 className={`h-4 w-4 animate-spin ${status === 'WORKING' ? 'text-emerald-600' : status === 'RETRYING' ? 'text-amber-500' : 'text-slate-500'}`} />
+        <div className={`p-4 rounded-2xl border backdrop-blur-xs flex gap-4 items-center max-w-md w-full shadow-xs transition-all duration-300 animate-fadeIn ${active.style}`}>
+            <div className="p-2.5 rounded-xl bg-white shadow-xs shrink-0 flex items-center justify-center border border-slate-100">
+                {active.icon}
             </div>
-            <div className="space-y-0.5">
-                <h5 className="text-xs font-bold leading-tight tracking-wide uppercase">{active.title}</h5>
-                <p className="text-[11px] md:text-xs font-medium opacity-85 leading-relaxed">{active.description}</p>
+            <div className="space-y-0.5 min-w-0">
+                <h5 className="text-[11px] font-extrabold leading-tight tracking-wider uppercase opacity-90">{active.title}</h5>
+                <p className="text-xs font-medium opacity-75 truncate">{active.description}</p>
             </div>
+            {status === 'WORKING' && (
+                <div className="ml-auto flex gap-1 items-center shrink-0 pr-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
+                    <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+                </div>
+            )}
         </div>
     );
 }
 
-
-
-function ErrorStatusBlock({ error, onRetry }: { error: string; onRetry: any }) {
-    // Determine context root failure categories to deliver contextual recovery steps
+function ErrorStatusBlock({ error, onRetry }: { error: string; onRetry: () => void }) {
     const isNetworkFault = error.toLowerCase().includes('fetch') || error.toLowerCase().includes('connectivity') || error.toLowerCase().includes('network');
 
     return (
@@ -261,7 +263,7 @@ function ErrorStatusBlock({ error, onRetry }: { error: string; onRetry: any }) {
 export default function GPTMarketplace() {
     const sidebarOpen = true;
     const [input, setInput] = useState("");
-    const [lastQueryCache, setLastQueryCache] = useState(""); // Caches query parameter to facilitate one-click error recovery
+    const [lastQueryCache, setLastQueryCache] = useState(""); 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
     const [ShowauthAlertBox, setShowauthAlertBox] = useState(false);
@@ -274,7 +276,7 @@ export default function GPTMarketplace() {
         status,
         error,
         sendMessage,
-        markStreamed
+        markStreamed,
     } = useConversations();
 
     const { isAuthenticated } = useAuth();
@@ -303,7 +305,7 @@ export default function GPTMarketplace() {
     const handleSend = async (e: React.FormEvent) => {
         e.preventDefault();
         const cleanedPayload = input.trim();
-        if (!cleanedPayload || status === 'WORKING' || status === 'LOADING') return;
+        if (!cleanedPayload || status === 'WORKING' || status === 'LOADING' || status === 'RETRYING') return;
 
         setLastQueryCache(cleanedPayload);
         setInput("");
@@ -374,9 +376,9 @@ export default function GPTMarketplace() {
                                 </div>
                             ))}
 
-                            {/* State Machine Runtime Processing Blocks */}
-                            {(status === 'LOADING' || status === 'WORKING' || status === 'RETRYING') && (
-                                <div className="pl-12">
+                            {/* Refactored Animated Bento Loading & Processing Runtimes */}
+                            {(status === 'WORKING' || status === 'LOADING' || status === 'RETRYING') && (
+                                <div className="pl-12 flex justify-start w-full">
                                     <LoadingStatusBlock status={status} />
                                 </div>
                             )}
@@ -384,7 +386,7 @@ export default function GPTMarketplace() {
                             {/* Comprehensive System Error Boundary Render Frame */}
                             {error && (
                                 <div className="pl-12">
-                                    <ErrorStatusBlock error={error} onRetry={null} />
+                                    <ErrorStatusBlock error={error} onRetry={handleRetryLastPayload} />
                                 </div>
                             )}
 

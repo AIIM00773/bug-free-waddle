@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Product } from '../Constants/productTypes';
 
 // ==========================================
 // 1. TYPE DEFINITIONS & SCHEMAS
 // ==========================================
-export type SearchTypes = "direct_search" | "intelligent_search" | "direct_filter" | "intelligent_filter";
-export type ResponseTypes = "direct_response" | "intelligent_response" | "direct_followup" | "intelligent_followup";
+export type SearchTypes = "direct_search" | "intelligent_search" | "direct_filter" | "intelligent_filter" | "direct_followup" | "intelligent_followup";
+export type ResponseTypes = "direct_response" | "intelligent_response" | "direct_followup" | "intelligent_followup" | "direct_inquery" | "inelgent_inquery";
 export type MessageType = 'success' | 'inquiry' | 'error' | 'followup' | 'response' | 'search';
 
 export interface Message {
@@ -21,9 +21,6 @@ export interface Message {
     responseType?: ResponseTypes;
 }
 
-
-
-
 export interface Conversation {
     id: string;
     uid?: string | null;
@@ -36,10 +33,6 @@ export interface Conversation {
     protected?: boolean;
 }
 
-
-
-
-
 export type ChatStatus = 'IDLE' | 'LOADING' | 'WORKING' | 'RETRYING' | 'ERROR';
 
 export interface ConversationState {
@@ -49,23 +42,19 @@ export interface ConversationState {
     error: string | null;
 }
 
-
-
-
 export interface ConversationSummary {
     id: string;
     title: string;
     updatedAt: number;
 }
 
-
-
-
 interface ConversationContextType extends ConversationState {
     currentMessages: Message[];
     conversationList: ConversationSummary[];
     searchType: SearchTypes;
+    chatTypeSwitchErrorMessage: string | null;
     conversationErrorMessage: string | null;
+    clearConversationErrorMessage: () => void;
     sendMessage: (text: string) => Promise<void>;
     switchConversation: (id: string | null) => void;
     deleteConversation: (id: string) => Promise<void>;
@@ -74,21 +63,18 @@ interface ConversationContextType extends ConversationState {
     markStreamed: (messageId: string) => void;
     changeChatType: (type: SearchTypes) => void;
     loadAllConversations: () => Promise<void>;
+    chatWorkspaceState: string | null;
 }
 
-
-// ==========================================
-// 2. PRODUCTION API SERVICE LAYER WITH RETRY
-// ==========================================
 const API_BASE_URL = 'https://api.sokoai.tech/v1';
 
-// Helper to implement standard exponential backoff/retry with tracking hook callbacks
+// Standardized Inline Exponential Backoff Engine
 const fetchWithRetry = async (url: string, options: RequestInit, onRetryTrigger: () => void, retries = 2): Promise<Response> => {
     try {
         const res = await fetch(url, options);
         if (!res.ok && retries > 0) {
             onRetryTrigger();
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s before retry
+            await new Promise(resolve => setTimeout(resolve, 2000));
             return fetchWithRetry(url, options, onRetryTrigger, retries - 1);
         }
         return res;
@@ -102,58 +88,8 @@ const fetchWithRetry = async (url: string, options: RequestInit, onRetryTrigger:
     }
 };
 
-
-
-
-const sokoApi = {
-    async fetchAll(): Promise<Conversation[]> {
-        const res = await fetch(`${API_BASE_URL}/conversations`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        });
-        if (!res.ok) throw new Error('Failed to synchronize conversations from server.');
-        return res.json();
-    },
-
-    async create(text: string, searchType: SearchTypes, onRetry: () => void): Promise<Conversation> {
-        const res = await fetchWithRetry(`${API_BASE_URL}/conversations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, searchType }),
-        }, onRetry);
-        if (!res.ok) throw new Error('Failed to initialize workspace session on backend.');
-        return res.json();
-    },
-
-    async appendMessage(conversationId: string, text: string, onRetry: () => void): Promise<Conversation> {
-        const res = await fetchWithRetry(`${API_BASE_URL}/conversations/${conversationId}/messages`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text }),
-        }, onRetry);
-        if (!res.ok) throw new Error('Failed to deliver query payload upstream to scrapers.');
-        return res.json();
-    },
-
-    async delete(id: string): Promise<void> {
-        const res = await fetch(`${API_BASE_URL}/conversations/${id}`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-        });
-        if (!res.ok) throw new Error('Remote lifecycle terminal request dropped.');
-    },
-
-    async clearAll(): Promise<void> {
-        const res = await fetch(`${API_BASE_URL}/conversations/clear`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-        });
-        if (!res.ok) throw new Error('Global account history sweep rejected.');
-    }
-};
-
 // ==========================================
-// 3. INITIAL STATES & CONTEXT SEEDING
+// 2. INITIAL STATES & CONTEXT SEEDING
 // ==========================================
 const INITIAL_STATE: ConversationState = {
     conversations: {},
@@ -165,11 +101,17 @@ const INITIAL_STATE: ConversationState = {
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
 
 // ==========================================
-// 4. MAIN PROVIDER IMPLEMENTATION
+// 3. MAIN PROVIDER IMPLEMENTATION
 // ==========================================
 export function ConversationProvider({ children }: { children: React.ReactNode }) {
     const [searchType, setSearchType] = useState<SearchTypes>("direct_search");
     const [conversationErrorMessage, setConversationErrorMessage] = useState<string | null>(null);
+    const [chatTypeSwitchErrorMessage, setchatTypeSwitchErrorMessage] = useState<string | null>(null);
+    const [chatWorkspaceState, setchatWorkspaceState] = useState<string | null>(null);
+
+    const clearConversationErrorMessage = () => {
+        setConversationErrorMessage(null);
+    };
 
     const [state, setState] = useState<ConversationState>(() => {
         if (typeof window !== 'undefined') {
@@ -200,27 +142,218 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 
     const conversationList = useMemo(() => {
         return Object.values(state.conversations)
+            .filter(c => c.id !== 'placeholder_session')
             .map(({ id, title, updatedAt }) => ({ id, title, updatedAt }))
             .sort((a, b) => b.updatedAt - a.updatedAt);
     }, [state.conversations]);
 
+    const triggerRetryStatus = useCallback(() => {
+        setState(prev => ({ ...prev, status: 'RETRYING' }));
+    }, []);
+
+
+
+
+
     // ==========================================
-    // 5. CONTEXT ACTIONS & MUTATOR ENGINE
+    // 4. DECOUPLED OPERATIONAL ENGINE (INLINE APIS)
     // ==========================================
+
+    const createNewConversation = async (text: string, clientUserMessage: Message) => {
+        const placeholderId = 'placeholder_session';
+        setchatWorkspaceState("WORKING");
+
+        setState(prev => ({
+            ...prev,
+            status: 'WORKING',
+            error: null,
+            activeId: placeholderId,
+            conversations: {
+                ...prev.conversations,
+                [placeholderId]: {
+                    id: placeholderId,
+                    title: text.substring(0, 30),
+                    messages: [clientUserMessage],
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                }
+            }
+        }));
+
+        try {
+            const res = await fetchWithRetry(`${API_BASE_URL}/conversations`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text, searchType })
+            }, triggerRetryStatus);
+
+            if (!res.ok) throw new Error('Failed to initialize workspace session, server or network Error!!.');
+            const serverResponse: Conversation = await res.json();
+
+            setchatWorkspaceState("IDLE");
+            setState(prev => {
+                const cleanConversations = { ...prev.conversations };
+                delete cleanConversations[placeholderId];
+
+                return {
+                    ...prev,
+                    status: 'IDLE',
+                    activeId: serverResponse.id,
+                    conversations: {
+                        ...cleanConversations,
+                        [serverResponse.id]: serverResponse
+                    }
+                };
+            });
+        } catch (err: any) {
+            console.error("Failed to spin up backend workspace canvas session:", err);
+            setchatWorkspaceState("ERROR");
+
+            setState(prev => {
+                const cleanConversations = { ...prev.conversations };
+                delete cleanConversations[placeholderId];
+                return {
+                    ...prev,
+                    status: 'ERROR',
+                    activeId: null,
+                    conversations: cleanConversations,
+                    error: err?.message || 'Server drops initialization link.'
+                };
+            });
+            setConversationErrorMessage(err?.message || 'Failed to initialize session.');
+        }
+    };
+
+
+
+
+
+
+    const appendFollowupMessage = async (text: string, activeId: string, clientUserMessage: Message) => {
+        setchatWorkspaceState("WORKING");
+
+        setState(prev => {
+            const existingChat = prev.conversations[activeId];
+            if (!existingChat) return prev;
+            return {
+                ...prev,
+                status: 'WORKING',
+                error: null,
+                conversations: {
+                    ...prev.conversations,
+                    [activeId]: {
+                        ...existingChat,
+                        messages: [...existingChat.messages, clientUserMessage],
+                        updatedAt: Date.now()
+                    }
+                }
+            };
+        });
+
+        try {
+            const res = await fetchWithRetry(`${API_BASE_URL}/conversations/${activeId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text }),
+            }, triggerRetryStatus);
+
+            if (!res.ok) throw new Error('Failed to deliver query payload upstream to scrapers.');
+            const serverResponse: Conversation = await res.json();
+
+            setchatWorkspaceState("IDLE");
+            setState(prev => ({
+                ...prev,
+                status: 'IDLE',
+                conversations: {
+                    ...prev.conversations,
+                    [serverResponse.id]: serverResponse
+                }
+            }));
+        } catch (err: any) {
+            console.error("Downstream append pipeline dropped payload execution context:", err);
+            setchatWorkspaceState("ERROR");
+
+            setState(prev => {
+                const cleanConversations = { ...prev.conversations };
+                const existingChat = cleanConversations[activeId];
+                if (existingChat) {
+                    cleanConversations[activeId] = {
+                        ...existingChat,
+                        messages: existingChat.messages.filter(m => m.id !== clientUserMessage.id)
+                    };
+                }
+                return {
+                    ...prev,
+                    status: 'ERROR',
+                    conversations: cleanConversations,
+                    error: err?.message || 'Upstream request handling failure.'
+                };
+            });
+            setConversationErrorMessage(err?.message || 'Failed to sync follow-up query.');
+        }
+    };
+
+
+
+
+
+
+    // ==========================================
+    // 5. SERVICE ROUTER & MANAGER RUNTIMES
+    // ==========================================
+    const sendMessage = async (text: string) => {
+        if (!text.trim()) return;
+
+        const currentActiveId = state.activeId;
+        const isInitialPrompt = !currentActiveId || currentActiveId === 'placeholder_session';
+
+        const clientUserMessage: Message = {
+            id: `temp-user-msg-${Date.now()}`,
+            sender: 'user',
+            text: text,
+            timestamp: Date.now(),
+            type: isInitialPrompt ? 'search' : 'followup'
+        };
+
+        if (isInitialPrompt) {
+            await createNewConversation(text, clientUserMessage);
+        } else {
+            await appendFollowupMessage(text, currentActiveId!, clientUserMessage);
+        }
+    };
+
+
+
+
+
+
+
     const changeChatType = (type: SearchTypes) => {
         if (type !== "direct_search") {
-            setConversationErrorMessage("Sorry! This Advanced Feature is currently not available. We'll notify you when it goes live! Please switch to direct search for now.");
-            setSearchType("direct_search");
+            setchatTypeSwitchErrorMessage("Sorry! This Feature is currently not available. We'll notify you when it goes live! Please switch to direct search for now.");
         } else {
-            setConversationErrorMessage(null);
+            setchatTypeSwitchErrorMessage(null);
             setSearchType(type);
         }
     };
 
+
+
+
+
+
+
+
     const loadAllConversations = async () => {
         setState(prev => ({ ...prev, status: 'LOADING', error: null }));
         try {
-            const serverConversations = await sokoApi.fetchAll();
+            const res = await fetch(`${API_BASE_URL}/conversations`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!res.ok) throw new Error('Failed to synchronize conversations from server.');
+            const serverConversations: Conversation[] = await res.json();
+
             const normalizedConversations = serverConversations.reduce<Record<string, Conversation>>((acc, curr) => {
                 acc[curr.id] = curr;
                 return acc;
@@ -240,13 +373,19 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         }
     };
 
+
+
+
     const switchConversation = (id: string | null) => {
         setState(prev => ({
             ...prev,
             activeId: id,
-            error: null // Wipe errors cleanly when switching chat contexts
+            error: null
         }));
     };
+
+
+
 
     const startNewChatFrame = () => {
         setState(prev => ({
@@ -256,134 +395,20 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         }));
     };
 
-    const sendMessage = async (text: string) => {
-        if (!text.trim()) return;
 
-        const currentActiveId = state.activeId;
-        const isInitialPrompt = !currentActiveId;
 
-        // Generate a local client-side message block just to append the user's input *immediately*
-        const clientUserMessage: Message = {
-            id: `temp-user-msg-${Date.now()}`,
-            sender: 'user',
-            text: text,
-            timestamp: Date.now(),
-            type: isInitialPrompt ? 'search' : 'followup'
-        };
 
-        // 1. Optimistically write the User's text block into the UI feed while changing status to WORKING
-        setState(prev => {
-            if (isInitialPrompt) {
-                // If it's a new chat, create a placeholder workspace object so the text can display
-                const placeholderId = 'placeholder_session';
-                return {
-                    ...prev,
-                    status: 'WORKING',
-                    error: null,
-                    activeId: placeholderId,
-                    conversations: {
-                        ...prev.conversations,
-                        [placeholderId]: {
-                            id: placeholderId,
-                            title: text.substring(0, 30),
-                            messages: [clientUserMessage],
-                            createdAt: Date.now(),
-                            updatedAt: Date.now()
-                        }
-                    }
-                };
-            } else {
-                // Ongoing conversation: append to existing message stack immediately
-                const existingChat = prev.conversations[currentActiveId!];
-                if (!existingChat) return { ...prev, status: 'WORKING', error: null };
-                return {
-                    ...prev,
-                    status: 'WORKING',
-                    error: null,
-                    conversations: {
-                        ...prev.conversations,
-                        [currentActiveId!]: {
-                            ...existingChat,
-                            messages: [...existingChat.messages, clientUserMessage],
-                            updatedAt: Date.now()
-                        }
-                    }
-                };
-            }
-        });
 
-        // Trigger target hook callback down into network stream layers if retry loops are executed
-        const triggerRetryStatus = () => {
-            setState(prev => ({ ...prev, status: 'RETRYING' }));
-        };
-
-        try {
-            let updatedConversationFromServer: Conversation;
-
-            if (isInitialPrompt) {
-                updatedConversationFromServer = await sokoApi.create(text, searchType, triggerRetryStatus);
-            } else {
-                updatedConversationFromServer = await sokoApi.appendMessage(currentActiveId!, text, triggerRetryStatus);
-            }
-
-            // 3. Request succeeded! Replace placeholder tracking keys with official server objects
-            setState(prev => {
-                const cleanConversations = { ...prev.conversations };
-                // Wipe our temporary creation container key clean
-                delete cleanConversations['placeholder_session']; 
-
-                return {
-                    ...prev,
-                    status: 'IDLE',
-                    activeId: updatedConversationFromServer.id,
-                    conversations: {
-                        ...cleanConversations,
-                        [updatedConversationFromServer.id]: updatedConversationFromServer
-                    }
-                };
-            });
-
-        } catch (err: any) {
-            console.error("Upstream request dropped or rejected:", err);
-            
-            // 4. On Error: Revert the placeholder conversation block if it was a failed initial prompt 
-            // so garbage chat entries don't persist on the side dashboard tree lists.
-            setState(prev => {
-                const cleanConversations = { ...prev.conversations };
-                
-                if (isInitialPrompt) {
-                    delete cleanConversations['placeholder_session'];
-                    return {
-                        ...prev,
-                        status: 'ERROR',
-                        activeId: null,
-                        conversations: cleanConversations,
-                        error: err?.message || 'Network communication break. Connection timed out.'
-                    };
-                } else {
-                    // For failed followups, strip the un-answered message block so the user can re-submit cleanly
-                    const existingChat = cleanConversations[currentActiveId!];
-                    if (existingChat) {
-                        cleanConversations[currentActiveId!] = {
-                            ...existingChat,
-                            messages: existingChat.messages.filter(m => m.id !== clientUserMessage.id)
-                        };
-                    }
-                    return {
-                        ...prev,
-                        status: 'ERROR',
-                        conversations: cleanConversations,
-                        error: err?.message || 'Network communication break. Request failed.'
-                    };
-                }
-            });
-        }
-    };
 
     const deleteConversation = async (id: string) => {
         setState(prev => ({ ...prev, status: 'WORKING' }));
         try {
-            await sokoApi.delete(id);
+            const res = await fetch(`${API_BASE_URL}/conversations/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!res.ok) throw new Error('Remote lifecycle terminal request dropped.');
+
             setState(prev => {
                 const updatedConversations = { ...prev.conversations };
                 delete updatedConversations[id];
@@ -399,15 +424,32 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         }
     };
 
+
+
+
+
+
+
+
     const clearAllConversations = async () => {
         setState(prev => ({ ...prev, status: 'WORKING' }));
         try {
-            await sokoApi.clearAll();
+            const res = await fetch(`${API_BASE_URL}/conversations/clear`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!res.ok) throw new Error('Global account history sweep rejected.');
+
             setState(INITIAL_STATE);
         } catch (err: any) {
             setState(prev => ({ ...prev, status: 'ERROR', error: err.message }));
         }
     };
+
+
+
+
+
 
     const markStreamed = (messageId: string) => {
         if (!state.activeId) return;
@@ -439,7 +481,6 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
             currentMessages,
             conversationList,
             searchType,
-            conversationErrorMessage,
             sendMessage,
             switchConversation,
             deleteConversation,
@@ -447,7 +488,11 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
             clearAllConversations,
             markStreamed,
             changeChatType,
-            loadAllConversations
+            loadAllConversations,
+            chatTypeSwitchErrorMessage,
+            conversationErrorMessage,
+            clearConversationErrorMessage,
+            chatWorkspaceState
         }}>
             {children}
         </ConversationContext.Provider>
@@ -457,7 +502,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 export function useConversations() {
     const context = useContext(ConversationContext);
     if (!context) {
-        throw new Error('useConversations must be strictly wrapped inside a valid ConversationProvider instantiation block.');
+        throw new Error('useConversations must be wrapped inside a valid ConversationProvider block.');
     }
     return context;
 }
