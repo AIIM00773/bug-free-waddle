@@ -11,9 +11,11 @@ export interface Message {
     sender: 'user' | 'assistant' | 'system' | 'sokoAI';
     text: string;
     products?: Product[];
-    relatedProducts?: Product[]; // Added to explicitly handle your 4 related items cleanly
+    relatedProducts?: Product[]; 
     timestamp: number;
     type?: 'success' | 'inquiry' | 'error' | 'followup';
+    // Highlight: Moved to individual messages to accurately track per-item stream states
+    streamed?: boolean; 
 }
 
 export interface Conversation {
@@ -44,16 +46,16 @@ interface ConversationContextType extends ConversationState {
     deleteConversation: (id: string) => void;
     startNewChatFrame: () => void;
     clearAllConversations: () => void;
+    // Highlight: Accepts target messageId to mutate specifically
+    markStreamed: (messageId: string) => void; 
 }
 
-// Helper: Safely grab random elements from an array source
 const getRandomItems = (arr: Product[], count: number): Product[] => {
     if (!arr || arr.length === 0) return [];
     const shuffled = [...arr].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, count);
 };
 
-// Helper: Pool of realistic, dynamic AI conversational responses
 const AI_RESPONSES = [
     "I've scanned the active marketplaces and found excellent options based on your request. Take a look at these current listings:",
     "Here are the top-rated matching items updated live from your product feed. I've also tagged a few related alternatives below:",
@@ -72,6 +74,7 @@ const INITIAL_STATE: ConversationState = {
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
 
 export function ConversationProvider({ children }: { children: React.ReactNode }) {
+    
     // ==========================================
     // 2. STATE MANAGER (useState LocalStorage Initialization)
     // ==========================================
@@ -89,12 +92,10 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         return INITIAL_STATE;
     });
 
-    // Write-through caching synchronization layer
     useEffect(() => {
         localStorage.setItem('soko_ai_sessions', JSON.stringify(state));
     }, [state]);
 
-    // Computed derived state properties
     const currentMessages = state.activeId ? state.conversations[state.activeId]?.messages || [] : [];
 
     // ==========================================
@@ -105,7 +106,7 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         setState(prev => ({
             ...prev,
             activeId: id,
-            error: null // Reset error states on context swap
+            error: null 
         }));
     };
 
@@ -132,9 +133,31 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         setState(INITIAL_STATE);
     };
 
-    /**
-     * Production-Ready MVP Mock Engine Handler
-     */
+    // Highlight: New function targeting the accurate message node
+    const markStreamed = (messageId: string) => {
+        if (!state.activeId) return;
+        
+        setState(prev => {
+            const activeChat = prev.activeId ? prev.conversations[prev.activeId] : null;
+            if (!activeChat) return prev;
+
+            const updatedMessages = activeChat.messages.map(msg => 
+                msg.id === messageId ? { ...msg, streamed: true } : msg
+            );
+
+            return {
+                ...prev,
+                conversations: {
+                    ...prev.conversations,
+                    [activeChat.id]: {
+                        ...activeChat,
+                        messages: updatedMessages
+                    }
+                }
+            };
+        });
+    };
+
     const sendMessage = async (text: string) => {
         if (!text.trim()) return;
 
@@ -145,18 +168,14 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
             id: `user_${Date.now()}`,
             sender: 'user',
             text,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            streamed: true // User messages don't need a text-reveal stream effect
         };
 
-        // 1. Immediately inject the user's message into local state cleanly
         setState(prev => {
             const isInitialPrompt = !prev.activeId;
             const now = Date.now();
-
-            const derivedTitle = text.length > 30
-                ? `${text.substring(0, 30)}...`
-                : text;
-
+            const derivedTitle = text.length > 30 ? `${text.substring(0, 30)}...` : text;
             let targetedConversation = prev.conversations[targetChatId];
 
             if (isInitialPrompt || !targetedConversation) {
@@ -188,10 +207,8 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         });
 
         try {
-            // 2. Simulated Network Call latency 
             const responseData = await new Promise<{ text: string; products: Product[]; related: Product[] }>((resolve) => {
                 setTimeout(() => {
-                    // Pick 6 random items for primary array, 4 separate random items for related recommendations
                     const mainProducts = getRandomItems(EXTENSIVE_MOCK_DATABASE || [], 6);
                     const relatedProducts = getRandomItems(EXTENSIVE_MOCK_DATABASE || [], 4);
                     const randomText = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
@@ -204,19 +221,20 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
                 }, 1000);
             });
 
+            // Highlight: Explicitly initialized with `streamed: false`
             const assistantMessage: Message = {
                 id: `ai_${Date.now()}`,
                 sender: 'assistant',
                 text: responseData.text,
                 products: responseData.products,
                 relatedProducts: responseData.related,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                streamed: false 
             };
 
-            // 3. Update active conversation map stack with incoming engine reply payload
             setState(prev => {
                 const targetConv = prev.conversations[targetChatId];
-                if (!targetConv) return prev; // Guard condition check
+                if (!targetConv) return prev; 
 
                 return {
                     ...prev,
@@ -249,7 +267,8 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
             switchConversation,
             deleteConversation,
             startNewChatFrame,
-            clearAllConversations
+            clearAllConversations,
+            markStreamed // Highlight: Passed out safely to consumer hooks
         }}>
             {children}
         </ConversationContext.Provider>

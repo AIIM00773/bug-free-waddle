@@ -19,24 +19,37 @@ import HomeHeader from './Components/HomeHeader';
 
 // --- PREMIUM TYPING AND CASCADING PRODUCTS CONTROLLER ---
 function TypingResponseBlock({
+    messageId,
     text,
     products,
+    isStreamed,
+    markStreamed,
     onCardClick,
     getMerchantStyles,
     onLayoutResize
 }: {
+    messageId: string;
     text: string;
     products?: Product[];
+    isStreamed?: boolean;
+    markStreamed: (id: string) => void;
     onCardClick: (p: Product) => void;
     getMerchantStyles: (m: Product['merchant']) => string;
     onLayoutResize: () => void;
 }) {
-    const [displayedText, setDisplayedText] = useState("");
-    const [showProducts, setShowProducts] = useState(false);
-    const [visibleCardsCount, setVisibleCardsCount] = useState(0);
+    // If it's already recorded as streamed, fill text instantly and show all items immediately
+    const [displayedText, setDisplayedText] = useState(isStreamed ? text : "");
+    const [showProducts, setShowProducts] = useState(!!isStreamed);
+    const [visibleCardsCount, setVisibleCardsCount] = useState(isStreamed ? (products?.length || 0) : 0);
 
     // 1. Text Typing Engine
     useEffect(() => {
+        if (isStreamed) {
+            setDisplayedText(text);
+            setShowProducts(true);
+            return;
+        }
+
         let index = 0;
         const speed = text.length > 200 ? 10 : 25; 
         setDisplayedText("");
@@ -57,17 +70,24 @@ function TypingResponseBlock({
         }, speed);
 
         return () => clearInterval(interval);
-    }, [text]);
+    }, [text, isStreamed]);
 
 
     // 2. Card Cascading Stagger Engine
     useEffect(() => {
+        if (isStreamed) {
+            setVisibleCardsCount(products?.length || 0);
+            return;
+        }
+
         if (!showProducts || !products || products.length === 0) return;
 
         const cardInterval = setInterval(() => {
             setVisibleCardsCount((prev) => {
                 if (prev >= products.length) {
                     clearInterval(cardInterval);
+                    // Critical: Notify context database layer that streaming actions are wrapped up cleanly
+                    markStreamed(messageId);
                     return prev;
                 }
                 setTimeout(onLayoutResize, 400); 
@@ -76,7 +96,7 @@ function TypingResponseBlock({
         }, 150); // 150ms delay between consecutive card mount entries
 
         return () => clearInterval(cardInterval);
-    }, [showProducts, products]);
+    }, [showProducts, products, isStreamed, messageId, markStreamed]);
 
     return (
         <div className="space-y-2 flex-1 min-w-0">
@@ -84,7 +104,8 @@ function TypingResponseBlock({
                 Soko AI
             </div>
             <div className="text-sm md:text-base leading-relaxed text-slate-800 min-h-[24px]">
-                <p className="after:content-['|'] after:ml-0.5 after:text-emerald-600 after:animate-pulse after:font-light">
+                {/* Only animate the blinking cursor tail while streaming is uncompleted */}
+                <p className={!isStreamed ? "after:content-['|'] after:ml-0.5 after:text-emerald-600 after:animate-pulse after:font-light" : ""}>
                     {displayedText}
                 </p>
             </div>
@@ -154,7 +175,8 @@ export default function GPTMarketplace() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const [ShowauthAlertBox, setShowauthAlertBox] = useState(false);
 
-    const { activeId, currentMessages, status, error, sendMessage } = useConversations();
+    // Highlight: Grab the markStreamed action from hook context
+    const { activeId, currentMessages, status, error, sendMessage, markStreamed } = useConversations();
     const { isAuthenticated } = useAuth();
 
     useEffect(() => {
@@ -174,7 +196,6 @@ export default function GPTMarketplace() {
         }
     }, [selectedProduct]);
 
-    // Explicit scroll hook passed into the typist callback instances
     const scrollToBottom = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'auto' }); 
     };
@@ -238,9 +259,13 @@ export default function GPTMarketplace() {
                                             </div>
                                         </div>
                                     ) : (
+                                        // Highlight: Connect values cleanly to the tracking engine props
                                         <TypingResponseBlock
+                                            messageId={msg.id}
                                             text={msg.text}
                                             products={msg.products}
+                                            isStreamed={msg.streamed}
+                                            markStreamed={markStreamed}
                                             onCardClick={setSelectedProduct}
                                             getMerchantStyles={getMerchantStyles}
                                             onLayoutResize={scrollToBottom}
