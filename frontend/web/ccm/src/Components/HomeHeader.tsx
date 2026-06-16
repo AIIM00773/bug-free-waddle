@@ -13,18 +13,18 @@ import {
     BrainCircuit
 } from 'lucide-react';
 import { useAuth } from '../Providers/AuthContex';
+import { useConversations } from '../Providers/ConversationContext';
 import SokoLogo from '../Constants/Logo';
-
-type SearchMode = 'intelligent' | 'direct';
 
 export default function HomeHeader() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [actionsOpen, setActionsOpen] = useState(false);
     const [cartCount, setCartCount] = useState(0);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [activeMode, setActiveMode] = useState<SearchMode>('direct');
 
+    // Context Layer Bindings
     const { isAuthenticated, setAuthRoute } = useAuth();
+    const { searchType, changeChatType } = useConversations();
 
     useEffect(() => {
         setCartCount(0);
@@ -59,31 +59,31 @@ export default function HomeHeader() {
                     <SokoLogo />
                 </div>
 
-                {/* Search Mode Toggle - Matches your glassmorphism style */}
+                {/* Search Mode Toggle Engine - Leverages Production Provider State Mutators */}
                 <div className="hidden md:inline-flex p-1 bg-slate-100/60 border border-slate-200/40 backdrop-blur-sm rounded-xl shadow-xs transition-all">
                     <button
                         type="button"
-                        onClick={() => { alert ("This Feature is Currently Not Available ");setActiveMode('direct')}}
-                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 
-                        ${activeMode === 'intelligent'
+                        onClick={() => changeChatType('intelligent_search')}
+                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                        ${searchType === 'intelligent_search'
                                 ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
                             }`}
                     >
-                        <Sparkles className={`h-3.5 w-3.5 transition-colors ${activeMode === 'intelligent' ? 'text-amber-500' : 'text-slate-400'}`} />
+                        <Sparkles className={`h-3.5 w-3.5 transition-colors ${searchType === 'intelligent_search' ? 'text-amber-500' : 'text-slate-400'}`} />
                         Intelligent
                     </button>
 
                     <button
                         type="button"
-                        onClick={() => setActiveMode('direct')}
-                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200
-                        ${activeMode === 'direct'
+                        onClick={() => changeChatType('direct_search')}
+                        className={`flex items-center gap-2 px-4 py-1.5 text-[11px] font-semibold rounded-lg transition-all duration-200 cursor-pointer
+                        ${searchType === 'direct_search'
                                 ? 'bg-white text-slate-900 shadow-sm border border-slate-200/50'
                                 : 'text-slate-500 hover:text-slate-700 hover:bg-white/40'
                             }`}
                     >
-                        <BrainCircuit className={`h-3.5 w-3.5 transition-colors ${activeMode === 'direct' ? 'text-indigo-500' : 'text-slate-400'}`} />
+                        <BrainCircuit className={`h-3.5 w-3.5 transition-colors ${searchType === 'direct_search' ? 'text-indigo-500' : 'text-slate-400'}`} />
                         Direct 
                     </button>
                 </div>

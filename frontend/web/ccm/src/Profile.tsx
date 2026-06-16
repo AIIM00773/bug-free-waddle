@@ -144,7 +144,7 @@ export default function ProfilePage() {
         <div className="min-h-screen w-full bg-slate-50/50 text-slate-800 font-sans antialiased">
             
             {/* GLOBAL NAVIGATION HEADER */}
-            <header className="h-20 bg-white border-b border-slate-100 flex items-center px-4 sm:px-6 lg:px-12 sticky top-0 z-40 select-none">
+            <header className="min-h-15  bg-white border-b border-orange-600 flex items-center px-4 sm:px-6 lg:px-12 sticky top-0 z-40 select-none">
                 <div className="w-full flex items-center justify-between gap-4">
                     <div className="flex items-center gap-10 shrink-0">
                         <button
@@ -188,6 +188,9 @@ export default function ProfilePage() {
                 </div>
             </header>
 
+
+
+
             {/* CURRENT ACTIVE TAB BAR DISPLAY FOR MOBILE ONLY */}
             <div className="md:hidden bg-white border-b border-slate-200/60 px-4 py-3 flex items-center justify-between shadow-xs">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">Workspace View</span>
@@ -200,14 +203,16 @@ export default function ProfilePage() {
                 </button>
             </div>
 
+
+
             {/* LAYOUT BODY CONTAINER */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6 md:py-10 grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8 items-start">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6  sm:pl-1 lg:px-12  lg:pl-1 py-6   md:py-3   grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8 items-start">
                 
                 {/* DESKTOP + MOBILE SLIDE-OVER SIDEBAR CONTAINER */}
                 <aside className={`
                     fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200 p-5 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:z-0 md:w-auto md:bg-transparent md:border-none md:p-0
                     ${isMobileNavOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'}
-                    md:sticky md:top-28
+                    md:sticky md:top-4
                 `}>
                     <div className="flex items-center justify-between mb-6 md:hidden">
                         <span className="text-sm font-black tracking-wider text-slate-900 uppercase"><SokoLogo /></span>
