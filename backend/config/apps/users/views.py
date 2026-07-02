@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 # Explicitly import all updated backend schemas for the atomic pipeline
-from .models import UserCart, UserReview, UserAlert, UserSearches
+from .models import  UserReview, UserAlert, UserSearches, CartGroup, SubCart, SubCartItem , UserOrderGroup, UserSubOrder, UserSubOrderItem
 
 User = get_user_model()
 
@@ -30,6 +30,8 @@ def validate_email(email):
         return None
 
 
+
+
 def validate_name(name): 
     if not name or len(name.strip()) < 2:
         return None
@@ -38,8 +40,9 @@ def validate_name(name):
     return name.strip()
 
 
+
 def validate_password(password):
-    if not password or len(password) < 4:  # Re-enforced production 8-character rule
+    if not password or len(password) < 4:
         return None
     has_upper = any(c.isupper() for c in password)
     has_lower = any(c.islower() for c in password)
@@ -49,6 +52,8 @@ def validate_password(password):
     if all([has_upper, has_lower, has_digit, has_special]):
         return password
     return None
+
+
 
 
 def validate_phone(phone):
@@ -62,6 +67,8 @@ def validate_phone(phone):
     return cleaned_phone
 
 
+
+
 # ---------------------------------------------------------
 # API CONTROLLER VIEWS
 # ---------------------------------------------------------
@@ -72,24 +79,43 @@ class ValidateAuth(APIView):
     def get(self, request, *args, **kwargs):
         user = self.request.user
         refresh = RefreshToken.for_user(user)
-
+        
         return Response(
             {
-                "message": "Your authentication has been successfully validated.",
+                "message": "User registered successfully.",
                 "user": {
-                    "uuid": str(user.unique_uuid),
-                    "phone": user.phone if user.phone else user.username,
+                    "uuid": str(user.unique_id),
+                    "phone": user.username,
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "full_name":user.full_name,
+                    "is_active": user.is_active,
+                    "is_merchant": user.is_merchant,
+                    "is_banned":user.is_banned,
+                    "is_suspended":user.is_suspended ,
+                    "is_blocked":user.is_blocked , 
+                    "is_email_verified": user.is_email_verified,
+                    "is_phone_verified":user.is_phone_verified ,
+                    "onboarding_completed": user.onboarding_completed,
+                    "mfa_required":user.mfa_required ,
+                    "age": user.age,
+                    "created_at":user.created_at,
+                    "is_merchant_verified":user.is_merchant_verified      
                 },
                 "tokens": {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                 },
             },
-            status=status.HTTP_200_OK,
+            status=status.HTTP_201_CREATED,
         )
+
+
+
+
+
+
 
 
 class UserRegistrationView(APIView):
@@ -151,7 +177,7 @@ class UserRegistrationView(APIView):
             phone=phone,
         )
 
-        UserCart.objects.create(user=user)
+        CartGroup.objects.create(user=user)
         UserReview.objects.create(user=user)
         UserAlert.objects.create(user=user)
         UserSearches.objects.create(user=user)  
@@ -161,11 +187,24 @@ class UserRegistrationView(APIView):
             {
                 "message": "User registered successfully.",
                 "user": {
-                    "uuid": str(user.unique_uuid),
+                    "uuid": str(user.unique_id),
                     "phone": user.username,
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "full_name":user.full_name,
+                    "is_active": user.is_active,
+                    "is_merchant": user.is_merchant,
+                    "is_banned":user.is_banned,
+                    "is_suspended":user.is_suspended ,
+                    "is_blocked":user.is_blocked , 
+                    "is_email_verified": user.is_email_verified,
+                    "is_phone_verified":user.is_phone_verified ,
+                    "onboarding_completed": user.onboarding_completed,
+                    "mfa_required":user.mfa_required ,
+                    "age": user.age,
+                    "created_at":user.created_at,
+                    "is_merchant_verified":user.is_merchant_verified      
                 },
                 "tokens": {
                     "refresh": str(refresh),
@@ -174,6 +213,12 @@ class UserRegistrationView(APIView):
             },
             status=status.HTTP_201_CREATED,
         )
+
+
+
+
+
+
 
 
 
@@ -207,24 +252,42 @@ class UserLoginView(APIView):
             )
 
         refresh = RefreshToken.for_user(user)
-
+        
         return Response(
             {
-                "message": "Login successful.",
+                "message": "User registered successfully.",
                 "user": {
-                    "uuid": str(user.unique_uuid),
-                    "phone": user.phone if user.phone else user.username,
+                    "unique_id": str(user.unique_id),
+                    "phone": user.username,
                     "email": user.email,
                     "first_name": user.first_name,
                     "last_name": user.last_name,
+                    "full_name":user.full_name,
+                    "is_active": user.is_active,
+                    "is_merchant": user.is_merchant,
+                    "is_banned":user.is_banned,
+                    "is_suspended":user.is_suspended ,
+                    "is_blocked":user.is_blocked , 
+                    "is_email_verified": user.is_email_verified,
+                    "is_phone_verified":user.is_phone_verified ,
+                    "onboarding_completed": user.onboarding_completed,
+                    "mfa_required":user.mfa_required ,
+                    "age": user.age,
+                    "created_at":user.created_at,
+                    "is_merchant_verified":user.is_merchant_verified      
                 },
                 "tokens": {
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                 },
             },
-            status=status.HTTP_200_OK,
+            status=status.HTTP_201_CREATED,
         )
+
+
+
+
+
 
 
 
@@ -266,6 +329,11 @@ class UserLogoutView(APIView):
 
 
 
+
+
+
+
+
 class UserProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -283,7 +351,7 @@ class UserProfileView(APIView):
 
         return Response(
             {
-                "uuid": str(user.unique_uuid),
+                "uuid": str(user.unique_id),
                 "phone": user.phone if user.phone else user.username,
                 "email": user.email,
                 "first_name": user.first_name,
@@ -294,3 +362,10 @@ class UserProfileView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+        
+        
+        
+        
+        
+        
+        

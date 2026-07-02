@@ -4,15 +4,22 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
-from apps.inventory.models import Product 
+from apps.Merchants.models  import InternalMerchantProfile , MerchantProductCatalog
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
+from django.utils.translation import gettext_lazy as _
+
+
 
 
 class User(AbstractUser):
     # ---------------------------------------------------------
     # CORE IDENTITY
     # ---------------------------------------------------------
-    unique_uuid = models.UUIDField(
+    
+    unique_id = models.UUIDField(
         default=uuid.uuid4,
+        primary_key=True,
         unique=True,
         editable=False,
         db_index=True
@@ -99,6 +106,7 @@ class User(AbstractUser):
         default=False,
         db_index=True
     )
+    
     is_merchant_verified = models.BooleanField(
         default=False,
         db_index=True
@@ -162,6 +170,7 @@ class User(AbstractUser):
     
     mfa_required = models.BooleanField(default=False)
 
+
     # ---------------------------------------------------------
     # TIMESTAMPS
     # ---------------------------------------------------------
@@ -214,63 +223,217 @@ class User(AbstractUser):
 
 
 
-# =======================USER CART 
-class UserCart(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="cart")
-    unique_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"Cart ({self.user.username})"
 
 
+# ========================================================================================
+#Addresses
+# ========================================================================================
 
-
-# =====================CART ITEM 
-class CartItem(models.Model):
-    cart = models.ForeignKey(
-        'UserCart', 
-        on_delete=models.CASCADE, 
-        related_name='items'
-    )
-    product = models.ForeignKey(
-        Product, 
-        on_delete=models.CASCADE,
-        related_name='cart_items'
-    )
-    quantity = models.PositiveIntegerField(
-        default=1,
-        validators=[MinValueValidator(1)]
-    )
-    added_at_price = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2,
-        help_text="Price in KSh recorded when the item was added to cart."
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class UserAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="addresses")
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ["-created_at"]
-        unique_together = ('cart', 'product')
-
-    @property
-    def total_item_cost(self):
-        return self.added_at_price * self.quantity
-
-    def save(self, *args, **kwargs):
-        if not self.added_at_price and self.product_id:
-            self.added_at_price = getattr(self.product, 'current_price', 0.00)
-        super().save(*args, **kwargs)
+        verbose_name = "User Address"
+        verbose_name_plural = "User Addresses"
 
     def __str__(self):
-        return f"{self.quantity}x {self.product.title[:20]}... in Cart ({self.cart.user.username})"
+        return f"Address {self.unique_id} for {self.user.username}"
 
 
+# ==============================================================================================
+# CARTS
+# ==============================================================================================
+
+class CartGroup(models.Model):
+    user = models.OneToOneField(User, on_delete=models.PROTECT, related_name="cart_group")
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    enabled = models.BooleanField(default=True)
+    protected = models.BooleanField(default=False)
+    password = models.CharField(max_length=128, null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    @property
+    def total_items(self):
+        # Optimized aggregation example:
+        # return sum(subcart.total_items for subcart in self.sub_carts.all())
+        pass
+
+    @property
+    def total_cost_before_tax_and_shipping(self):
+        pass
+
+    @property
+    def total_shipping_cost(self):
+        pass
+
+    @property
+    def total_cost_after_tax_and_shipping(self):
+        pass
+
+
+
+
+
+class SubCart(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    cart_group = models.ForeignKey(CartGroup, on_delete=models.PROTECT, related_name="sub_carts")
+    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name="sub_carts_related_merchant")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('cart_group', 'merchant')
+
+    @property
+    def total_number_of_items(self):
+        pass
+
+    @property
+    def total_cost_before_tax(self):
+        pass
+
+    @property
+    def total_cost_before_shipping(self):
+        pass
+
+    @property
+    def total_shipping_cost(self):
+        pass
+
+    @property
+    def total_cost_after_shipping_and_tax(self):
+        pass
+
+
+
+
+class SubCartItem(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    sub_cart = models.ForeignKey(SubCart, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.PROTECT, related_name="cart_items")
+    
+    # Financial snapshot data - using DecimalField for precise money handling
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    product_title = models.CharField(max_length=255, null=True, blank=True)
+    product_description = models.TextField(null=True, blank=True)
+    
+    count = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('sub_cart', 'product')
+
+    def __str__(self):
+        return f"{self.count}x {self.product_title or 'Unknown Product'}"
+
+
+
+
+
+
+
+
+
+# ==============================================================================================
+# ORDERS
+# ==============================================================================================
+
+ORDER_STATUSES = (
+    ("WAITING_FOR_PAYMENT", "Waiting for Payment to process"),
+    ("QUEUED", "Order Queued for Processing"),
+    ("PROCESSING", "Order Being Processed"),
+    ("IN_SHIPMENT", "Order in shipment"),
+    ("DELAYED_IN_SHIPMENT", "Order Delaying in shipment"),
+    ("DELIVERED", "Order Delivered"),
+)
+
+
+class UserOrderGroup(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="order_groups")
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    status = models.CharField(max_length=30, choices=ORDER_STATUSES, default="WAITING_FOR_PAYMENT")
+    order_delivered = models.BooleanField(default=False)
+    order_delivery_confirmed = models.BooleanField(default=False)
+    order_disputed = models.BooleanField(default=False)
+    order_cancelled = models.BooleanField(default=False)
+    
+    tracking_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    delivery_address = models.ForeignKey(UserAddress, on_delete=models.PROTECT, related_name="orders")
+
+    @property
+    def total_order_items(self):
+        pass
+
+    @property
+    def total_order_cost(self):
+        pass
+
+    @property
+    def order_status_and_shipment_updates(self):
+        pass
+
+
+
+class UserSubOrder(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    order_group = models.ForeignKey(UserOrderGroup, on_delete=models.PROTECT, related_name="sub_orders")
+    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name="sub_orders_rlated_merchant")
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    
+    order_is_urgent = models.BooleanField(default=False) 
+    express_delivery = models.BooleanField(default=False)
+
+    @property
+    def total_number_of_items(self):
+        pass
+
+    @property
+    def total_cost_before_shipping(self):
+        pass
+
+    @property
+    def total_shipping_cost(self):
+        pass
+
+    @property
+    def total_cost_after_shipping_and_tax(self):
+        pass
+
+
+
+
+
+class UserSubOrderItem(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    sub_order = models.ForeignKey(UserSubOrder, on_delete=models.PROTECT, related_name="items")
+    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.PROTECT, related_name="order_items")
+    
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    product_title = models.CharField(max_length=255, null=True, blank=True)
+    product_description = models.TextField(null=True, blank=True)
+    
+    count = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.count}x {self.product_title or 'Unknown Product'}"
+    
+    
+    
+    
+    
+    
+    
+# ========================================================================================================
+# USER SEARCHES AND SYSTEM COMUNICATION 
+# =========================================================================================================
 
 class UserSearches(models.Model):
-    # RELATIONSHIPS & IDENTITY
     user = models.OneToOneField(
         User, 
         on_delete=models.CASCADE, 
@@ -361,7 +524,7 @@ class UserSearches(models.Model):
 
 
 
-# USER CONVERSATION
+
 class UserConversation(models.Model):
     parent = models.ForeignKey(
         UserSearches, 
@@ -418,189 +581,10 @@ class UserConversationHistoryItem(models.Model):
 
 
 
-class UserOrder(models.Model):
-    STATUS_CHOICES = (
-        ("pending_payment", "Pending Payment"),
-        ("paid", "Paid / Processing"),
-        ("shipped", "Shipped from Merchant"),
-        ("delivered", "Delivered"),
-        ("cancelled", "Cancelled"),
-        ("refunded", "Refunded"),
-    )
-    
-    
-    PAYMENT_METHOD_CHOICES = (
-        ("mpesa", "M-Pesa"),
-        ("airtel_money", "Airtel Money"),
-        ("cash_on_delivery", "Cash on Delivery"),
-    )
-    
 
-    user = models.ForeignKey(
-        'User', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='orders',
-        help_text="Set to NULL if account is hard-deleted so we retain financial history tracking."
-    )
-    
-    order_number = models.CharField(
-        max_length=100, 
-        unique=True, 
-        editable=False, 
-        db_index=True
-    )
-    
-    status = models.CharField(
-        max_length=30, 
-        choices=STATUS_CHOICES, 
-        default="pending_payment",
-        db_index=True
-    )
-    
-    
-    subtotal = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        help_text="Total price of items in KSh before auxiliary fees."
-    )
-    
-    
-    shipping_fee = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        default=0.00,
-        help_text="Calculated delivery charges based on user coordinates."
-    )
-    
-    
-    total_amount = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        help_text="Final absolute transactional value in KSh (Subtotal + Shipping)."
-    )
-    
-    
-    payment_method = models.CharField(
-        max_length=30, 
-        choices=PAYMENT_METHOD_CHOICES, 
-        blank=True, 
-        null=True
-    )
-    
-    is_paid = models.BooleanField(default=False, db_index=True)
-    payment_reference = models.CharField(
-        max_length=255, 
-        blank=True, 
-        null=True, 
-        db_index=True,
-        help_text="e.g., M-Pesa Transaction Code (RG67XXXXXX) or Charge ID."
-    )
-    paid_at = models.DateTimeField(blank=True, null=True)
-
-    shipping_full_name = models.CharField(max_length=255)
-    shipping_phone = models.CharField(max_length=50)
-    shipping_country = models.CharField(max_length=100, default="Kenya")
-    shipping_city = models.CharField(max_length=100)
-    shipping_address_line = models.TextField(help_text="Specific details: Apartment, House No, Street name.")
-
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    total_shipping_weight = models.CharField(max_length=200, null=True, blank=True , help_text="shipping weight in kgs")
-    total_shipping_length = models.CharField(max_length=200, null=True, blank=True, help_text="shipping length in meters")
-    total_shipping_width = models.CharField(max_length=200, null=True, blank=True , help_text="shipping width in meters ")
-    total_shipping_height = models.CharField(max_length=200, null=True, blank=True , help_text="shipping Height in Meters ")
-    total_shipping_volume = models.CharField(max_length=200, null=True, blank=True, help_text="shipping volume in Cubic meters")
-    
-
-     
-
-    class Meta:
-        ordering = ["-created_at"]
-        indexes = [
-            models.Index(fields=["status"]),
-            models.Index(fields=["is_paid"]),
-            models.Index(fields=["order_number"]),
-            models.Index(fields=["created_at"]),
-        ]
-
-    def generate_order_number(self):
-        today_str = timezone.now().strftime('%Y%m%d')
-        random_suffix = str(uuid.uuid4().hex[:8]).upper()
-        return f"SOKO-{today_str}-{random_suffix}"
-    
-
-    def save(self, *args, **kwargs):
-        if not self.order_number:
-            self.order_number = self.generate_order_number()
-        self.total_amount = self.subtotal + self.shipping_fee
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"Order {self.order_number} ({self.status})"
-
-
-
-
-
-class UserOrderItem(models.Model):
-    order = models.ForeignKey(
-        UserOrder, 
-        on_delete=models.CASCADE, 
-        related_name='order_items'
-    )
-    product = models.ForeignKey(
-        Product, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='order_entries'
-    )
-    snapshot_title = models.CharField(
-        max_length=500, 
-        help_text="Immutable copy of the product title at checkout."
-    )
-    
-    snapshot_description = models.TextField(
-        help_text="Immutable copy of the product description at checkout."
-    )
-    
-    snapshot_merchant = models.CharField(
-        max_length=100, 
-        help_text="e.g., Jumia, Kilimall, SkyGarden"
-    )
-    
-    snapshot_image_url = models.URLField(max_length=1000, blank=True, null=True)
-    
-    quantity = models.PositiveIntegerField(
-        default=1,
-        validators=[MinValueValidator(1)]
-    )
-    price_per_unit = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2,
-        help_text="The exact amount in KSh the item cost at the moment of checkout validation."
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    @property
-    def total_cost(self):
-        return self.price_per_unit * self.quantity
-
-    def save(self, *args, **kwargs):
-        if self.product and not self.snapshot_title:
-            self.snapshot_title = self.product.title
-            self.snapshot_merchant = getattr(self.product, 'merchant', 'Unknown')
-            self.snapshot_image_url = getattr(self.product, 'image_url', '')
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f"{self.quantity}x {self.snapshot_title[:20]}... in {self.order.order_number}"
-
-
-
-
-
+# ========================================================================================================
+# USER REVIEWS AND ALERTS 
+# =========================================================================================================
 
 
 class UserReview(models.Model):
@@ -614,7 +598,7 @@ class UserReview(models.Model):
 
 class UserReviewItem(models.Model):
     parent = models.ForeignKey(UserReview, on_delete=models.CASCADE, related_name="reviews")
-    target_item = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="product_reviews")
+    target_item = models.ForeignKey(MerchantProductCatalog, on_delete=models.CASCADE, related_name="product_reviews")
     
     review_text = models.TextField()
     rating = models.PositiveIntegerField(
@@ -657,7 +641,7 @@ class UserAlertItem(models.Model):
     )
 
     parent = models.ForeignKey(UserAlert, on_delete=models.CASCADE, related_name="alerts")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="tracked_alerts", null=True, blank=True)
+    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.CASCADE, related_name="tracked_alerts", null=True, blank=True)
     alert_type = models.CharField(max_length=50, choices=ALERT_TYPE_CHOICES, default="price_drop")
     target_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Target budget match value in KSh")
     is_triggered = models.BooleanField(default=False)
@@ -673,9 +657,14 @@ class UserAlertItem(models.Model):
 
 
 
+# ========================================================================================================
+# USER PAYMENT, WALLETS AND LEDGERS 
+# =========================================================================================================
+
 class UserPaymentOption(models.Model):
     PAYMENT_TYPE_CHOICES = (
         ("mpesa", "M-Pesa Express"),
+        ("bank", "Bank-Transfer"), 
         ("card", "Debit/Credit Card"),
     )
     
@@ -686,6 +675,11 @@ class UserPaymentOption(models.Model):
     
     # M-Pesa Data Fields
     mpesa_phone_number = models.CharField(max_length=15, blank=True, null=True, help_text="Format: 07XXXXXXXX or 254XXXXXXXX")
+    
+    # Bank tranfer fileds 
+    bank_name = models.CharField(max_length=200, null=True , blank=True)
+    bank_account_number = models.CharField(max_length=100, null=True, blank=True)
+    
     
     # Card Mask Data Fields (Never store raw CVV or Full numbers!)
     card_brand = models.CharField(max_length=20, blank=True, null=True, help_text="Visa, Mastercard, etc.")
@@ -703,6 +697,14 @@ class UserPaymentOption(models.Model):
 
 
 
+
+
+
+
+
+# ========================================================================================================
+# USER SHIPPING  ADDRESSES
+# =========================================================================================================
 
 class UserShippingAddress(models.Model):
     ADDRESS_TAG_CHOICES = (
@@ -737,3 +739,75 @@ class UserShippingAddress(models.Model):
 
     def __str__(self):
         return f"{self.get_address_tag_display()} - {self.building_or_estate} ({self.user.username})"
+    
+    
+    
+    
+
+
+# ========================================================================================================
+# USER LOGS AND ACCOUNT ACTIONS 
+# =========================================================================================================
+class UserActivityLog(models.Model):
+    """
+    An immutable audit log tracking all operational, authentication, and financial 
+    actions taken by or triggered for a user profile.
+    """
+    CATEGORY_CHOICES = (
+        ('auth', 'Authentication & Security'),
+        ('profile', 'Profile & Settings Modification'),
+        ('branch', 'Branch Distribution Operations'),
+        ('catalog', 'Inventory & Catalog Updates'),
+        ('order', 'Order & Fulfillment Triggers'),
+        ('payin', 'Financials & Ledger Settlements'),
+        ('system', 'System Automation / Background Alert'),
+    )
+
+    SEVERITY_CHOICES = (
+        ('info', 'Informational'),
+        ('warning', 'Warning Notice'),
+        ('critical', 'Critical Security/Financial'),
+    )
+
+    unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True)
+    user = models.ForeignKey(User,on_delete=models.CASCADE, related_name='activity_logs',help_text="The user  tied to this record.")
+    initiated_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True,related_name='user_initiated_actions')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, db_index=True)
+    severity = models.CharField(max_length=15, choices=SEVERITY_CHOICES, default='info', db_index=True)
+    action_event = models.CharField(max_length=255, help_text="e.g., 'user_login', 'user_signup' ")
+    description = models.TextField(help_text="Human-readable detail statement summarizing exactly what transpired.")
+    ip_address = models.GenericIPAddressField(null=True, blank=True, db_index=True)
+    user_agent = models.CharField(max_length=500, null=True, blank=True, help_text="Browser/device fingerprint data")    
+    location_snapshot = models.CharField(max_length=255, null=True, blank=True, help_text="Approximate or pinpoint geo-metadata at the moment of entry, e.g., 'Juja, Kiambu'")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True, editable=False)
+    
+    class Meta:
+        db_table = 'soko_user_activity_log'
+        ordering = ['-created_at']
+        verbose_name = 'User Activity Log'
+        verbose_name_plural = 'User Activity Logs'
+
+    def __str__(self):
+        return f"{self.user.full_name} | {self.action_event} | {self.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            raise PermissionDenied(_("User log records are strictly immutable and cannot be updated once stored."))
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise PermissionDenied(_("User log records are permanent and cannot be deleted from this platform."))
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        

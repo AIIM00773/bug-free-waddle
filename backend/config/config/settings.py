@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     
     # Third-party apps
-    "corsheaders",  # <-- ADDED FOR CORS
+    "corsheaders", 
     "rest_framework",
     "rest_framework_simplejwt", 
     "rest_framework_simplejwt.token_blacklist",
@@ -50,14 +50,20 @@ INSTALLED_APPS = [
     # Local apps
     "apps.administration",
     "apps.users", 
-    "apps.inventory",
+    "apps.Conversations",
+    "apps.Markets",
+    "apps.Merchants",
+    "apps.taxonomies",
+    "apps.CustomerMerchantOrders",
+    
+    
 ]
 
 
 
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # <-- MUST BE AT THE VERY TOP
+    "corsheaders.middleware.CorsMiddleware",  
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -67,21 +73,22 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# CORS Configuration — Adjust the ports if your React dev server uses a different one
+# CORS Configuration — Adjust the ports as fits 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
+    "http://localhost:5175",
+    
     
 ]
 
-# If you're sending credentials like cookies or HTTP Basic auth, uncomment this line:
+# If  sending credentials like cookies or HTTP Basic auth, uncomment this line:
 # CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
-    # FIXED TYPOS: Corrected 'CLASSSES' spelling and 'rest_fremework' path string
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
@@ -94,6 +101,8 @@ SIMPLE_JWT = {
     "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
     "UPDATE_LAST_LOGIN": False,
+    "USER_ID_FIELD": "unique_id",
+    "USER_ID_CLAIM": "user_id",
 }
 
 
@@ -179,3 +188,14 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "users.User"
+
+
+
+
+
+from pathlib import Path
+
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_URL = '/merchant_legal_media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'merchant_legal_media'),

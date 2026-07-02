@@ -3,15 +3,9 @@ import {
     ArrowUp,
     User,
     Sparkles,
-    AlertCircle,
     Star,
     MapPin,
-    RefreshCw,
     CornerDownLeft,
-    WifiOff,
-    Loader2,
-    Database,
-    Globe
 } from 'lucide-react';
 
 import ProductDetailsModal from './Components/ProductDetails';
@@ -23,84 +17,17 @@ import HomeSider from './Components/HomeAside';
 import AuthAlertComponent from './Components/HomeAuthAlert';
 import HomeHeader from './Components/HomeHeader';
 
+
+
 // ==========================================================
-// 1. TYPING AND CASCADING PRODUCTS CONTROLLER (SUBCONTEXT ENGINE)
+// 1. AI MESSAGE & PRODUCT DISPLAY COMPONENT
 // ==========================================================
-function TypingResponseBlock({
-    messageId,
-    text,
-    products,
-    isStreamed,
-    markStreamed,
-    onCardClick,
-    getMerchantStyles,
-    onLayoutResize,
+function AiMessageBlock({
+    text, products, onCardClick, getMerchantStyles,
 }: {
-    messageId: string;
-    text: string;
-    products?: Product[];
-    isStreamed?: boolean;
-    markStreamed: (id: string) => void;
-    onCardClick: (p: Product) => void;
-    getMerchantStyles: (m: Product['merchant']) => string;
-    onLayoutResize: () => void;
+    text: string; products?: Product[];
+    onCardClick: (p: Product) => void; getMerchantStyles: (m: Product['merchant']) => string;
 }) {
-    const [displayedText, setDisplayedText] = useState(isStreamed ? text : "");
-    const [showProducts, setShowProducts] = useState(!!isStreamed);
-    const [visibleCardsCount, setVisibleCardsCount] = useState(isStreamed ? (products?.length || 0) : 0);
-
-    useEffect(() => {
-        if (isStreamed) {
-            setDisplayedText(text);
-            setShowProducts(true);
-            return;
-        }
-
-        let index = 0;
-        const speed = text.length > 200 ? 10 : 25;
-        setDisplayedText("");
-        setShowProducts(false);
-        setVisibleCardsCount(0);
-
-        const interval = setInterval(() => {
-            setDisplayedText((prev) => prev + text.charAt(index));
-            index++;
-            onLayoutResize();
-
-            if (index >= text.length) {
-                clearInterval(interval);
-                setTimeout(() => {
-                    setShowProducts(true);
-                }, 300);
-            }
-        }, speed);
-
-        return () => clearInterval(interval);
-    }, [text, isStreamed, onLayoutResize]);
-
-    useEffect(() => {
-        if (isStreamed) {
-            setVisibleCardsCount(products?.length || 0);
-            return;
-        }
-
-        if (!showProducts || !products || products.length === 0) return;
-
-        const cardInterval = setInterval(() => {
-            setVisibleCardsCount((prev) => {
-                if (prev >= products.length) {
-                    clearInterval(cardInterval);
-                    markStreamed(messageId);
-                    return prev;
-                }
-                setTimeout(onLayoutResize, 400);
-                return prev + 1;
-            });
-        }, 150);
-
-        return () => clearInterval(cardInterval);
-    }, [showProducts, products, isStreamed, messageId, markStreamed, onLayoutResize]);
-
     return (
         <div className="space-y-2 flex-1 min-w-0">
             <div className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">
@@ -108,18 +35,16 @@ function TypingResponseBlock({
             </div>
 
             <div className="text-sm md:text-base leading-relaxed text-slate-800 min-h-[24px]">
-                <p className={!isStreamed ? "after:content-['|'] after:ml-0.5 after:text-emerald-600 after:animate-pulse after:font-light" : ""}>
-                    {displayedText}
-                </p>
+                <p>{text}</p>
             </div>
 
-            {products && products.length > 0 && showProducts && (
+            {products && products.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pt-3">
-                    {products.slice(0, visibleCardsCount).map((product: Product) => (
+                    {products.map((product: Product) => (
                         <div
                             key={product.id}
                             onClick={() => onCardClick(product)}
-                            className="bg-white rounded-2xl overflow-hidden border border-slate-200/80 hover:border-slate-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform animate-fadeIn translate-y-2 group flex flex-col justify-between cursor-pointer"
+                            className="bg-white rounded-2xl overflow-hidden border border-slate-200/80 hover:border-slate-300 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 transform group flex flex-col justify-between cursor-pointer"
                         >
                             <div className="relative aspect-video w-full bg-slate-50 overflow-hidden border-b border-slate-100">
                                 <img
@@ -169,124 +94,31 @@ function TypingResponseBlock({
 }
 
 // ==========================================================
-// 2. WORKING / LOADING RUNTIME STATUS MONITOR (NEAT BENTO INDICATOR)
-// ==========================================================
-function LoadingStatusBlock({ status }: { status: 'LOADING' | 'WORKING' | 'RETRYING' }) {
-    const config = {
-        LOADING: {
-            title: "Initializing Canvas",
-            description: "Opening isolated session pipeline data maps...",
-            icon: <Database className="h-4 w-4 text-slate-500" />,
-            style: "border-slate-200 bg-slate-50 text-slate-700"
-        },
-        WORKING: {
-            title: "Compiling Marketplace Nodes",
-            description: "Scraping items from Jumia, Kilimall & SkyGarden listings...",
-            icon: <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />,
-            style: "border-emerald-500/20 bg-emerald-50/40 text-emerald-900"
-        },
-        RETRYING: {
-            title: "Pipeline Network Recovery",
-            description: "Connection unstable. Re-routing payload queries across clusters...",
-            icon: <Globe className="h-4 w-4 text-amber-600 animate-bounce" />,
-            style: "border-amber-500/30 bg-amber-50/60 text-amber-900 animate-pulse"
-        }
-    };
-
-    const active = config[status];
-
-    return (
-        <div className={`p-4 rounded-2xl border backdrop-blur-xs flex gap-4 items-center max-w-md w-full shadow-xs transition-all duration-300 animate-fadeIn ${active.style}`}>
-            <div className="p-2.5 rounded-xl bg-white shadow-xs shrink-0 flex items-center justify-center border border-slate-100">
-                {active.icon}
-            </div>
-            <div className="space-y-0.5 min-w-0">
-                <h5 className="text-[11px] font-extrabold leading-tight tracking-wider uppercase opacity-90">{active.title}</h5>
-                <p className="text-xs font-medium opacity-75 truncate">{active.description}</p>
-            </div>
-            {status === 'WORKING' && (
-                <div className="ml-auto flex gap-1 items-center shrink-0 pr-1">
-                    <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-                    <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
-                </div>
-            )}
-        </div>
-    );
-}
-
-function ErrorStatusBlock({ error, onRetry }: { error: string; onRetry: () => void }) {
-    const isNetworkFault = error.toLowerCase().includes('fetch') || error.toLowerCase().includes('connectivity') || error.toLowerCase().includes('network');
-
-    return (
-        <div className="p-5 bg-red-50/60 border border-red-200/80 rounded-2xl flex gap-4 items-start shadow-xs animate-fadeIn max-w-2xl">
-            <div className="p-2 rounded-xl bg-white text-red-600 shadow-xs mt-0.5 shrink-0 border border-red-100">
-                {isNetworkFault ? <WifiOff className="h-4 w-4 stroke-[2.2]" /> : <AlertCircle className="h-4 w-4 stroke-[2.2]" />}
-            </div>
-            <div className="space-y-3 flex-1 min-w-0">
-                <div className="space-y-0.5">
-                    <h5 className="text-xs font-extrabold text-red-950 uppercase tracking-wide">
-                        {isNetworkFault ? "Upstream Network Pipeline Break" : "Query Core Execution Error"}
-                    </h5>
-                    <p className="text-xs text-red-800/90 font-medium leading-relaxed bg-white/50 border border-red-100/50 p-2.5 rounded-xl font-mono select-text break-words mt-1.5">
-                        {error}
-                    </p>
-                </div>
-
-                <div className="space-y-1 bg-white/40 border border-red-100/30 p-3 rounded-xl">
-                    <span className="text-[10px] uppercase font-bold text-red-900 tracking-wider block">Recommended Action</span>
-                    <p className="text-[11px] text-red-800 font-medium leading-relaxed">
-                        {isNetworkFault
-                            ? "Please check your internet parameters or proxy configurations, verify the local backend endpoint is responsive, and attempt to re-dispatch the lookup thread context."
-                            : "The server rejected the current request interface. Modify the text terms, ensure your session cookie is unexpired, or force a data stream refresh loop."
-                        }
-                    </p>
-                </div>
-
-                <div className="pt-1 flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={onRetry}
-                        className="inline-flex items-center gap-2 px-3.5 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer select-none active:scale-[0.98]"
-                    >
-                        <RefreshCw className="h-3.5 w-3.5 stroke-[2.2]" />
-                        <span>Re-dispatch Last Search</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// ==========================================================
-// 3. MAIN APPLICATION INTERFACE CONTAINER
+// 2. MAIN APPLICATION INTERFACE CONTAINER
 // ==========================================================
 export default function GPTMarketplace() {
     const sidebarOpen = true;
     const [input, setInput] = useState("");
-    const [lastQueryCache, setLastQueryCache] = useState(""); 
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-    const [ShowauthAlertBox, setShowauthAlertBox] = useState(false);
+    const [showAuthAlertBox, setShowAuthAlertBox] = useState(false);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const { activeId, currentMessages, status, sendMessage, clearConversationErrorMessage, searchType } = useConversations();
+    const { isAuthenticated, isLoading } = useAuth();
 
-    const {
-        activeId,
-        currentMessages,
-        status,
-        error,
-        sendMessage,
-        markStreamed,
-    } = useConversations();
-
-    const { isAuthenticated } = useAuth();
-
+    // Consolidated Auth Routing
     useEffect(() => {
-        if (isAuthenticated) {
-            setShowauthAlertBox(true);
+        if (!isLoading) {
+            if (isAuthenticated) {
+                setShowAuthAlertBox(true);
+            } else {
+                window.location.replace("/auth");
+            }
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, isLoading]);
 
+    // Mock Related Products Generator
     useEffect(() => {
         if (selectedProduct) {
             const shuffled = [...EXTENSIVE_MOCK_DATABASE].sort(() => 0.5 - Math.random());
@@ -294,10 +126,7 @@ export default function GPTMarketplace() {
         }
     }, [selectedProduct]);
 
-    const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'auto' });
-    };
-
+    // Smooth scroll to bottom on new messages
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [currentMessages, status]);
@@ -306,15 +135,10 @@ export default function GPTMarketplace() {
         e.preventDefault();
         const cleanedPayload = input.trim();
         if (!cleanedPayload || status === 'WORKING' || status === 'LOADING' || status === 'RETRYING') return;
-
-        setLastQueryCache(cleanedPayload);
+        
         setInput("");
+        clearConversationErrorMessage();
         await sendMessage(cleanedPayload);
-    };
-
-    const handleRetryLastPayload = async () => {
-        if (!lastQueryCache.trim()) return;
-        await sendMessage(lastQueryCache);
     };
 
     const getMerchantStyles = (merchant: Product['merchant']) => {
@@ -340,10 +164,10 @@ export default function GPTMarketplace() {
                                 <Sparkles className="h-6 w-6 stroke-[1.75] text-emerald-600" />
                             </div>
                             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-950">
-                                Shop intelligently with Soko AI
+                                Shop intelligently {searchType === "intelligent_search" ? ("with Soko AI") : ""}
                             </h1>
                             <p className="mt-2 text-xs md:text-sm text-slate-500 max-w-sm leading-relaxed">
-                                Find the best deals across Kenya, shop smarter with intelligent insights, and aggregate cross-platform search loops inside a single context panel.
+                                Find the best deals across Kenya, shop smarter with intelligent insights, in a single panel.
                             </p>
                         </div>
                     ) : (
@@ -362,56 +186,61 @@ export default function GPTMarketplace() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <TypingResponseBlock
-                                            messageId={msg.id}
+                                        <AiMessageBlock
                                             text={msg.text}
                                             products={msg.products}
-                                            isStreamed={msg.streamed}
-                                            markStreamed={markStreamed}
                                             onCardClick={setSelectedProduct}
                                             getMerchantStyles={getMerchantStyles}
-                                            onLayoutResize={scrollToBottom}
                                         />
                                     )}
                                 </div>
                             ))}
 
-                            {/* Refactored Animated Bento Loading & Processing Runtimes */}
-                            {(status === 'WORKING' || status === 'LOADING' || status === 'RETRYING') && (
-                                <div className="pl-12 flex justify-start w-full">
-                                    <LoadingStatusBlock status={status} />
+                            {(status === 'WORKING' || status === 'RETRYING') && (
+                                <div className="flex gap-4 items-start text-xs md:text-sm animate-fadeIn">
+                                    <div className="h-8 w-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs text-xs font-bold">
+                                        AI
+                                    </div>
+                                    <div className="space-y-1 flex-1 min-w-0 pt-0.5">
+                                        <div className="font-bold text-slate-400 text-[10px] uppercase tracking-wider">
+                                            {searchType === "intelligent_search" ? ("soko AI") : ("Soko System ")}
+                                        </div>
+                                        <div className="flex items-center gap-2 min-h-[24px]">
+                                            <span className="text-sm font-medium text-slate-500 antialiased">
+                                                {status === 'RETRYING' ? 'Working on it ' : 'Processing .. '}
+                                            </span>
+                                            <div className="flex items-center gap-1 py-1 mt-2">
+                                                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full opacity-80 animate-bounce [animation-delay:-0.3s]" />
+                                                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full opacity-80 animate-bounce [animation-delay:-0.15s]" />
+                                                <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full opacity-80 animate-bounce" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
-
-                            {/* Comprehensive System Error Boundary Render Frame */}
-                            {error && (
-                                <div className="pl-12">
-                                    <ErrorStatusBlock error={error} onRetry={handleRetryLastPayload} />
-                                </div>
-                            )}
-
                             <div ref={chatEndRef} />
                         </div>
                     )}
                 </div>
 
-                {/* Main Text Input Console Sub-Panel Layout */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent pt-6 pb-4 px-4 shrink-0 z-10 pointer-events-none">
                     <div className="max-w-2xl mx-auto w-full pointer-events-auto">
                         <form
                             onSubmit={handleSend}
-                            className="bg-white border border-slate-200 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-1.5 pl-4 flex items-center gap-3 transition-all duration-200 shadow-xs"
+                            className="bg-white border border-orange-300 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 rounded-2xl p-1.5 pl-4 flex items-center gap-3 transition-all duration-200 shadow-xs relative"
                         >
+                            <div className='absolute top-[-10px] md:top-[10px] p-2 left-[15px] md:left-[-140px] text-xs px-4 py-1 bg-green-400 rounded-3xl text-[aliceblue] capitalize' >
+                                {searchType.replace("_", " ")}
+                            </div>
                             <input
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 disabled={status === 'WORKING' || status === 'LOADING' || status === 'RETRYING'}
-                                placeholder={status === 'WORKING' ? "Soko AI is compiling listings..." : "Ask Soko AI... e.g., 'Find MacBook Pro M1 in Nairobi'"}
-                                className="flex-1 bg-transparent border-none text-sm font-normal text-slate-800 placeholder-slate-400 focus:outline-none py-2 disabled:opacity-50"
+                                placeholder={["intelligent_search", "intelligent_filter", "intelligent_followup"].includes(searchType) ? "Ask Soko AI... e.g., 'Find MacBook Pro M1 in Nairobi'" : "Make a direct product search... e.g. 'Sports Shoes'"}
+                                className="flex-1 bg-transparent border-none text-sm font-normal text-slate-800 placeholder-slate-400 focus:outline-none py-2 disabled:opacity-50 pl-2"
                             />
 
-                            {/* Visual Hint Indicator: Tells user that pressing enter submits search details */}
                             <div className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg select-none shrink-0 font-mono tracking-wide">
                                 <span>Enter</span>
                                 <CornerDownLeft className="h-2.5 w-2.5 shrink-0" />
@@ -428,7 +257,7 @@ export default function GPTMarketplace() {
                     </div>
                 </div>
 
-                {ShowauthAlertBox && <AuthAlertComponent />}
+                {showAuthAlertBox && <AuthAlertComponent />}
             </div>
 
             {selectedProduct && (

@@ -1,181 +1,349 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 
-export interface InternalMerchantProfile {
-    id: string;
+// ==========================================
+// --- TYPESCRIPT CORE DOMAIN INTERFACES ---
+// ==========================================
+
+export interface MerchantOwner {
+    full_name: string;
+    email: string;
+    phone: string;
+    continent: string | null;
+    country: string | null;
+    country_code: string | null;
+    state: string | null;
+    city: string | null;
+    timezone_name: string | null;
+    gender: string | null;
+    date_of_birth: string | null;
+    is_merchant: boolean;
+    is_merchant_verified: boolean;
+    is_banned: boolean;
+    is_suspended: boolean;
+    is_blocked: boolean;
+    is_email_verified: boolean;
+    is_phone_verified: boolean;
+    onboarding_completed: boolean;
+    created_at: string;
+    age: number | null;
+}
+
+// Basic merchant summary payload from / (refreshMerchantData)
+export interface MerchantSummary {
+    unique_id: string;
     shopName: string;
-    vendorOwner: string;
+    shopDescription: string;
     accountEmail: string;
-    commissionCutPercent: number;
-    totalActiveListings: number;
-    verificationStatus: 'verified' | 'pending_review' | 'suspended';
-    payoutMethod: 'M-Pesa' | 'Bank Transfer' | 'Card Settlement';
+    accountPhone: string;
+    shopCategoryPersist: string;
+    bussinessRegisted: boolean;
+    commissionCutPercent: string; // Server returns this as a string numeric value
+    isCommissionFree: boolean;
+    verified: boolean;
+    payoutMethod: string;
+    verificationStatus: string;
+    owner: MerchantOwner;
+    createdAt: string;
+}
+
+export interface MerchantProfile {
+    shopName: string;
+    description: string;
+    verificationStatus: string;
+    email: string;
+    is_verified: boolean;
+    commissionCutPercent: number; // Detail view returns this as a raw number
+    isCommissionFree: boolean;
+    payoutMethod: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface PayoutRoutes {
+    mpesa: string | null;
+    paybill: string | null;
+    till: string | null;
+    bank: string | null;
+}
+
+export interface Branch {
+    name: string;
+    city: string;
+    isPrimary: boolean;
+    [key: string]: any; // Allows fallback structures from your UI context
+}
+
+export interface CatalogSummaryItem {
+    title: string;
+    sku: string;
+}
+
+export interface CatalogSummary {
+    total: number;
+    items: CatalogSummaryItem[];
+}
+
+export interface RecentActivity {
+    event: string;
+    date: string;
+    severity: string;
+}
+
+// Full detailed merchant from the /details endpoint
+export interface MerchantDetails {
+    unique_id: string; // Stored natively during fetch ingestion
+    profile: MerchantProfile;
+    payout_routes: PayoutRoutes;
+    branches: Branch[];
+    catalog_summary: CatalogSummary;
+    recent_activity: RecentActivity[];
 }
 
 interface MerchantsContextType {
-    merchants: InternalMerchantProfile[];
+    merchants: MerchantSummary[];
+    individualMerchant: MerchantDetails | null;
     isLoading: boolean;
+    loadingIndividual: boolean;
     error: string | null;
+    clearError: () => void;
     refreshMerchantData: () => Promise<void>;
-    onboardNewVendor: (newVendor: Omit<InternalMerchantProfile, 'totalActiveListings'>) => Promise<void>;
-    updateMerchantDetails: (id: string, updatedFields: Partial<InternalMerchantProfile>) => Promise<void>;
-    updatePlatformTakeRate: (id: string, newRate: number) => Promise<void>;
-    toggleVendorVerification: (id: string, nextStatus: InternalMerchantProfile['verificationStatus']) => Promise<void>;
+    fetchIndividualMerchant: (unique_id: string) => Promise<void>;
+    ActivateMerchantProfile: (id: string) => Promise<void>;
+    DeactivateMerchantProfile: (id: string) => Promise<void>;
     removeVendorAccount: (id: string) => Promise<void>;
+    resetActiveMerchant: () => void;
 }
 
-const SEED_INTERNAL_MERCHANTS: InternalMerchantProfile[] = [
-    {
-        id: "VN-NBO-091",
-        shopName: "Nairobi Sneaker Syndicate",
-        vendorOwner: "Mwangi K.",
-        accountEmail: "info@sneakersyndicate.ke",
-        commissionCutPercent: 7.5,
-        totalActiveListings: 142,
-        verificationStatus: "verified",
-        payoutMethod: "M-Pesa"
-    },
-    {
-        id: "VN-MSA-043",
-        shopName: "Coast Wave Cosmetics",
-        vendorOwner: "Fatma B.",
-        accountEmail: "fatma.b@coastwave.co.ke",
-        commissionCutPercent: 10.0,
-        totalActiveListings: 89,
-        verificationStatus: "verified",
-        payoutMethod: "Bank Transfer"
-    },
-    {
-        id: "VN-ELD-112",
-        shopName: "Eldoret Tech & Spares",
-        vendorOwner: "Kipchumba J.",
-        accountEmail: "spares@eldotech.com",
-        commissionCutPercent: 5.0,
-        totalActiveListings: 234,
-        verificationStatus: "pending_review",
-        payoutMethod: "M-Pesa"
-    }
-];
+// ==========================================
+// --- CONFIGURATION & UTILITIES ---
+// ==========================================
+
+const API_BASE_URL = (import.meta.env.NEXT_PUBLIC_API_URL as string)?.trim() || "http://localhost:8000/";
+const BASE_MERCHANT_PATH = `${API_BASE_URL}adm/root/api/v1/8be4df6193ca11d2aa0d00e098032b8c/merchants`;
 
 const MerchantsContext = createContext<MerchantsContextType | undefined>(undefined);
 
+const getAuthHeaders = (): HeadersInit => {
+    try {
+        const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+        const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+        return {
+            "Content-Type": "application/json",
+            ...(access ? { Authorization: `Bearer ${access}` } : {})
+        };
+    } catch {
+        return { "Content-Type": "application/json" };
+    }
+};
+
+// ==========================================
+// --- CONTEXT PROVIDER IMPLEMENTATION ---
+// ==========================================
+
 export function DirectMerchantsProvider({ children }: { children: React.ReactNode }) {
-    const [merchants, setMerchants] = useState<InternalMerchantProfile[]>(SEED_INTERNAL_MERCHANTS);
+    const [merchants, setMerchants] = useState<MerchantSummary[]>([]);
+    const [individualMerchant, setIndividualMerchant] = useState<MerchantDetails | null>(null);
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [loadingIndividual, setLoadingIndividual] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
+    const clearError = useCallback(() => setError(null), []);
+
+    // Auto-Dismiss Errors Engine
+    useEffect(() => {
+        if (!error) return;
+        const handle = setTimeout(() => setError(null), 4500);
+        return () => clearTimeout(handle);
+    }, [error]);
+
+    // FETCH ALL VENDORS (Handles Array payload or object wrappers cleanly)
     const refreshMerchantData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 600));
-            setMerchants(prev => prev.map(m =>
-                m.verificationStatus === 'verified'
-                    ? { ...m, totalActiveListings: m.totalActiveListings + (Math.random() > 0.8 ? 1 : 0) }
-                    : m
-            ));
-        } catch (err) {
-            setError("Failed to refresh database. Connection timeout.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            const response = await fetch(`${BASE_MERCHANT_PATH}/`, {
+                method: "GET",
+                headers: getAuthHeaders(),
+            });
 
-    const onboardNewVendor = useCallback(async (newVendor: Omit<InternalMerchantProfile, 'totalActiveListings'>) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
+            const data = await response.json();
 
-            let targetId = newVendor.id.toUpperCase().trim();
-            if (!targetId) {
-                targetId = `VN-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+            if (!response.ok) {
+                throw new Error(data.error || `Server responded with status code ${response.status}`);
             }
 
-            setMerchants((prev) => {
-                if (prev.some(v => v.id === targetId)) {
-                    throw new Error(`Merchant conflict: ID "${targetId}" is already mapped.`);
-                }
-                return [...prev, { ...newVendor, id: targetId, totalActiveListings: 0 }];
+            // Normalizes payload variance if the data is a direct raw array or deep under nested results keys
+            if (Array.isArray(data)) {
+                setMerchants(data);
+            } else if (data && Array.isArray(data.results)) {
+                setMerchants(data.results);
+            } else {
+                setMerchants([]);
+            }
+        } catch (err: any) {
+            setError(err.message || "Failed to sync merchant system profiles registry database.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Initial background synchronization
+    useEffect(() => {
+        refreshMerchantData();
+    }, [refreshMerchantData]);
+
+    // FETCH INDIVIDUAL MERCHANT DETAILS DATA NODE
+    const fetchIndividualMerchant = useCallback(async (unique_id: string) => {
+        if (!unique_id?.trim()) {
+            setError("Merchant identification code missing in the payload!");
+            return;
+        }
+
+        setLoadingIndividual(true);
+        setError(null);
+        try {
+            const response = await fetch(`${BASE_MERCHANT_PATH}/details/?id=${unique_id}`, {
+                method: "GET",
+                headers: getAuthHeaders()
+            });
+
+            const resp = await response.json();
+
+            if (!response.ok) {
+                throw new Error(resp.error || `Error Loading the Individual Merchant Profile (Status: ${response.status})`);
+            }
+
+            // Injects unique_id into state data object explicitly since it comes from the query string parameters context
+            setIndividualMerchant({
+                ...resp,
+                unique_id: resp.unique_id || unique_id
             });
         } catch (err: any) {
-            setError(err.message || "Failed to onboard new vendor.");
-            throw err;
+            setError(err.message || "Network layout pipeline breakdown while seeking profile metrics.");
         } finally {
-            setIsLoading(false);
+            setLoadingIndividual(false);
         }
     }, []);
 
-    const updateMerchantDetails = useCallback(async (id: string, updatedFields: Partial<InternalMerchantProfile>) => {
-        setIsLoading(true);
+    // TOGGLE VENDOR VERIFICATION STATUS (ACTIVATE)
+    const ActivateMerchantProfile = useCallback(async (id: string) => {
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setMerchants(prev => prev.map(m => m.id === id ? { ...m, ...updatedFields } : m));
-        } catch (err) {
-            setError("Failed to update merchant configuration.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            const response = await fetch(`${BASE_MERCHANT_PATH}/activate/?id=${id}`, {
+                method: "PATCH",
+                headers: getAuthHeaders(),
+            });
 
-    const updatePlatformTakeRate = useCallback(async (id: string, newRate: number) => {
-        setIsLoading(true);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || "Failed to toggle vendor verification status.");
+            }
+
+            if (individualMerchant?.unique_id === id) {
+                await fetchIndividualMerchant(id);
+            }
+            await refreshMerchantData();
+        } catch (err: any) {
+            setError(err.message || "Verification activation failed.");
+        }
+    }, [individualMerchant, fetchIndividualMerchant, refreshMerchantData]);
+
+    // TOGGLE VENDOR VERIFICATION STATUS (DEACTIVATE)
+    const DeactivateMerchantProfile = useCallback(async (id: string) => {
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            const clampedRate = Math.min(Math.max(newRate, 0), 100);
-            setMerchants(prev => prev.map(m => m.id === id ? { ...m, commissionCutPercent: clampedRate } : m));
-        } catch (err) {
-            setError("Failed to alter platform commission rates.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            const response = await fetch(`${BASE_MERCHANT_PATH}/deactivate/?id=${id}`, {
+                method: "PATCH",
+                headers: getAuthHeaders(),
+            });
 
-    const toggleVendorVerification = useCallback(async (id: string, nextStatus: InternalMerchantProfile['verificationStatus']) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            setMerchants(prev => prev.map(m => m.id === id ? { ...m, verificationStatus: nextStatus } : m));
-        } catch (err) {
-            setError("Failed to alter vendor verification status workflow state.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || "Failed to toggle vendor verification status.");
+            }
 
+            if (individualMerchant?.unique_id === id) {
+                await fetchIndividualMerchant(id);
+            }
+            await refreshMerchantData();
+        } catch (err: any) {
+            setError(err.message || "Verification deactivation failed.");
+        }
+    }, [individualMerchant, fetchIndividualMerchant, refreshMerchantData]);
+
+    // DROP ACCOUNT DESTROY NODE (DELETE)
     const removeVendorAccount = useCallback(async (id: string) => {
         setIsLoading(true);
         setError(null);
+
+        const previousState = [...merchants];
+        setMerchants(prev => prev.filter(m => m.unique_id !== id));
+
         try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            setMerchants(prev => prev.filter(m => m.id !== id));
-        } catch (err) {
-            setError("Failed to remove vendor from registry registry database.");
+            const response = await fetch(`${BASE_MERCHANT_PATH}/update/delete/?id=${id}`, {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || "Remote execution denied account drop process.");
+            }
+
+            if (individualMerchant?.unique_id === id) {
+                setIndividualMerchant(null);
+            }
+        } catch (err: any) {
+            setMerchants(previousState);
+            setError(err.message || "Failed to remove vendor from system index data nodes.");
         } finally {
             setIsLoading(false);
         }
+    }, [merchants, individualMerchant]);
+
+    const resetActiveMerchant = useCallback(() => {
+        setIndividualMerchant(null);
     }, []);
 
+    const contextValue = useMemo(() => ({
+        merchants,
+        individualMerchant,
+        isLoading,
+        loadingIndividual,
+        error,
+        clearError,
+        refreshMerchantData,
+        fetchIndividualMerchant,
+        ActivateMerchantProfile,
+        DeactivateMerchantProfile,
+        removeVendorAccount,
+        resetActiveMerchant
+    }), [
+        merchants,
+        individualMerchant,
+        isLoading,
+        loadingIndividual,
+        error,
+        clearError,
+        refreshMerchantData,
+        fetchIndividualMerchant,
+        ActivateMerchantProfile,
+        DeactivateMerchantProfile,
+        removeVendorAccount,
+        resetActiveMerchant
+    ]);
+
     return (
-        <MerchantsContext.Provider
-            value={{
-                merchants,
-                isLoading,
-                error,
-                refreshMerchantData,
-                onboardNewVendor,
-                updateMerchantDetails,
-                updatePlatformTakeRate,
-                toggleVendorVerification,
-                removeVendorAccount
-            }}
-        >
+        <MerchantsContext.Provider value={contextValue}>
             {children}
         </MerchantsContext.Provider>
     );
 }
+
+// ==========================================
+// --- CUSTOM HOOK ---
+// ==========================================
 
 export function useDirectMerchants() {
     const context = useContext(MerchantsContext);

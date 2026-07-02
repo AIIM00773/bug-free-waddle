@@ -4,12 +4,12 @@ import {
     MessageSquare,
     PanelLeftClose,
     PanelLeftOpen,
-    Plus,
     ShoppingCart,
     LogIn,
     User2,
     UserPlus2,
-    Trash2
+    Trash2,
+    Edit
 } from 'lucide-react';
 import { useAuth } from "../Providers/AuthContex";
 import { useConversations } from "../Providers/ConversationContext";
@@ -33,7 +33,7 @@ export default function HomeSider() {
             {!sidebarOpen && (
                 <button
                     onClick={() => setSidebarOpen(true)}
-                    className="fixed top-4 left-4 z-40 p-2.5 bg-white border border-slate-200 shadow-md rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition active:scale-95 cursor-pointer"
+                    className="fixed top-14 left-4 z-40 p-2.5 bg-white border border-slate-200 shadow-md rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition active:scale-95 cursor-pointer"
                     title="Open Sidebar"
                 >
                     <PanelLeftOpen className="h-4 w-4" />
@@ -42,18 +42,18 @@ export default function HomeSider() {
 
             {/* SIDEBAR CONTAINER FRAME */}
             <aside
-                className={`h-full flex flex-col bg-white border-r border-slate-200/80 text-slate-700 transition-all duration-300 ease-in-out shrink-0 overflow-hidden relative z-30
-                    ${sidebarOpen ? 'w-[260px]' : 'w-0 border-r-0'}
+                className={`h-full flex flex-col bg-white border-r border-emerald-200/90  text-slate-700 transition-all duration-300 ease-in-out shrink-0 overflow-hidden relative z-30
+                    ${sidebarOpen ? 'w-[240px]' : 'w-0 border-r-0'}
                 `}
             >
                 {/* HEADER ACTIONS BLOCK */}
                 <div className="p-4 flex items-center justify-between gap-3 shrink-0 border-b border-slate-100/60">
                     <button
                         onClick={startNewChatFrame}
-                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-3 py-2.5 text-xs font-bold w-full text-center transition-all shadow-sm shadow-emerald-600/10 active:scale-[0.98] cursor-pointer"
+                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl px-3 py-2.5 text-xs font-bold w-[fitcontents] text-center transition-all shadow-sm shadow-emerald-600/10 active:scale-[0.98] cursor-pointer"
                     >
-                        <Plus className="h-4 w-4 stroke-[2.5]" />
-                        <span>New Search</span>
+                        <Edit className="h-4 w-4 stroke-[2.5]" />
+                        <span>New </span>
                     </button>
                     <button
                         onClick={() => setSidebarOpen(false)}
@@ -104,7 +104,7 @@ export default function HomeSider() {
                             ))
                         ) : (
                             <div className="px-3 py-8 text-center select-none">
-                                <p className="text-[11px] text-slate-400 italic">No search metrics processed yet.</p>
+                                <p className="text-[11px] text-slate-400 ">No searches  yet.</p>
                             </div>
                         )}
                     </div>
@@ -133,7 +133,7 @@ export default function HomeSider() {
                     )}
 
                     {/* RENDERS FOR ANONYMOUS VISITOR SESSIONS */}
-                    {!isAuthenticated && !isLoading && (
+                    {!isAuthenticated  && !isLoading && (
                         <div className="grid grid-cols-2 gap-2">
                             <Link to="/auth"
                                 onClick={() => setAuthRoute("login")}

@@ -27,7 +27,6 @@ import AdminDashboardView from './Views/AdminDashboardView';
 import ProductCatalogView from './Views/ProductCatalogView';
 import MarketplaceProfilesView from './Views/MarketplaceProfilesView';
 import TaxonomyMatricesView from './Views/TaxonomyMatricesView';
-import CurrencyLedgerView from './Views/CurrencyLedgerView';
 import PartnerMerchantsView from './Views/PartnerMerchantsView';
 import OrderRecordsView from './Views/OrderRecordsView';
 import CartAnalyticsView from './Views/CartAnalyticsView';
@@ -40,7 +39,6 @@ type ActiveView =
   | 'dashboard'
   | 'products'
   | 'marketplaces'
-  | 'currencies'
   | 'taxonomy'
   | 'merchants'
   | 'users'
@@ -78,7 +76,6 @@ export default function App() {
     { id: 'dashboard', label: 'Operations Dashboard', icon: LayoutDashboard },
     { id: 'marketplaces', label: 'Marketplace Profiles', icon: Globe },
     { id: 'taxonomy', label: 'Taxonomy Matrices', icon: Layers },
-    { id: 'currencies', label: 'Currency Ledger', icon: Coins },
   ];
 
   const businessDataGroup: NavItem[] = [
@@ -133,7 +130,6 @@ export default function App() {
       case 'products': return <ProductCatalogView />;
       case 'taxonomy': return <TaxonomyMatricesView />;
       case 'marketplaces': return <MarketplaceProfilesView />;
-      case 'currencies': return <CurrencyLedgerView />;
       case 'merchants': return <PartnerMerchantsView />;
       case 'users': return <PlatformUsersView />;
       case 'orders': return <OrderRecordsView />;

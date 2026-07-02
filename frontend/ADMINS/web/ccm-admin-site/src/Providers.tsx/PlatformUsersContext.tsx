@@ -1,7 +1,10 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 
-export interface AppUserNode {
-    id: string;
+// ======================================================
+// TYPE DEFINITIONS & SCHEMAS
+// ======================================================
+export interface AppUser {
+    id: string; 
     maskedEmail: string;
     clearTextEmailProxy: string;
     dateJoined: string;
@@ -10,195 +13,191 @@ export interface AppUserNode {
     totalAlertsConfigured: number;
 }
 
+export type CreateUserPayload = Omit<AppUser, 'id' | 'dateJoined' | 'maskedEmail'>;
+
 interface UsersContextType {
-    users: AppUserNode[];
+    users: AppUser[];
     isLoading: boolean;
     error: string | null;
     refreshDirectory: () => Promise<void>;
-    createNewUser: (user: Omit<AppUserNode, 'id' | 'dateJoined' | 'maskedEmail'>) => Promise<void>;
-    updateUserRole: (id: string, newRole: AppUserNode['accountRole']) => Promise<void>;
-    mutateLifecycleState: (id: string, targetStatus: AppUserNode['accountStatus']) => Promise<void>;
-    purgeUserAccount: (id: string) => Promise<void>;
+    createNewUser: (payload: CreateUserPayload) => Promise<void>;
+    updateUserRole: (id: string, newRole: AppUser['accountRole']) => Promise<void>;
+    updateUserStatus: (id: string, targetStatus: AppUser['accountStatus']) => Promise<void>;
+    deleteUserAccount: (id: string) => Promise<void>;
 }
 
-const SEED_DIRECTORY_NODES: AppUserNode[] = [
-    {
-        id: "USR-0041-KE",
-        maskedEmail: "mwangi.*******@gmail.com",
-        clearTextEmailProxy: "mwangi.dev@gmail.com",
-        dateJoined: "2026-05-12",
-        accountRole: "system_developer",
-        accountStatus: "active",
-        totalAlertsConfigured: 14
-    },
-    {
-        id: "USR-9912-KE",
-        maskedEmail: "kamau.******@outlook.com",
-        clearTextEmailProxy: "kamau.j@outlook.com",
-        dateJoined: "2026-05-28",
-        accountRole: "standard_user",
-        accountStatus: "active",
-        totalAlertsConfigured: 3
-    },
-    {
-        id: "USR-3049-UG",
-        maskedEmail: "atieno.******@yahoo.com",
-        clearTextEmailProxy: "atieno_fit@yahoo.com",
-        dateJoined: "2026-06-02",
-        accountRole: "standard_user",
-        accountStatus: "pending_verification",
-        totalAlertsConfigured: 0
-    },
-    {
-        id: "USR-1102-TZ",
-        maskedEmail: "bad.actor.*****@gmail.com",
-        clearTextEmailProxy: "bad.actor.scraping@gmail.com",
-        dateJoined: "2026-06-05",
-        accountRole: "standard_user",
-        accountStatus: "suspended_breach",
-        totalAlertsConfigured: 89
-    }
-];
-
+// ======================================================
+// CONFIGURATION & CORE HELPERS
+// ======================================================
 const UsersContext = createContext<UsersContextType | undefined>(undefined);
+const TOKEN_KEY = 'soko_ai_admin_token';
+const API_BASE_URL = 'http://127.0.0.1:8000/adm/root/api/v1/cd7bbe787516468fbd92b361b6be452f/users';
 
+const getAuthHeaders = (): HeadersInit => {
+    try {
+        const rawTokens = sessionStorage.getItem(TOKEN_KEY);
+        const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+        
+        return {
+            'Content-Type': 'application/json',
+            ...(access ? { 'Authorization': `Bearer ${access}` } : {}),
+        };
+    } catch {
+        return { 'Content-Type': 'application/json' };
+    }
+};
+
+// ======================================================
+// PROVIDER ENGINE IMPLEMENTATION
+// ======================================================
 export function PlatformUsersProvider({ children }: { children: React.ReactNode }) {
-    const [users, setUsers] = useState<AppUserNode[]>(SEED_DIRECTORY_NODES);
+    const [users, setUsers] = useState<AppUser[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Helper to generate a standardized email mask matchable to custom Django regex backends
-    const generateMask = (email: string): string => {
-        const [name, domain] = email.split('@');
-        if (!name || !domain) return '******@anonymous.internal';
-        const visible = name.substring(0, Math.min(3, name.length));
-        return `${visible}.*******@${domain}`;
-    };
-
+    // 1. Fetch User Directory (GET)
     const refreshDirectory = useCallback(async () => {
         setIsLoading(true);
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            // Simulating picking up upstream changes safely
-            setUsers(prev => [...prev]);
-        } catch (err) {
-            setError("Failed to sync client state with global IAM user directory service.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    const createNewUser = useCallback(async (newUserPayload: any) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 600));
-
-            const emailLower = newUserPayload.clearTextEmailProxy.trim().toLowerCase();
-
-            setUsers((prev) => {
-                if (prev.some(u => u.clearTextEmailProxy.toLowerCase() === emailLower)) {
-                    throw new Error(`Data Integrity Exception: Email "${emailLower}" already registers an active identity link.`);
-                }
-
-                const generatedNode: AppUserNode = {
-                    id: `USR-${Math.floor(1000 + Math.random() * 9000)}-KE`,
-                    clearTextEmailProxy: emailLower,
-                    maskedEmail: generateMask(emailLower),
-                    dateJoined: new Date().toISOString().split('T')[0],
-                    accountRole: newUserPayload.accountRole,
-                    accountStatus: newUserPayload.accountStatus,
-                    totalAlertsConfigured: 0
-                };
-
-                return [generatedNode, ...prev];
+            const response = await fetch(`${API_BASE_URL}/`, {
+                method: 'GET',
+                headers: getAuthHeaders(),
             });
-        } catch (err: any) {
-            setError(err.message || "Failed to populate identity database mapping.");
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+            const data = await response.json();
 
-    const updateUserRole = useCallback(async (id: string, newRole: AppUserNode['accountRole']) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setUsers(prev => prev.map(u => u.id === id ? { ...u, accountRole: newRole } : u));
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || "Failed to sync client state with user directory.");
+            }
+            setUsers(data.users || data);
         } catch (err) {
-            setError("Failed to commit authorization role mutation parameters.");
+            setError(err instanceof Error ? err.message : "An unknown sync error occurred.");
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    const mutateLifecycleState = useCallback(async (id: string, targetStatus: AppUserNode['accountStatus']) => {
+    // 2. Provision New User (POST)
+    const createNewUser = useCallback(async (payload: CreateUserPayload) => {
         setIsLoading(true);
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setUsers(prev => prev.map(u => {
-                if (u.id === id) {
-                    if (u.accountRole === 'system_developer' && targetStatus === 'suspended_breach') {
-                        throw new Error("Security Guardrail Exception: Core engineering accounts cannot be modified to suspended workflows.");
-                    }
-                    return { ...u, accountStatus: targetStatus };
-                }
-                return u;
-            }));
-        } catch (err: any) {
-            setError(err.message || "Failed to update target verification node lifecycle state.");
-            throw err;
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    const purgeUserAccount = useCallback(async (id: string) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            setUsers(prev => {
-                const target = prev.find(u => u.id === id);
-                if (target?.accountRole === 'system_developer') {
-                    throw new Error("Fatal Security Overwrite Prevention: Cannot purge an active Core Engineer node from the live registry.");
-                }
-                return prev.filter(u => u.id !== id);
+            const response = await fetch(`${API_BASE_URL}/`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(payload),
             });
-        } catch (err: any) {
-            setError(err.message || "Failed to safely decommission identity vector context.");
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || "Failed to create identity record mapping.");
+            }
+            setUsers((prev) => [data, ...prev]);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to execute create operations.");
             throw err;
         } finally {
             setIsLoading(false);
         }
     }, []);
+
+    // 3. Mutate Administrative Authorization Role (PUT)
+    const updateUserRole = useCallback(async (id: string, newRole: AppUser['accountRole']) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/${id}/`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ accountRole: newRole }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || "Failed to commit authorization role modifications.");
+            }
+            setUsers((prev) => prev.map((u) => (u.id === id ? data : u)));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to complete security role change.");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 4. Mutate Security Lifecycle State (PUT)
+    const updateUserStatus = useCallback(async (id: string, targetStatus: AppUser['accountStatus']) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/${id}/`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ accountStatus: targetStatus }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || data.detail || "Failed to update target node lifecycle state.");
+            }
+            setUsers((prev) => prev.map((u) => (u.id === id ? data : u)));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to alter account validation status.");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // 5. Decommission Identity Vector (DELETE)
+    const deleteUserAccount = useCallback(async (id: string) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/${id}/`, {
+                method: 'DELETE',
+                headers: getAuthHeaders(),
+            });
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || data.detail || "Failed to safely decommission identity context.");
+            }
+            setUsers((prev) => prev.filter((u) => u.id !== id));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Decommission execution pipeline failed.");
+            throw err;
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Memoize value to lock down and prevent downstream component updates
+    const contextValue = useMemo(() => ({
+        users,
+        isLoading,
+        error,
+        refreshDirectory,
+        createNewUser,
+        updateUserRole,
+        updateUserStatus,
+        deleteUserAccount
+    }), [users, isLoading, error, refreshDirectory, createNewUser, updateUserRole, updateUserStatus, deleteUserAccount]);
 
     return (
-        <UsersContext.Provider
-            value={{
-                users,
-                isLoading,
-                error,
-                refreshDirectory,
-                createNewUser,
-                updateUserRole,
-                mutateLifecycleState,
-                purgeUserAccount
-            }}
-        >
+        <UsersContext.Provider value={contextValue}>
             {children}
         </UsersContext.Provider>
     );
 }
 
+// ======================================================
+// CONSUMPTION HOOK
+// ======================================================
 export function usePlatformUsers() {
     const context = useContext(UsersContext);
     if (!context) {
-        throw new Error("usePlatformUsers hook must be bound within a PlatformUsersProvider node tree context.");
+        throw new Error("usePlatformUsers must be executed inside an initialized PlatformUsersProvider engine wrapper.");
     }
     return context;
 }

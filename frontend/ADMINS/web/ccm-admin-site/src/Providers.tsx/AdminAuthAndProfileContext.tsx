@@ -7,14 +7,24 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
+// ======================================================
+// CONFIGURATION & ENDPOINTS
+// ======================================================
 const STORAGE_KEY = "soko_ai_admin_user";
 const TOKEN_KEY = "soko_ai_admin_token";
-const API_BASE = "http://127.0.0.1:8000";
+
+// Unified API routing to prevent path duplication
+const API_BASE = "http://127.0.0.1:8000/adm/root/api/v1/cd7bbe787516468fbd92b361b6be452f";
+const ENDPOINTS = {
+    LOGIN: `${API_BASE}/auth/login/`,
+    SIGNUP: `${API_BASE}/auth/signup/`,
+    ME: `${API_BASE}/auth/me/`,
+    REFRESH: `http://127.0.0.1:8000/adm/root/api/v1/4f6d29e7e37e45df95cef6185d7e9123/token/refresh/`,
+} as const;
 
 // ======================================================
-// TYPES (MATCH BACKEND RESPONSE)
+// TYPES
 // ======================================================
-
 export interface AdminUser {
     id: number;
     username: string;
@@ -30,7 +40,7 @@ export interface AuthTokens {
     refresh: string;
 }
 
-interface LoginResponse {
+export interface LoginResponse {
     access: string;
     refresh: string;
     user: AdminUser;
@@ -56,16 +66,10 @@ interface AdminAuthContextType {
     getRefreshToken: () => string | null;
 }
 
-// ======================================================
 // CONTEXT
-// ======================================================
-
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
-// ======================================================
 // PROVIDER
-// ======================================================
-
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const [sessionToken, setSessionToken] = useState<AuthTokens | null>(() => {
         try {
@@ -94,7 +98,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     // ======================================================
     // HELPERS
     // ======================================================
-
     const clearAuthError = () => setAuthError(null);
     const getAccessToken = () => sessionToken?.access ?? null;
     const getRefreshToken = () => sessionToken?.refresh ?? null;
@@ -115,45 +118,49 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
     }, []);
 
-    // ======================================================
-    // CORE ASYNCHRONOUS ENGINE OPERATIONS
-    // ======================================================
 
+
+    
+    // CORE ASYNCHRONOUS ENGINE OPERATIONS
     const login = async (username: string, password: string): Promise<boolean> => {
         setIsLoading(true);
         setAuthError(null);
+        setIsMfaRequired(false); 
 
         try {
-            const response = await fetch(`${API_BASE}/adm/root/auth/login/`, {
+            const response = await fetch(ENDPOINTS.LOGIN, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
             });
 
-            const data: LoginResponse = await response.json();
+            const data = await response.json();
 
             if (!response.ok) {
-                throw new Error((data as any)?.detail || "Invalid username or password");
+                throw new Error(data?.detail || "Invalid username or password");
             }
 
+            // Handle custom 2-step verification requirement
             if (data.mfa_required) {
                 setIsMfaRequired(true);
-                return false;
+                return false; 
             }
 
             persistAuth({ access: data.access, refresh: data.refresh }, data.user);
             return true;
-        } catch (error: any) {
-            setAuthError(error?.message ?? "Authentication failed");
+        } catch (error) {
+            setAuthError(error instanceof Error ? error.message : "Authentication failed");
             return false;
         } finally {
             setIsLoading(false);
         }
     };
 
+
+
     const refreshAccessToken = useCallback(async (currentRefreshToken: string): Promise<string | null> => {
         try {
-            const response = await fetch(`${API_BASE}/adm/root/auth/token/refresh/`, {
+            const response = await fetch(ENDPOINTS.REFRESH, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ refresh: currentRefreshToken }),
@@ -168,8 +175,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+
     const refreshAuth = useCallback(async () => {
-        // Read directly from storage to get the fresh tokens for bootstrap initialization execution
         let tokenData: AuthTokens | null = null;
         try {
             const stored = sessionStorage.getItem(TOKEN_KEY);
@@ -184,10 +192,11 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            let response = await fetch(`${API_BASE}/adm/root/auth/me/`, {
+            let response = await fetch(ENDPOINTS.ME, {
                 headers: { Authorization: `Bearer ${tokenData.access}` },
             });
 
+            // Handle token expiration seamlessly
             if (response.status === 401 && tokenData.refresh) {
                 const newAccessToken = await refreshAccessToken(tokenData.refresh);
 
@@ -203,7 +212,7 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
                 setSessionToken(updatedTokens);
                 sessionStorage.setItem(TOKEN_KEY, JSON.stringify(updatedTokens));
 
-                response = await fetch(`${API_BASE}/adm/root/auth/me/`, {
+                response = await fetch(ENDPOINTS.ME, {
                     headers: { Authorization: `Bearer ${newAccessToken}` },
                 });
             }
@@ -220,10 +229,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
         }
     }, [refreshAccessToken, logout]);
 
-    // ======================================================
-    // INITIALIZATION LOCK
-    // ======================================================
 
+
+    // INITIALIZATION LOCK
     useEffect(() => {
         refreshAuth();
     }, [refreshAuth]);
@@ -253,7 +261,6 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 // ======================================================
 // HOOK
 // ======================================================
-
 export function useAdminAuth() {
     const ctx = useContext(AdminAuthContext);
     if (!ctx) {

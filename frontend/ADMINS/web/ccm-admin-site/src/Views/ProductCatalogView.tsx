@@ -14,6 +14,8 @@ import {
 } from 'lucide-react';
 import { useCatalog } from '../Providers.tsx/ProductCatalogContext';
 import type { Product } from '../Providers.tsx/ProductCatalogContext';
+import { useDirectMerchants } from '../Providers.tsx/PartnerMerchantsContext';
+import { useTaxonomyMatrices } from '../Providers.tsx/TaxonomyMatricesContext';
 
 export default function ProductCatalogView() {
   const {
@@ -27,22 +29,28 @@ export default function ProductCatalogView() {
     getCatalog
   } = useCatalog();
 
+  // Integrated context matrices
+  const { merchants } = useDirectMerchants();
+  const { brands, categories } = useTaxonomyMatrices();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Form State Nodes
-  const [newProduct, setNewProduct] = useState<Omit<Product, 'prevPrice'>>({
+  // Form State Nodes mapped exactly to your database structure
+  const [newProduct, setNewProduct] = useState<Omit<Product, 'unique_id' | 'discount_percentage' | 'created_at'>>({
     title: '',
     sku: '',
     description: '',
-    category: '',
-    brand: '',
-    merchant: '',
-    marketplace: '',
-    currentPrice: 0,
-    currency: 'KES',
-    inStock: true
+    category: '', // Baseline string for smooth select dropdown tracking
+    brand: '',    // Baseline string for smooth select dropdown tracking
+    merchant: '',  // Tracks the target ForeignKey ID as a string state string
+    original_price: 0,
+    color:'',
+    size:'',
+    deal_price: 0,
+    primary_image_url: 'https://images.sokoai.internal/placeholder.png',
+    is_available: true
   });
 
   // Handle live incremental text query matching
@@ -58,14 +66,20 @@ export default function ProductCatalogView() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProduct.title || !newProduct.sku) return;
+    if (!newProduct.title || !newProduct.sku || !newProduct.merchant) return;
 
-    await addToCatalog({
+    // Build processing block converting non-selected values cleanly into null targets
+    const processedPayload = {
       ...newProduct,
-      prevPrice: null
-    });
+      merchant: Number(newProduct.merchant),
+      category: newProduct.category === '' ? null : newProduct.category,
+      brand: newProduct.brand === '' ? null : newProduct.brand,
+    };
 
-    // Reset workflow allocations
+    // Transmit sanitized operational block structure to context layer
+    await addToCatalog(processedPayload);
+
+    // Reset workflow allocations back to empty baseline states
     setNewProduct({
       title: '',
       sku: '',
@@ -73,10 +87,12 @@ export default function ProductCatalogView() {
       category: '',
       brand: '',
       merchant: '',
-      marketplace: '',
-      currentPrice: 0,
-      currency: 'KES',
-      inStock: true
+      original_price: 0,
+      deal_price: 0,
+      primary_image_url: 'https://images.sokoai.internal/placeholder.png',
+      is_available: true,
+      color:'',
+      size:'',
     });
     setIsDrawerOpen(false);
   };
@@ -136,9 +152,9 @@ export default function ProductCatalogView() {
               className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-8 py-2 text-xs font-medium text-slate-700 appearance-none focus:outline-hidden focus:border-slate-300 focus:bg-white cursor-pointer transition-all"
             >
               <option value="all">All Classifications</option>
-              <option value="Infrastructure">Infrastructure</option>
-              <option value="Data Engine">Data Engine</option>
-              <option value="Gym Equipments">Gym Equipments</option>
+              {categories?.map((cat: any) => (
+                <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+              ))}
             </select>
             <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
@@ -170,21 +186,26 @@ export default function ProductCatalogView() {
             <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
               {products.length > 0 ? (
                 products.map((product) => (
-                  <tr key={product.sku} className="hover:bg-slate-50/40 transition-colors">
+                  <tr key={product.unique_id} className="hover:bg-slate-50/40 transition-colors">
 
                     {/* Primary Identifier Mapping Node Block */}
                     <td className="py-3.5 px-4 max-w-xs md:max-w-sm">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 object-cover rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0 font-mono text-[9px]">
-                          CORE
-                        </div>
+                        <img 
+                          src={product.primary_image_url} 
+                          alt="core" 
+                          className="h-10 w-10 object-cover rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0 font-mono text-[9px]"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.sokoai.internal/placeholder.png';
+                          }}
+                        />
                         <div className="min-w-0 space-y-0.5">
-                          <span className="text-[10px] font-mono text-slate-400 uppercase block tracking-tight">{product.sku}</span>
+                          <span className="text-[10px] font-mono text-slate-400 uppercase block tracking-tight">{product.sku || "NO-SKU"}</span>
                           <p className="text-slate-800 text-xs font-semibold truncate" title={product.title}>
                             {product.title}
                           </p>
                           <span className="text-[10px] text-slate-400 block truncate font-normal">
-                            {product.description}
+                            {product.description || "No description provided."}
                           </span>
                         </div>
                       </div>
@@ -193,7 +214,11 @@ export default function ProductCatalogView() {
                     <td className="py-3.5 px-4 whitespace-nowrap text-slate-600">
                       <div className="flex items-center gap-1.5">
                         <Globe size={12} className="text-slate-400" />
-                        <span>{product.merchant || "System Kernel"}</span>
+                        <span>
+                          {typeof product.merchant === 'object' 
+                            ? (product.merchant as any)?.name 
+                            : merchants?.find(m => m.unique_id === String(product.merchant))?.unique_id || `Merchant Node ID: ${product.merchant}`}
+                        </span>
                       </div>
                     </td>
 
@@ -206,18 +231,18 @@ export default function ProductCatalogView() {
 
                     <td className="py-3.5 px-4 whitespace-nowrap">
                       <p className="text-slate-900 font-semibold">
-                        {product.currentPrice.toLocaleString()}{' '}
-                        <span className="text-[10px] text-slate-400 font-medium">{product.currency || 'USD'}</span>
+                        {product.deal_price.toLocaleString()}{' '}
+                        <span className="text-[10px] text-slate-400 font-medium">KES</span>
                       </p>
                     </td>
 
-                    <td className="py-3.5 px-4延 whitespace-nowrap">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <div className="space-y-1">
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-semibold tracking-wide ${product.inStock
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-sm font-semibold tracking-wide ${product.is_available
                             ? 'bg-emerald-50 border border-emerald-100 text-emerald-700'
                             : 'bg-rose-50 border border-rose-100 text-rose-700'
                           }`}>
-                          {product.inStock ? 'Active' : 'Depleted'}
+                          {product.is_available ? 'Active' : 'Depleted'}
                         </span>
                       </div>
                     </td>
@@ -232,7 +257,7 @@ export default function ProductCatalogView() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => removeFromCatalog(product.sku)}
+                          onClick={() => product.unique_id && removeFromCatalog(product.unique_id)}
                           className="p-1.5 bg-white border border-slate-200 text-slate-400 hover:text-rose-600 rounded-lg shadow-xs hover:border-rose-200 transition-all cursor-pointer inline-flex items-center"
                         >
                           <Trash2 size={12} />
@@ -291,65 +316,78 @@ export default function ProductCatalogView() {
                     <label className="block text-slate-500">Hardware SKU Block</label>
                     <input
                       type="text" required
-                      value={newProduct.sku}
+                      value={newProduct.sku || ''}
                       onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
                       placeholder="SKU-BASE-01"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
                     />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 relative">
                     <label className="block text-slate-500">Brand Module</label>
-                    <input
-                      type="text"
+                    <select
                       value={newProduct.brand || ''}
                       onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
-                      placeholder="Soko AI Core"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
-                    />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 appearance-none focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all cursor-pointer"
+                    >
+                      <option value="">-- Null (Not Set) --</option>
+                      {brands?.map((brand: any) => (
+                        <option key={brand.id || brand.name} value={brand.name}>{brand.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 bottom-2.5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
+                  <div className="space-y-1 relative">
                     <label className="block text-slate-500">Classification Category</label>
-                    <input
-                      type="text"
+                    <select
                       value={newProduct.category || ''}
                       onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                      placeholder="Infrastructure"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
-                    />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 appearance-none focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all cursor-pointer"
+                    >
+                      <option value="">-- Null (Not Set) --</option>
+                      {categories?.map((cat: any) => (
+                        <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 bottom-2.5 text-slate-400 pointer-events-none" />
                   </div>
-                  <div className="space-y-1">
-                    <label className="block text-slate-500">Market Domain</label>
-                    <input
-                      type="text"
-                      value={newProduct.merchant || ''}
+                  <div className="space-y-1 relative">
+                    <label className="block text-slate-500">Merchant Node Matrix</label>
+                    <select
+                      required
+                      value={newProduct.merchant}
                       onChange={(e) => setNewProduct({ ...newProduct, merchant: e.target.value })}
-                      placeholder="Alpha Region Hub"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
-                    />
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 appearance-none focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all cursor-pointer"
+                    >
+                      <option value="" disabled>Select Merchant Hub</option>
+                      {merchants?.map((m: any) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-3 bottom-2.5 text-slate-400 pointer-events-none" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="block text-slate-500">Price Points</label>
+                    <label className="block text-slate-500">Original Price</label>
                     <input
                       type="number" required
-                      value={newProduct.currentPrice || ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, currentPrice: Number(e.target.value) })}
+                      value={newProduct.original_price || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, original_price: Number(e.target.value) })}
                       placeholder="0.00"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="block text-slate-500">Asset Currency</label>
+                    <label className="block text-slate-500">Active Deal Price</label>
                     <input
-                      type="text"
-                      value={newProduct.currency || ''}
-                      onChange={(e) => setNewProduct({ ...newProduct, currency: e.target.value })}
-                      placeholder="KES"
+                      type="number" required
+                      value={newProduct.deal_price || ''}
+                      onChange={(e) => setNewProduct({ ...newProduct, deal_price: Number(e.target.value) })}
+                      placeholder="0.00"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all"
                     />
                   </div>
@@ -359,7 +397,7 @@ export default function ProductCatalogView() {
                   <label className="block text-slate-500">System Functional Description</label>
                   <textarea
                     rows={3}
-                    value={newProduct.description}
+                    value={newProduct.description || ''}
                     onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                     placeholder="Enter granular operational telemetry description block specs..."
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-hidden focus:border-slate-300 focus:bg-white transition-all resize-none"
@@ -369,12 +407,12 @@ export default function ProductCatalogView() {
                 <div className="flex items-center gap-2 pt-2">
                   <input
                     type="checkbox"
-                    id="inStockCheck"
-                    checked={newProduct.inStock}
-                    onChange={(e) => setNewProduct({ ...newProduct, inStock: e.target.checked })}
+                    id="isAvailableCheck"
+                    checked={newProduct.is_available}
+                    onChange={(e) => setNewProduct({ ...newProduct, is_available: e.target.checked })}
                     className="h-4 w-4 accent-slate-950 rounded-sm cursor-pointer"
                   />
-                  <label htmlFor="inStockCheck" className="text-slate-600 select-none cursor-pointer">
+                  <label htmlFor="isAvailableCheck" className="text-slate-600 select-none cursor-pointer">
                     Item verified active inside pipeline tracking node scope.
                   </label>
                 </div>

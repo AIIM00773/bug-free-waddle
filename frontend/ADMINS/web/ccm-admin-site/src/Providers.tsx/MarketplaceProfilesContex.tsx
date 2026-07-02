@@ -1,13 +1,13 @@
-import  { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 
 export interface Marketplace {
+  unique_id: string | null;
   title: string;
   sku: string;
   base_url: string;
   base_search_url: string;
-  categoised_search_url: string; // Kept typo to match backend schema exactly
-
+  categorised_search_url: string;
   region_boundary: string;
   currency: string;
   index_output: string;
@@ -38,53 +38,15 @@ interface Markets {
   resetMarketFilters: () => void;
 }
 
-const MarketplaceContext = createContext<Markets | undefined>(undefined);
+export const BASE_URL = "http://127.0.0.1:8000";
 
-// Core infrastructure mock telemetry to seed data before backend connection links up
-const baselineMarketsSeed: Marketplace[] = [
-  {
-    title: "Jumia Kenya",
-    sku: "MKT-JM-KE-01",
-    base_url: "https://www.jumia.co.ke",
-    base_search_url: "https://www.jumia.co.ke/catalog/?q=",
-    categoised_search_url: "https://www.jumia.co.ke/",
-    region_boundary: "Kenya",
-    currency: "KES",
-    index_output: "soko_ai_backend.pipelines.JumiaKePipeline",
-    is_active: true,
-    is_suspended: false,
-    is_running: false,
-    logo_url: null
-  },
-  {
-    title: "Kilimall",
-    sku: "MKT-KM-KE-02",
-    base_url: "https://www.kilimall.co.ke",
-    base_search_url: "https://www.kilimall.co.ke/new/am_search?q=",
-    categoised_search_url: "https://www.kilimall.co.ke/",
-    region_boundary: "Kenya",
-    currency: "KES",
-    index_output: "soko_ai_backend.pipelines.KilimallPipeline",
-    is_active: true,
-    is_suspended: false,
-    is_running: true,
-    logo_url: null
-  },
-  {
-    title: "Copia E-Commerce",
-    sku: "MKT-CP-KE-03",
-    base_url: "https://copia.co.ke",
-    base_search_url: "https://copia.co.ke/?s=",
-    categoised_search_url: "https://copia.co.ke/",
-    region_boundary: "Kenya",
-    currency: "KES",
-    index_output: "soko_ai_backend.pipelines.CopiaPipeline",
-    is_active: false,
-    is_suspended: true,
-    is_running: false,
-    logo_url: null
-  }
-];
+export const BASE_ROUTES = {
+  BASE_ROUTE_GET: "/adm/root/api/v1/cd7bbe787516468fbd92b361b6be452f/markets/",  // GET and POST 
+  BASE_ROUTE_UPDATE_DELETE: "/adm/root/api/v1/cd7bbe787516468fbd92b361b6be452f/markets/update/delete/",  //update/delete
+  BASE_ROUTE_FILTER: "",
+};
+
+const MarketplaceContext = createContext<Markets | undefined>(undefined);
 
 export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [markets, setMarkets] = useState<Marketplace[]>([]);
@@ -92,7 +54,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-fetch active scraped target frames on instantiation
+  // Auto-fetch active merchant networks on instantiation
   useEffect(() => {
     refreshMarkets();
   }, []);
@@ -102,27 +64,67 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     try {
-      // Simulate remote network handshake execution payload
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setMarkets(baselineMarketsSeed);
-      setFilteredMarkets(baselineMarketsSeed);
-    } catch (err) {
-      setError("Failed to stream connection nodes layout from backend network hub.");
+      const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+      const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+
+      const response = await fetch(`${BASE_URL}${BASE_ROUTES.BASE_ROUTE_GET}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(access ? { Authorization: `Bearer ${access}` } : {}),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error fetching markets from server.");
+      }
+
+      const resp = await response.json();
+      setMarkets(resp.markets || []);
+      setFilteredMarkets(resp.markets || []);
+    } catch (err: any) {
+      setError(err.message || "Failed to stream connection nodes layout from backend network hub.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Add a new target marketplace scraper node registry block
+
+
+
+
+
+
+  // Add a new merchant provider node registry block
   const addNew = async (newMarketplace: Marketplace) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+      const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+
+      const response = await fetch(`${BASE_URL}${BASE_ROUTES.BASE_ROUTE_GET}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(access ? { Authorization: `Bearer ${access}` } : {}),
+        },
+        body: JSON.stringify(newMarketplace)
+      });
+
+      if (!response.ok) {
+
+        const error = await response.json()
+
+        setError(error.error);
+        return
+      }
       setMarkets((prev) => {
         const next = [...prev, newMarketplace];
         setFilteredMarkets(next);
         return next;
       });
+
     } catch (err) {
       setError("Database mutation failure: Could not record current node configuration map.");
     } finally {
@@ -130,11 +132,35 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
+
+
+
+
   // Remove tracking node completely via structural identification index match
   const removeMarket = async (market_sku: string) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
+      const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+      const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+
+      const response = await fetch(`${BASE_URL}${BASE_ROUTES.BASE_ROUTE_UPDATE_DELETE}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          ...(access ? { Authorization: `Bearer ${access}` } : {})
+
+        },
+        body: JSON.stringify({ "sku": market_sku })
+      });
+
+      if (!response.ok) {
+        const resp = await response.json();
+        setError("Error deleting the marketplace : " + `${resp.error}`)
+        return
+      };
+
+
       setMarkets((prev) => {
         const next = prev.filter((m) => m.sku !== market_sku);
         setFilteredMarkets(next);
@@ -147,24 +173,60 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Edit/Mutate an active marketplace record setup safely inline
-  const editMarket = async (new_version: Marketplace) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      setMarkets((prev) => {
-        const next = prev.map((m) => (m.sku === new_version.sku ? new_version : m));
-        setFilteredMarkets(next);
-        return next;
-      });
-    } catch (err) {
-      setError("Database structural edit transaction block atomic write anomaly.");
-    } finally {
-      setIsLoading(false);
+
+
+
+
+
+
+
+
+
+
+
+// Edit/Mutate an active marketplace record setup safely inline
+const editMarket = async (new_version: Marketplace) => {
+  setIsLoading(true);
+  setError(null); 
+  
+  try {
+    const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+    const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+
+    const response = await fetch(`${BASE_URL}${BASE_ROUTES.BASE_ROUTE_UPDATE_DELETE}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...(access ? { Authorization: `Bearer ${access}` } : {})
+      },
+      body: JSON.stringify({"sku":new_version.sku, "is_suspended": !new_version.is_active  })
+    });
+
+    if (!response.ok) {
+      const resp = await response.json();
+      setError("Error while updating the marketplace: " + `${resp.error || response.statusText}`);
+      return;
     }
-  };
+
+    setMarkets((prev) => {
+      const next = prev.map((m) => (m.sku === new_version.sku ? new_version : m));
+      setFilteredMarkets(next);
+      return next;
+    });
+  } catch (err) {
+    setError("Database structural edit transaction block atomic write anomaly.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+
 
   // Filter Subroutines (Normalized string parsing protects against case mismatch anomalies)
+  // Note: These currently override each other. If you need stacked filtering (e.g., Active AND in a specific region), 
+  // you will eventually want to transition to a single combined `applyFilters(criteria)` function.
   const searchByTitle = (query: string) => {
     if (!query.trim()) return setFilteredMarkets(markets);
     setFilteredMarkets(
@@ -173,7 +235,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
   };
 
   const byRegion = (region: string) => {
-    if (!region || region === "all") return setFilteredMarkets(markets);
+    if (!region || region.toLowerCase() === "all") return setFilteredMarkets(markets);
     setFilteredMarkets(
       markets.filter((m) => m.region_boundary.toLowerCase() === region.toLowerCase())
     );
@@ -209,7 +271,7 @@ export function MarketplaceProvider({ children }: { children: ReactNode }) {
     byActivity,
     bySuspensionState,
     byRunningState,
-    resetMarketFilters
+    resetMarketFilters,
   };
 
   return (

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     ArrowRight,
     Eye,
@@ -7,10 +8,14 @@ import {
     AlertCircle,
     Loader2,
 } from "lucide-react";
-import { useAuth } from "./Providers/AuthContex"; // Ensure your spelling matches file path
-import type {  AuthRoute } from "./Providers/AuthContex"; // Ensure your spelling matches file path
 
-import { useNavigate } from "react-router-dom";
+
+import type { AuthRoute } from "./Providers/AuthContex";
+import { useAuth } from "./Providers/AuthContex";
+
+
+/* REGEX CONSTANTS */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthPage() {
     const {
@@ -24,12 +29,12 @@ export default function AuthPage() {
         resetPassword,
         isLoading,
         authError,
-        clearAuthError
+        clearAuthError,
     } = useAuth();
 
     const navigate = useNavigate();
 
-    /* ================= LOCAL STATE ================= */
+    /* LOCAL STATE */
     const [showPassword, setShowPassword] = useState(false);
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
     const [localError, setLocalError] = useState<string | null>(null);
@@ -44,28 +49,26 @@ export default function AuthPage() {
         agreeToTerms: false,
     });
 
-    /* ================= AUTHENTICATION GUARDS ================= */
+    /* AUTHENTICATION GUARDS */
     useEffect(() => {
         if (isAuthenticated && user) {
             navigate("/shop");
         }
     }, [isAuthenticated, user, navigate]);
 
-    /* ================= REGEX HELPER ================= */
-    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    /* ================= EVENT HANDLERS ================= */
+
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type, checked } = e.target;
 
-        setFormData((prev) => ({
-            ...prev,
-            [name]: type === "checkbox" ? checked : value,
-        }));
+        setFormData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value, }));
 
         if (localError) setLocalError(null);
         if (authError) clearAuthError();
     };
+
+
 
     const handleRouteSwitch = (route: AuthRoute) => {
         setLocalError(null);
@@ -85,7 +88,9 @@ export default function AuthPage() {
         setAuthRoute(route);
     };
 
-    /* ================= FORM SUBMISSION PROCESSOR ================= */
+
+
+    /* FORM SUBMISSION PROCESSOR */
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isLoading) return;
@@ -117,7 +122,7 @@ export default function AuthPage() {
                     }
 
                     if (!EMAIL_REGEX.test(formData.email)) {
-                        setLocalError("Please enter a structurally valid email address.");
+                        setLocalError("Please enter a valid email address.");
                         return;
                     }
 
@@ -127,7 +132,7 @@ export default function AuthPage() {
                     }
 
                     if (!formData.agreeToTerms) {
-                        setLocalError("You must read and accept the Terms & Conditions to proceed.");
+                        setLocalError("You must accept the Terms & Conditions to proceed.");
                         return;
                     }
 
@@ -143,44 +148,46 @@ export default function AuthPage() {
 
                 case "forgot-password": {
                     if (!formData.email) {
-                        setLocalError("Please input your recovery email address.");
+                        setLocalError("Please enter your registered email address.");
                         return;
                     }
 
                     if (!EMAIL_REGEX.test(formData.email)) {
-                        setLocalError("Please input a valid recovery email target structure.");
+                        setLocalError("Please enter a valid email address.");
                         return;
                     }
 
                     await forgotPassword(formData.email.trim().toLowerCase());
-                    setSuccessMessage("A password reset link has been dispatched to your email.");
-                    setFormData((p) => ({ ...p, email: "" }));
+                    setSuccessMessage("A password reset link has been sent to your email.");
+                    setFormData((prev) => ({ ...prev, email: "" }));
                     break;
                 }
 
+
                 case "reset-password": {
                     if (!formData.newPassword) {
-                        setLocalError("Please provide your new selection password.");
+                        setLocalError("Please provide your new password.");
                         return;
                     }
 
                     if (formData.newPassword.length < 8) {
-                        setLocalError("New password choices must meet the 8-character ceiling minimum.");
+                        setLocalError("New password must be at least 8 characters long.");
                         return;
                     }
 
                     await resetPassword(formData.newPassword.trim());
-                    setSuccessMessage("Password altered cleanly. Routing back to lockscreen portal...");
-                    setFormData((p) => ({ ...p, newPassword: "" }));
+                    setSuccessMessage("Password changed successfully. Redirecting to login...");
+                    setFormData((prev) => ({ ...prev, newPassword: "" }));
                     break;
                 }
             }
         } catch (err: any) {
-            setLocalError(err?.message || "An unhandled authentication event fault triggered.");
+            setLocalError(err?.message || "An unexpected error occurred during authentication.");
         }
     };
 
-    /* ================= INTERFACE CONFIG FLAGS ================= */
+    /* INTERFACE FLAGS & CONFIG */
+
     const isLogin = authRoute === "login";
     const isSignUp = authRoute === "signup";
     const isForgot = authRoute === "forgot-password";
@@ -188,13 +195,12 @@ export default function AuthPage() {
 
     const activeError = localError || authError;
 
-    // Early layout skip loop if security flags verified
     if (isAuthenticated && user) return null;
 
     return (
         <div className="min-h-screen w-screen flex bg-slate-50 text-slate-800 antialiased selection:bg-emerald-500/20">
-            
-            {/* LEFT PANEL: MARKETEERING BRAND DISPLAY */}
+
+            {/* LEFT PANEL: MARKETING & BRAND DISPLAY */}
             <div className="hidden lg:flex lg:w-[45%] bg-gradient-to-br from-emerald-50 to-slate-100 p-12 border-r border-slate-200">
                 <div className="flex flex-col justify-between h-full w-full max-w-md mx-auto">
                     <div className="font-black text-2xl tracking-tight text-emerald-600">SokoAI</div>
@@ -204,38 +210,50 @@ export default function AuthPage() {
                             Smarter shopping <br />starts right here.
                         </h1>
                         <p className="text-slate-500 text-sm leading-relaxed">
-                            Access live AI-powered product deep-scrapers, cross-marketplace price variance analysis, and instant discovery engines throughout Kenyan digital storefronts.
+                            Shop across kenya  with the help of an inteligent system .
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-sm w-fit">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                        Next-Gen Marketplace Intelligence Encryption
-                    </div>
+                    {isLogin ? (
+                        <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-sm w-fit">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                            Welcome back , Login to proceed with Smart Dsicoveries
+                        </div>
+                    ): (
+                        <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-3 rounded-xl shadow-sm w-fit">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                            Welcome to SokoAI , Authenticate  to unlock all features  
+                        </div>
+                    )}
+
+
                 </div>
             </div>
 
-            {/* RIGHT PANEL: CORE ACTION INTERACTIVE CONTENT LAYER */}
+
+
+            {/* RIGHT PANEL: INTERACTIVE CONTENT LAYER */}
             <div className="flex-1 flex items-center justify-center p-6 md:p-12">
                 <div className="w-full max-w-[440px] bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xl shadow-slate-100/50">
-                    
-                    {/* ROUTE SPECIFIC CONTENT TITLE META */}
+
+                    {/* ROUTE HEADER TEXT */}
                     <div className="mb-6">
                         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
                             {isLogin && "Welcome back"}
                             {isSignUp && "Create your account"}
-                            {isForgot && "Recover credentials"}
+                            {isForgot && "Recover account"}
                             {isReset && "Set secure password"}
                         </h2>
                         <p className="text-xs font-medium text-slate-400 mt-1.5">
-                            {isLogin && "Access your personalized Soko workspace platform dashboard."}
+                            {isLogin && "Access your personalized Soko workspace and dashboard."}
                             {isSignUp && "Begin comparing pricing across localized digital vendors."}
-                            {isForgot && "Provide structural target email routing metrics below."}
-                            {isReset && "Update token parameter payload safely via backend engine."}
+                            {isForgot && "Enter your email address to receive recovery instructions."}
+                            {isReset && "Update your credentials safely to secure your workspace account."}
                         </p>
                     </div>
 
-                    {/* DYNAMIC VALIDATION NOTIFICATION BANNERS */}
+
+                    {/* DYNAMIC ALERT NOTIFICATIONS */}
                     {activeError && (
                         <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium rounded-xl flex gap-2.5 items-start animate-fadeIn">
                             <AlertCircle className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
@@ -250,12 +268,13 @@ export default function AuthPage() {
                         </div>
                     )}
 
-                    {/* INPUT FORM SCHEMATICS */}
+
+                    {/* CORE DATA FORM */}
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        
-                        {/* FIRST & LAST NAME FIELDS */}
+
+                        {/* SIGNUP SPECIFIC FIELDS */}
                         {isSignUp && (
-                            <div className="grid grid-cols-2 gap-3.5 duration-200 ease-in-out">
+                            <div className="grid grid-cols-2 gap-3.5">
                                 <div className="space-y-1">
                                     <label className="text-xs font-bold text-slate-600">First Name</label>
                                     <input
@@ -283,44 +302,42 @@ export default function AuthPage() {
                             </div>
                         )}
 
-                        {/* ACCOUNT PARAMETERS SECTION */}
-                        {!isReset && (
-                            <div className="space-y-4">
-                                {/* Conditional Email (Omit from direct Login processing route) */}
-                                {!isLogin && (
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-600">Email Address</label>
-                                        <input
-                                            name="email"
-                                            type="email"
-                                            required
-                                            placeholder="you@domain.com"
-                                            value={formData.email}
-                                            onChange={handleChange}
-                                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-150"
-                                        />
-                                    </div>
-                                )}
 
-                                {/* Phone Field Configuration */}
-                                {!isForgot && (
-                                    <div className="space-y-1">
-                                        <label className="text-xs font-bold text-slate-600">Phone Number</label>
-                                        <input
-                                            name="phone"
-                                            type="tel"
-                                            required
-                                            placeholder="e.g., 0712345678"
-                                            value={formData.phone}
-                                            onChange={handleChange}
-                                            className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-150"
-                                        />
-                                    </div>
-                                )}
+                        {/* EMAIL ROUTING FIELD */}
+                        {!isLogin && !isReset && (
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-600">Email Address</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    required
+                                    placeholder="you@domain.com"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-150"
+                                />
                             </div>
                         )}
 
-                        {/* PASSWORDS LAYER HANDLING */}
+
+                        {/* PHONE INPUT FIELD */}
+                        {!isForgot && !isReset && (
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-slate-600">Phone Number</label>
+                                <input
+                                    name="phone"
+                                    type="tel"
+                                    required
+                                    placeholder="e.g., 0712345678"
+                                    value={formData.phone}
+                                    onChange={handleChange}
+                                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-150"
+                                />
+                            </div>
+                        )}
+
+
+                        {/* STANDARD PASSWORD FIELD */}
                         {(isLogin || isSignUp) && (
                             <div className="space-y-1">
                                 <div className="flex justify-between items-center">
@@ -356,7 +373,7 @@ export default function AuthPage() {
                             </div>
                         )}
 
-                        {/* RESET MUTATION FIELD OVERLAY */}
+                        {/* NEW PASSWORD RESET TARGET */}
                         {isReset && (
                             <div className="space-y-1">
                                 <label className="text-xs font-bold text-slate-600">New Password</label>
@@ -364,7 +381,7 @@ export default function AuthPage() {
                                     name="newPassword"
                                     type="password"
                                     required
-                                    placeholder="Set new string token"
+                                    placeholder="Enter new password"
                                     value={formData.newPassword}
                                     onChange={handleChange}
                                     className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 transition-all duration-150"
@@ -372,7 +389,7 @@ export default function AuthPage() {
                             </div>
                         )}
 
-                        {/* LEGAL COMPLIANCE TIER SELECTOR */}
+                        {/* TERMS LEGAL COMPLIANCE CHECKSUM */}
                         {isSignUp && (
                             <label className="flex items-start gap-2.5 cursor-pointer py-1 select-none group">
                                 <input
@@ -383,12 +400,12 @@ export default function AuthPage() {
                                     className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/20 accent-emerald-600"
                                 />
                                 <span className="text-xs font-medium text-slate-500 group-hover:text-slate-700 transition-colors">
-                                    I certify that I accept the Soko AI platform data parsing <span className="text-emerald-600 underline font-semibold">Terms & Privacy Policies</span>.
+                                    I accept SokoAI's data processing <span className="text-emerald-600 underline font-semibold">Terms & Privacy Policies</span>.
                                 </span>
                             </label>
                         )}
 
-                        {/* EXECUTION FORWARD BUTTON */}
+                        {/* TRANSACTION EXECUTION BUTTON */}
                         <button
                             type="submit"
                             disabled={isLoading}
@@ -400,27 +417,27 @@ export default function AuthPage() {
                                 <>
                                     {isLogin && "Sign in to workspace"}
                                     {isSignUp && "Create access profile"}
-                                    {isForgot && "Transmit recovery link"}
-                                    {isReset && "Save changes"}
+                                    {isForgot && "Send recovery link"}
+                                    {isReset && "Save new password"}
                                     <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </>
                             )}
                         </button>
                     </form>
 
-                    {/* DYNAMIC ALTERNATIVE PATH LINKS */}
+                    {/* INTERACTION SWITCH ACTION ANCHORS */}
                     <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-center text-slate-500">
                         {isLogin && (
                             <p>
-                                New to our marketplace context?{" "}
+                                New to SokoAI?{" "}
                                 <button onClick={() => handleRouteSwitch("signup")} className="text-emerald-600 font-bold hover:underline">
-                                    Register free account
+                                    Register a free account
                                 </button>
                             </p>
                         )}
                         {isSignUp && (
                             <p>
-                                Already possess an allocation space?{" "}
+                                Already have an account?{" "}
                                 <button onClick={() => handleRouteSwitch("login")} className="text-emerald-600 font-bold hover:underline">
                                     Sign in instead
                                 </button>
@@ -428,7 +445,7 @@ export default function AuthPage() {
                         )}
                         {(isForgot || isReset) && (
                             <button onClick={() => handleRouteSwitch("login")} className="text-emerald-600 font-bold hover:underline">
-                                Terminate attempt and return to login screen
+                                Return to login screen
                             </button>
                         )}
                     </div>

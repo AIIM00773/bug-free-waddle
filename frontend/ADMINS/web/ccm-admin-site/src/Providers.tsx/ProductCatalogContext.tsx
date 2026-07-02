@@ -1,25 +1,31 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
+// 1. Updated interface structural properties to accurately match Django serializer data footprints
 export interface Product {
+    unique_id?: string; 
     title: string;
-    sku: string;
-    description: string;
+    sku: string | null;
+    description: string | null;
     category: string | null;
     brand: string | null;
-    merchant: string | null;
-    marketplace: string | null;
-    prevPrice: number | null;
-    currentPrice: number;
-    currency: string | null;
-    inStock: boolean;
+    merchant: number | string; 
+    original_price: number;     
+    deal_price: number;       
+    primary_image_url: string;
+    secondary_images?: string[];
+    is_available: boolean;    
+    click_count?: number;
+    discount_percentage?: number;
+    created_at?: string;
+    color?:string;
+    size?:string;
 }
 
 interface Catalog {
     products: Product[];
     isLoading: boolean;
     error: string | null;
-
 
     // Search and Filter Functions
     searchByTitle: (title: string) => void;
@@ -32,46 +38,17 @@ interface Catalog {
     filterByOutOfStock: () => void;
     resetFilters: () => void;
 
-    // Mutation Routines
+    // Async Network Mutation Operations
     addToCatalog: (newProduct: Product) => Promise<void>;
-    removeFromCatalog: (productSku: string) => Promise<void>;
+    removeFromCatalog: (uniqueId: string) => Promise<void>;
     updateProduct: (updatedProduct: Product) => Promise<void>;
     getCatalog: () => Promise<void>;
 }
 
 const CatalogContext = createContext<Catalog | undefined>(undefined);
 
-// Initial placeholder mock data to prevent UI from breaking during initialization
-const initialMockCatalog: Product[] = [
-    {
-        title: "Enterprise AI Gateway Node",
-        sku: "SKU-SOKO-AI-01",
-        description: "High-performance processing hub for secure telemetry streaming ingestion routing.",
-        category: "Infrastructure",
-        brand: "Soko Core",
-        merchant: "Alpha Nexus",
-        marketplace: "Global Node",
-        prevPrice: 1200,
-        currentPrice: 950,
-        currency: "USD",
-        inStock: true
-    },
-    {
-        title: "Quantum Ledger Storage Core",
-        sku: "SKU-SOKO-QLS-02",
-        description: "Cryptographically bound ledger array for transactional ledger currency accounting.",
-        category: "Data Engine",
-        brand: "Ledger Stack",
-        merchant: "Soko Tech Labs",
-        marketplace: "EMEA Region",
-        prevPrice: null,
-        currentPrice: 2400,
-        currency: "USD",
-        inStock: false
-    }
-];
-
-
+// API Gateway environment context variables 
+const API_BASE_URL = "http://127.0.0.1:8000/adm/root/api/v1/fdf3a589-dd03-4be8-9de4-66922db46e55/catalogs/products/";
 
 export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const [masterProducts, setMasterProducts] = useState<Product[]>([]);
@@ -79,27 +56,122 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-
-    // Load baseline inventory data node structures on mounting sequence
     useEffect(() => {
         getCatalog();
     }, []);
 
 
+
+    // Secure Header Utility
+    const getAuthHeaders = (): HeadersInit => {
+        try {
+            const rawTokens = sessionStorage.getItem("soko_ai_admin_token");
+            const access = rawTokens ? JSON.parse(rawTokens)?.access : null;
+            return {
+                "Content-Type": "application/json",
+                ...(access ? { "Authorization": `Bearer ${access}` } : {})
+            };
+        } catch {
+            return { "Content-Type": "application/json" };
+        }
+    };
+
     const getCatalog = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            await new Promise((resolve) => setTimeout(resolve, 600));
-            setMasterProducts(initialMockCatalog);
-            setFilteredProducts(initialMockCatalog);
-        } catch (err) {
-            setError("Failed to interface with server database storage node cluster.");
+            const res = await fetch(`${API_BASE_URL}`, {
+                method: "GET",
+                headers: getAuthHeaders(),
+            });
+            if (!res.ok) throw new Error("Server synchronization failed.");
+            const data: Product[] = await res.json();
+            setMasterProducts(data);
+            setFilteredProducts(data);
+        } catch (err: any) {
+            setError(err.message || "Failed to interface with server database storage node cluster.");
         } finally {
             setIsLoading(false);
         }
     };
 
+
+
+    const addToCatalog = async (newProduct: Product) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(newProduct),
+            });
+            if (!res.ok) throw new Error("Could not persist product entity state to storage engine.");
+            const payload = await res.json();
+
+            // Sync local runtime state with backend database record response
+            setMasterProducts((prev) => {
+                const next = [payload.data, ...prev];
+                setFilteredProducts(next);
+                return next;
+            });
+        } catch (err: any) {
+            setError(err.message || "Failed to push configuration block matrix mutations onto registry.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+
+
+    const updateProduct = async (updatedProduct: Product) => {
+        if (!updatedProduct.unique_id) return;
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}details/?product_id=${updatedProduct.unique_id}/`, {
+                method: "PUT",
+                headers: getAuthHeaders(),
+                body: JSON.stringify(updatedProduct),
+            });
+            if (!res.ok) throw new Error("Upstream mutation transaction failed.");
+            const payload = await res.json();
+
+            setMasterProducts((prev) => {
+                const next = prev.map((p) => (p.unique_id === updatedProduct.unique_id ? payload.data : p));
+                setFilteredProducts(next);
+                return next;
+            });
+        } catch (err: any) {
+            setError(err.message || "Failed to write upstream atomic data change mapping blocks.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const removeFromCatalog = async (uniqueId: string) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const res = await fetch(`${API_BASE_URL}details/?product_id=${uniqueId}/`, {
+                method: "DELETE",
+                headers: getAuthHeaders(),
+            });
+            if (!res.ok) throw new Error("Drop sequence execution failed at storage cluster level.");
+
+            setMasterProducts((prev) => {
+                const next = prev.filter((p) => p.unique_id !== uniqueId);
+                setFilteredProducts(next);
+                return next;
+            });
+        } catch (err: any) {
+            setError(err.message || "Failed to drop database object identification footprint.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Client-side Memory Engine Filters
     const searchByTitle = (title: string) => {
         if (!title.trim()) return setFilteredProducts(masterProducts);
         setFilteredProducts(
@@ -110,14 +182,14 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     const searchBySku = (sku: string) => {
         if (!sku.trim()) return setFilteredProducts(masterProducts);
         setFilteredProducts(
-            masterProducts.filter((p) => p.sku.toLowerCase().includes(sku.toLowerCase()))
+            masterProducts.filter((p) => p.sku?.toLowerCase().includes(sku.toLowerCase()) ?? false)
         );
     };
 
     const searchByDescription = (desc: string) => {
         if (!desc.trim()) return setFilteredProducts(masterProducts);
         setFilteredProducts(
-            masterProducts.filter((p) => p.description.toLowerCase().includes(desc.toLowerCase()))
+            masterProducts.filter((p) => p.description?.toLowerCase().includes(desc.toLowerCase()) ?? false)
         );
     };
 
@@ -133,68 +205,20 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
 
     const filterByPriceRange = (min: number, max: number) => {
         setFilteredProducts(
-            masterProducts.filter((p) => p.currentPrice >= min && p.currentPrice <= max)
+            masterProducts.filter((p) => p.deal_price >= min && p.deal_price <= max)
         );
     };
 
     const filterByInStock = () => {
-        setFilteredProducts(masterProducts.filter((p) => p.inStock));
+        setFilteredProducts(masterProducts.filter((p) => p.is_available));
     };
 
     const filterByOutOfStock = () => {
-        setFilteredProducts(masterProducts.filter((p) => !p.inStock));
+        setFilteredProducts(masterProducts.filter((p) => !p.is_available));
     };
 
     const resetFilters = () => {
         setFilteredProducts(masterProducts);
-    };
-
-    const addToCatalog = async (newProduct: Product) => {
-        setIsLoading(true);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setMasterProducts((prev) => {
-                const next = [newProduct, ...prev];
-                setFilteredProducts(next);
-                return next;
-            });
-        } catch (err) {
-            setError("Failed to push configuration block matrix mutations onto registry.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const removeFromCatalog = async (productSku: string) => {
-        setIsLoading(true);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setMasterProducts((prev) => {
-                const next = prev.filter((p) => p.sku !== productSku);
-                setFilteredProducts(next);
-                return next;
-            });
-        } catch (err) {
-            setError("Failed to drop database object identification footprint.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const updateProduct = async (updatedProduct: Product) => {
-        setIsLoading(true);
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 400));
-            setMasterProducts((prev) => {
-                const next = prev.map((p) => (p.sku === updatedProduct.sku ? updatedProduct : p));
-                setFilteredProducts(next);
-                return next;
-            });
-        } catch (err) {
-            setError("Failed to write upstream atomic data change mapping blocks.");
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     const value: Catalog = {
@@ -219,7 +243,7 @@ export const CatalogProvider = ({ children }: { children: ReactNode }) => {
     return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>;
 };
 
-export function useCatalog() { 
+export function useCatalog() {
     const ctx = useContext(CatalogContext);
     if (!ctx) {
         throw new Error("useCatalog must be utilized inside a valid explicit CatalogProvider tree element structure.");

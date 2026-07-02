@@ -5,7 +5,7 @@ import './index.css';
 import App from './App.tsx';
 
 // Import the consolidated engine wrapper
-import { AdminWorkspaceProviders } from './Providers.tsx/indexProvider.tsx';
+import { AdminWorkspaceProviders } from './Providers.tsx/_indexProvider.tsx';
 
 const router = createBrowserRouter([
   {

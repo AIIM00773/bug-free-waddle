@@ -1,82 +1,108 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-// --- CORE INTERFACES (Strictly matching your application architecture) ---
-
+// --- CORE INTERFACES ---
 export interface Category {
-  category_title: string;
-  category_node_id: string;
-  identity_definnition: string | null; 
+  unique_id: string;
+  name: string;
   description: string | null;
-  releated_categories: string[]; 
-  indexed_sku_counts: number;
+  related_categories: string[];
 }
 
 export interface Brand {
-  brand_title: string;
-  brand_node_id: string;
-  identity_definnition: string | null;
+  unique_id: string;
+  name: string;
   description: string | null;
-  releated_categories: string[];
+  categories: string[];
   related_brands: string[];
-  indexed_sku_counts: number;
-  Canonical_Slugs: string[];
 }
 
-export interface Sizes {
-  size_label: string;
-  size_node_id: string;
-  identity_definnition: string | null;
-  description: string | null;
-  releated_categories: string[];
-  related_brands: string[];
-  indexed_sku_counts: number;
-  Canonical_Slugs: string[];
+export interface Size {
+  unique_id: string;
+  name: string;
+  unit_symbol: string;
 }
 
-export interface Colors {
-  color_label: string;
-  size_node_id: string; 
-  identity_definnition: string | null;
-  description: string | null;
-  releated_categories: string[];
-  related_brands: string[];
-  indexed_sku_counts: number;
-  Canonical_Slugs: string[];
-  color_rgb: string | null;
-  color_code: string | null;
+export interface Color {
+  unique_id: string;
+  name: string;
+  identity_definition: string | null;
+  hex_code: string | null;
 }
 
-export interface Weights {
-  weight_unit_label: string;
-  weight_symbal: string; 
-  weight_node_id: string;  
-  identity_definnition: string | null;
-  description: string | null;
-  indexed_sku_counts: number;
+export interface Weight {
+  unique_id: string;
+  unit_name: string;
+  symbol: string;
 }
 
+export interface Tag {
+  unique_id: string;
+  name: string;
+}
 
+export interface Shape {
+  unique_id: string;
+  name: string;
+}
 
-// Master context payload contract schema
+export interface Country {
+  unique_id: string;
+  name: string;
+  zip_code: string | null;
+  is_setup_for_operation: boolean;
+}
+
+export interface Currency {
+  unique_id: string;
+  name: string;
+  symbol: string | null;
+  code: string;
+  country: string;
+  is_allowed: boolean;
+  is_base_currency: boolean;
+}
+
+// --- TYPE DISCRIMINATORS ---
+type TaxonomyType = "category" | "brand" | "size" | "color" | "weight" | "tag" | "shape" | "country" | "currency";
+type AnyTaxonomyEntity = Category | Brand | Size | Color | Weight | Tag | Shape | Country | Currency;
+
 interface TaxonomyMatrices {
   categories: Category[];
   brands: Brand[];
-  sizes: Sizes[];
-  colors: Colors[];
-  weights: Weights[];
+  sizes: Size[];
+  colors: Color[];
+  weights: Weight[];
+  tags: Tag[];
+  shapes: Shape[];
+  countries: Country[];
+  currencies: Currency[];
   isLoading: boolean;
   error: string | null;
 
-  // Taxonomy Master Fetch Routine
   refreshTaxonomies: () => Promise<void>;
 
   // Append Methods
-  addCategory: (entity: Category) => Promise<void>;
-  addBrand: (entity: Brand) => Promise<void>;
-  addSize: (entity: Sizes) => Promise<void>;
-  addColor: (entity: Colors) => Promise<void>;
-  addWeight: (entity: Weights) => Promise<void>;
+  addCategory: (entity: Omit<Category, 'unique_id'>) => Promise<void>;
+  addBrand: (entity: Omit<Brand, 'unique_id'>) => Promise<void>;
+  addSize: (entity: Omit<Size, 'unique_id'>) => Promise<void>;
+  addColor: (entity: Omit<Color, 'unique_id'>) => Promise<void>;
+  addWeight: (entity: Omit<Weight, 'unique_id'>) => Promise<void>;
+  addTag: (entity: Omit<Tag, 'unique_id'>) => Promise<void>;
+  addShape: (entity: Omit<Shape, 'unique_id'>) => Promise<void>;
+  addCountry: (entity: Omit<Country, 'unique_id'>) => Promise<void>;
+  addCurrency: (entity: Omit<Currency, 'unique_id'>) => Promise<void>;
+
+  // Update Methods
+  updateCategory: (entity: Category) => Promise<void>;
+  updateBrand: (entity: Brand) => Promise<void>;
+  updateSize: (entity: Size) => Promise<void>;
+  updateColor: (entity: Color) => Promise<void>;
+  updateWeight: (entity: Weight) => Promise<void>;
+  updateTag: (entity: Tag) => Promise<void>;
+  updateShape: (entity: Shape) => Promise<void>;
+  updateCountry: (entity: Country) => Promise<void>;
+  updateCurrency: (entity: Currency) => Promise<void>;
 
   // Purge Routines
   removeCategory: (nodeId: string) => Promise<void>;
@@ -84,145 +110,196 @@ interface TaxonomyMatrices {
   removeSize: (nodeId: string) => Promise<void>;
   removeColor: (nodeId: string) => Promise<void>;
   removeWeight: (nodeId: string) => Promise<void>;
+  removeTag: (nodeId: string) => Promise<void>;
+  removeShape: (nodeId: string) => Promise<void>;
+  removeCountry: (nodeId: string) => Promise<void>;
+  removeCurrency: (nodeId: string) => Promise<void>;
 }
 
-const TaxonomyMatricesContex = createContext<TaxonomyMatrices | undefined>(undefined);
+const BASE_TAXONOMY_URL = "http://127.0.0.1:8000/adm/root/api/v1/0e812203c3134ffeb059e8158a486250";
 
-
-const mockCategories: Category[] = [
-  {
-    category_title: "Gym Equipments",
-    category_node_id: "CAT-GYM-01",
-    identity_definnition: "Physical strength conditioning utilities",
-    description: "Normalized tree containing free weights, resistance kits, and machine nodes.",
-    releated_categories: ["CAT-SHOES-02"],
-    indexed_sku_counts: 1420
-  }
-];
-
-const mockBrands: Brand[] = [
-  {
-    brand_title: "Nike",
-    brand_node_id: "BRD-NIKE-01",
-    identity_definnition: "Global athletic sportswear manufacturer",
-    description: "Primary brand tracker for cross-regional sports items.",
-    releated_categories: ["CAT-SHOES-02"],
-    related_brands: ["Adidas"],
-    indexed_sku_counts: 890,
-    Canonical_Slugs: ["nike-sports", "nike-active"]
-  }
-];
+const TaxonomyMatricesContext = createContext<TaxonomyMatrices | undefined>(undefined);
 
 export function TaxonomyMatricesProvider({ children }: { children: ReactNode }) {
+  // State Declarations
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [sizes, setSizes] = useState<Sizes[]>([]);
-  const [colors, setColors] = useState<Colors[]>([]);
-  const [weights, setWeights] = useState<Weights[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  const [weights, setWeights] = useState<Weight[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [shapes, setShapes] = useState<Shape[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    refreshTaxonomies();
-  }, []);
+  // --- UTILITY: AUTH HEADERS ---
+  const getAuthHeaders = (): HeadersInit => {
+    try {
+      const tokensRaw = sessionStorage.getItem("soko_ai_admin_token");
+      if (!tokensRaw) return { "Content-Type": "application/json" };
+      
+      const parsed = JSON.parse(tokensRaw);
+      return {
+        "Content-Type": "application/json",
+        "Authorization": parsed?.access ? `Bearer ${parsed.access}` : "",
+      };
+    } catch (e) {
+      console.error("Critical Token Extraction Fault:", e);
+      return { "Content-Type": "application/json" };
+    }
+  };
 
+  // --- CORE SYSTEM ROUTINES ---
   const refreshTaxonomies = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setCategories(mockCategories);
-      setBrands(mockBrands);
-      setSizes([]);
-      setColors([]);
-      setWeights([]);
-    } catch (err) {
-      setError("Failed to construct systemic baseline taxonomy matrix maps.");
+      const response = await fetch(`${BASE_TAXONOMY_URL}/taxonomies/`, {
+        method: "GET",
+        headers: getAuthHeaders()
+      });
+      
+      if (!response.ok) throw new Error(`HTTP Error Status: ${response.status}`);
+      const data = await response.json();
+
+      setCategories(data.categories || []);
+      setBrands(data.brands || []);
+      setSizes(data.sizes || []);
+      setColors(data.colors || []);
+      setWeights(data.weights || []);
+      setTags(data.tags || []);
+      setShapes(data.shapes || []);
+      setCountries(data.countries || []);
+      setCurrencies(data.currencies || []);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to construct systemic baseline taxonomy matrix maps.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    refreshTaxonomies();
+  }, []);
 
-
-  
-  // --- MUTATION APPEND ROUTINES ---
-  const addCategory = async (entity: Category) => {
-    setCategories((prev) => [...prev, entity]);
+  // --- DYNAMIC DISPATCH LOOKUP REGISTRY ---
+  // Recomputed on execution to capture active closures instead of initial empty arrays
+  const getListSetter = (type: TaxonomyType): React.Dispatch<React.SetStateAction<any[]>> => {
+    const setters: Record<TaxonomyType, React.Dispatch<React.SetStateAction<any[]>>> = {
+      category: setCategories,
+      brand: setBrands,
+      size: setSizes,
+      color: setColors,
+      weight: setWeights,
+      tag: setTags,
+      shape: setShapes,
+      country: setCountries,
+      currency: setCurrencies,
+    };
+    return setters[type];
   };
 
-  const addBrand = async (entity: Brand) => {
-    setBrands((prev) => [...prev, entity]);
+  // --- REUSABLE GENERIC NETWORK MUTATION CORE (Creates & Updates) ---
+  const mutateTaxonomy = async (type: TaxonomyType, entity: Partial<AnyTaxonomyEntity>, isNew: boolean) => {
+    const setList = getListSetter(type);
+    
+    // Generates completely clean, trailing-slash explicit Django URLs
+    const url = isNew 
+      ? `${BASE_TAXONOMY_URL}/taxonomies/${type}/` 
+      : `${BASE_TAXONOMY_URL}/taxonomies/${type}/update/${entity.unique_id}/`;
+    
+    try {
+      const response = await fetch(url, {
+        method: isNew ? "POST" : "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(entity)
+      });
+      
+      if (!response.ok) throw new Error(`Server mutation rejected for ${type}.`);
+      const updatedNode = await response.json();
+
+      // Optimistic layout sync engines
+      if (isNew) {
+        setList((prev) => [...prev, updatedNode]);
+      } else {
+        setList((prev) => prev.map((item) => item.unique_id === entity.unique_id ? updatedNode : item));
+      }
+    } catch (err) {
+      console.error(`Matrix sync rollback on type [${type}]:`, err);
+      throw err;
+    }
   };
 
-  const addSize = async (entity: Sizes) => {
-    setSizes((prev) => [...prev, entity]);
-  };
+  // --- REUSABLE GENERIC PURGE ENGINE ---
+  const purgeTaxonomy = async (type: TaxonomyType, nodeId: string) => {
+    const setList = getListSetter(type);
+    
+    try {
+      const response = await fetch(`${BASE_TAXONOMY_URL}/taxonomies/${type}/purge/${nodeId}/`, {
+        method: "DELETE",
+        headers: getAuthHeaders()
+      });
 
-  const addColor = async (entity: Colors) => {
-    setColors((prev) => [...prev, entity]);
-  };
-
-  const addWeight = async (entity: Weights) => {
-    setWeights((prev) => [...prev, entity]);
-  };
-
-  // --- MUTATION PURGE ROUTINES ---
-  const removeCategory = async (nodeId: string) => {
-    setCategories((prev) => prev.filter((c) => c.category_node_id !== nodeId));
-  };
-
-  const removeBrand = async (nodeId: string) => {
-    setBrands((prev) => prev.filter((b) => b.brand_node_id !== nodeId));
-  };
-
-  const removeSize = async (nodeId: string) => {
-    setSizes((prev) => prev.filter((s) => s.size_node_id !== nodeId));
-  };
-
-  const removeColor = async (nodeId: string) => {
-    setColors((prev) => prev.filter((c) => c.size_node_id !== nodeId));
-  };
-
-  const removeWeight = async (nodeId: string) => {
-    setWeights((prev) => prev.filter((w) => w.weight_node_id !== nodeId));
+      if (!response.ok) throw new Error(`Server rejection payload status response received.`);
+      
+      setList((prev) => prev.filter((item) => item.unique_id !== nodeId));
+    } catch (err) {
+      console.error(`Matrix deletion failure on type [${type}]:`, err);
+      throw err;
+    }
   };
 
   const values: TaxonomyMatrices = {
-    categories,
-    brands,
-    sizes,
-    colors,
-    weights,
-    isLoading,
-    error,
+    categories, brands, sizes, colors, weights, tags, shapes, countries, currencies, isLoading, error,
     refreshTaxonomies,
-    addCategory,
-    addBrand,
-    addSize,
-    addColor,
-    addWeight,
-    removeCategory,
-    removeBrand,
-    removeSize,
-    removeColor,
-    removeWeight
+
+    // Append Engine Bindings
+    addCategory: (entity) => mutateTaxonomy("category", entity, true),
+    addBrand: (entity) => mutateTaxonomy("brand", entity, true),
+    addSize: (entity) => mutateTaxonomy("size", entity, true),
+    addColor: (entity) => mutateTaxonomy("color", entity, true),
+    addWeight: (entity) => mutateTaxonomy("weight", entity, true),
+    addTag: (entity) => mutateTaxonomy("tag", entity, true),
+    addShape: (entity) => mutateTaxonomy("shape", entity, true),
+    addCountry: (entity) => mutateTaxonomy("country", entity, true),
+    addCurrency: (entity) => mutateTaxonomy("currency", entity, true),
+
+    // Update Engine Bindings
+    updateCategory: (entity) => mutateTaxonomy("category", entity, false),
+    updateBrand: (entity) => mutateTaxonomy("brand", entity, false),
+    updateSize: (entity) => mutateTaxonomy("size", entity, false),
+    updateColor: (entity) => mutateTaxonomy("color", entity, false),
+    updateWeight: (entity) => mutateTaxonomy("weight", entity, false),
+    updateTag: (entity) => mutateTaxonomy("tag", entity, false),
+    updateShape: (entity) => mutateTaxonomy("shape", entity, false),
+    updateCountry: (entity) => mutateTaxonomy("country", entity, false),
+    updateCurrency: (entity) => mutateTaxonomy("currency", entity, false),
+
+    // Purge Engine Bindings
+    removeCategory: (nodeId) => purgeTaxonomy("category", nodeId),
+    removeBrand: (nodeId) => purgeTaxonomy("brand", nodeId),
+    removeSize: (nodeId) => purgeTaxonomy("size", nodeId),
+    removeColor: (nodeId) => purgeTaxonomy("color", nodeId),
+    removeWeight: (nodeId) => purgeTaxonomy("weight", nodeId),
+    removeTag: (nodeId) => purgeTaxonomy("tag", nodeId),
+    removeShape: (nodeId) => purgeTaxonomy("shape", nodeId),
+    removeCountry: (nodeId) => purgeTaxonomy("country", nodeId),
+    removeCurrency: (nodeId) => purgeTaxonomy("currency", nodeId),
   };
 
   return (
-    <TaxonomyMatricesContex.Provider value={values}>
+    <TaxonomyMatricesContext.Provider value={values}>
       {children}
-    </TaxonomyMatricesContex.Provider>
+    </TaxonomyMatricesContext.Provider>
   );
 }
 
-// --- CONSUMER TRANSLATION HOOK LAYER ---
 export function useTaxonomyMatrices() {
-  const ctx = useContext(TaxonomyMatricesContex);
-  if (!ctx) {
-    throw new Error(
-      "useTaxonomyMatrices must be executed exclusively inside a valid TaxonomyMatricesProvider tree boundary node structure."
-    );
-  }
+  const ctx = useContext(TaxonomyMatricesContext);
+  if (!ctx) throw new Error("useTaxonomyMatrices must be executed exclusively inside a valid TaxonomyMatricesProvider.");
   return ctx;
 }
