@@ -31,6 +31,8 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
     _catalog_low_stock_items = serializers.SerializerMethodField()
     _merchant_alerts = serializers.SerializerMethodField()
     _incoming_orders = serializers.SerializerMethodField()
+    _incoming_reviews = serializers.SerializerMethodField()
+    
     
     
     
@@ -95,8 +97,14 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
                 "status": order.status,
                 "createdAt": order.createdAt,
                 
+                
             } for order in recent_orders
         ]
+        
+        
+    def get__incoming_reviews(self,obj):
+        reviews_filtered = obj.reviews.filter(read = False).order_by("created_at")
+        return [{ "unique_id":review.unique_id, "customer":review.reviewer_name, "ratting":review.rating , "comment":review.comment , "date":review.created_at} for review in reviews_filtered]
     
     
     

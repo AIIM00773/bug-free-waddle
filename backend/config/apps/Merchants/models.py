@@ -182,7 +182,7 @@ class MerchantProductCatalog(models.Model):
     color =  models.ForeignKey(Color, null=True , blank=True,  on_delete=models.PROTECT)
     size =  models.ForeignKey(Size, null=True , blank=True,  on_delete=models.PROTECT)
     shape =  models.ForeignKey(Shape, null=True , blank=True,  on_delete=models.PROTECT)
-    isRefubished =  models.BooleanField(default=False)
+    isRefurbished =  models.BooleanField(default=False)
     isNew =  models.BooleanField(default=True)
   
     
@@ -196,7 +196,7 @@ class MerchantProductCatalog(models.Model):
     originalPrice = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)])
     dealPrice = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)], help_text="Active selling price")
     priceChangeRecord = models.JSONField(default=list , null=True,blank=True, help_text="record of all prices this product has had" )
-    priceComPetitonRecord = models.JSONField(default=list, null=True, blank=True, help_text="position in pricing and the defference from the most selling merchant")
+    priceCompetitionRecord = models.JSONField(default=list, null=True, blank=True, help_text="position in pricing and the defference from the most selling merchant")
     
     
     
@@ -212,7 +212,7 @@ class MerchantProductCatalog(models.Model):
     
     isAvailable = models.BooleanField(default=True, db_index=True)
     clickCount = models.PositiveIntegerField(default=0, help_text="Tracks user engagement")
-    minimumStockThreshhold = models.BigIntegerField(default=4)
+    minimumStockThreshold = models.BigIntegerField(default=4)
     stockQuantity = models.BigIntegerField(default=0)
     stockAuantity = models.BigIntegerField(default=0)
 
@@ -623,7 +623,18 @@ class MerchantAlerts (models.Model):
     
     def __str__(self):
         return f"Alert for {self.Merchant.shopName} | Type: {self.Type} | Priority: {self.Priority} | Read: {self.Read}"
+ 
+ 
+ 
+class MerchnatsNotifications (models.Model):
+    unique_id = models.UUIDField  (default = uuid.uuid4 , primary_key =True, unique=True)
+    message = models.TextField()
+    resolved = models.BooleanField(default=True)
+    urlPath = models.URLField(null=True)
     
+    def __str__(self):
+        return  f"{self.message} :: {self.urlPath} . "
+        
     
     
     
@@ -636,6 +647,8 @@ class MerchantReviews(models.Model):
     rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    read = models.BooleanField(default=False)
+    
 
     class Meta:
         db_table = 'soko_merchant_reviews'

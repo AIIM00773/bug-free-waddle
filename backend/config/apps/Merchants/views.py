@@ -281,7 +281,7 @@ class MerchantProfileDashboardView(APIView):
 
     def get(self, request):
         # Fetch the profile
-        profile = get_object_or_404(InternalMerchantProfile.objects.prefetch_related('branches', 'payout_history', "incoming_orders","products", "merchant_alerts","incoming_orders") , vendorOwner=request.user)
+        profile = get_object_or_404(InternalMerchantProfile.objects.prefetch_related('branches', 'payout_history', "incoming_orders","products", "merchant_alerts","incoming_orders", "reviews") , vendorOwner=request.user)
         serializer = MerchantDashboardSerializer(profile)
         return Response({
             "merchant_profile": serializer.data

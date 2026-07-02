@@ -29,22 +29,27 @@ const DASHBOARD_TABS = [
 
 type ShopDashboardSummaryType = typeof DASHBOARD_TABS[number]["label"];
 
+// --- CONSTANTS & HELPERS ---
 
+const ORDER_STATUS_COLORS: Record<string, string> = {
+    DELIVERED: 'bg-emerald-100 text-emerald-800',
+    AWAITING_ALLOCATION: 'bg-amber-100 text-amber-800',
+    PREPARING: 'bg-indigo-100 text-indigo-800',
+    READY_FOR_PICKUP: 'bg-amber-100 text-amber-800',
+    CANCELLED: 'bg-rose-100 text-rose-800',
+    DISPATCHED: 'bg-blue-100 text-blue-800',
+    DISPUTED: 'bg-red-100 text-red-800',
+    DEFAULT: 'bg-slate-100 text-slate-800'
+};
 
-interface ReviewItem {
-    id: number;
-    customer: string;
-    rating: number; // 1-5
-    comment: string;
-    date: string;
-}
+const getStatusColor = (status: string) => {
+    return ORDER_STATUS_COLORS[status] || ORDER_STATUS_COLORS.DEFAULT;
+};
 
-const reviews: ReviewItem[] = [
-    { id: 1, customer: "Alice Johnson", rating: 5, comment: "Excellent quality and fast shipping!", date: "Jul 01, 2026" },
-    { id: 2, customer: "Bob Smith", rating: 4, comment: "Great product, but packaging was a bit damaged.", date: "Jun 30, 2026" },
-    { id: 3, customer: "Charlie Davis", rating: 5, comment: "Exactly what I was looking for.", date: "Jun 29, 2026" },
-];
-
+// Type guard for session storage validation
+const isDashboardTab = (val: string | null): val is ShopDashboardSummaryType => {
+    return DASHBOARD_TABS.some(t => t.label === val);
+};
 
 // --- COMPONENTS ---
 
@@ -77,8 +82,7 @@ export const DashboardOverview: React.FC = () => {
 
     const [shopDashboardSummary, setShopDashboardSummary] = React.useState<ShopDashboardSummaryType>(() => {
         const saved = sessionStorage.getItem('activeShopDashboardSummaryView');
-        const validViews = DASHBOARD_TABS.map(t => t.label);
-        return validViews.includes(saved as any) ? (saved as ShopDashboardSummaryType) : "Alerts";
+        return isDashboardTab(saved) ? saved : "Alerts";
     });
 
     useEffect(() => {
@@ -107,14 +111,12 @@ export const DashboardOverview: React.FC = () => {
                         <p>{merchantProfile?.shopDescription || 'Manage your store analytics and operations.'}</p>
                         <span className="text-slate-300">•</span>
 
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${user?.is_merchant_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'
-                            }`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${user?.is_merchant_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>
                             {user?.is_merchant_verified && <Check className="h-3 w-3" />}
                             {user?.is_merchant_verified ? 'Verified' : 'Not Verified'}
                         </span>
 
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${merchantProfile?.is_accepting_orders ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
-                            }`}>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${merchantProfile?.is_accepting_orders ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}`}>
                             {merchantProfile?.is_accepting_orders ? 'Accepting Orders' : 'Not Accepting Orders'}
                         </span>
                     </div>
@@ -169,6 +171,7 @@ export const DashboardOverview: React.FC = () => {
                 />
             </div>
 
+
             {/* 3. CORE ANALYTICS AND MONITORING BOARD */}
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
                 {/* LEFT COLUMN: ACTIVE INCOMING ORDER FEED */}
@@ -220,29 +223,21 @@ export const DashboardOverview: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {(merchantProfile?._incoming_orders?.length ?? 0) > 0 && merchantProfile?._incoming_orders?.map((order) => (
-                                            <tr key={order.unique_id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-slate-900">{order.order_id}</td>
-                                                <td className="px-6 py-4 text-slate-600">{order.shippingCustomerName}</td>
-                                                <td className="px-6 py-4 text-slate-600">{order.branch}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-900 text-right">{order.gross_sales_amount}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className={
-                                                        `inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${order.status === 'DELIVERED' ?
-                                                            'bg-emerald-100 text-emerald-800' : order.status === 'AWAITING_ALLOCATION' ? 'bg-amber-100 text-amber-800' :
-                                                                order.status === 'PREPARING' ? 'bg-indigo-100 text-indigo-800' : order.status === 'READY_FOR_PICKUP' ?
-                                                                    'bg-amber-100 text-amber-800' : order.status === 'CANCELLED' ? 'bg-rose-100 text-rose-800' : order.status === 'DISPATCHED' ?
-                                                                        'bg-slate-100 text-slate-800' : order.status === 'DISPUTED' ? 'bg-red-600 text-blue-800' : order.status === 'DISPATCHED' ?
-                                                                            'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-500'
-                                                        }`}>
-                                                        {order.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-
-
-                                        {(merchantProfile?._incoming_orders?.length ?? 0) === 0 && (
+                                        {merchantProfile?._incoming_orders?.length ? (
+                                            merchantProfile._incoming_orders.map((order) => (
+                                                <tr key={order.unique_id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-slate-900">{order.order_id}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{order.shippingCustomerName}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{order.branch}</td>
+                                                    <td className="px-6 py-4 font-medium text-slate-900 text-right">{order.gross_sales_amount}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusColor(order.status)}`}>
+                                                            {order.status}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
                                             <tr>
                                                 <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
                                                     <h3 className="text-sm font-medium text-slate-900 mb-1">No Incoming Orders</h3>
@@ -254,10 +249,6 @@ export const DashboardOverview: React.FC = () => {
                                 </table>
                             </div>
                         )}
-
-
-
-
 
                         {shopDashboardSummary === "Alerts" && (
                             <div className="overflow-x-auto">
@@ -271,41 +262,36 @@ export const DashboardOverview: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {(merchantProfile?._merchant_alerts?.length ?? 0) > 0 && merchantProfile?._merchant_alerts.map((alert) => (
-                                            <tr key={alert.unique_id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-slate-900">{alert.Type}</td>
-                                                <td className="px-6 py-4 text-slate-600 whitespace-normal">{alert.Message}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${alert.Priority === 'HIGH' ? 'bg-rose-100 text-rose-800' :
-                                                        alert.Priority === 'MEDIUM' ? 'bg-amber-100 text-amber-800' :
-                                                            'bg-slate-100 text-slate-800'
-                                                        }`}>
-                                                        {alert.Priority}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-xs text-slate-500 text-right">{alert.created_at}</td>
-                                            </tr>
-                                        ))}
-
-
-                                        {(merchantProfile?._merchant_alerts?.length ?? 0) === 0 && (
+                                        {merchantProfile?._merchant_alerts?.length ? (
+                                            merchantProfile._merchant_alerts.map((alert) => (
+                                                <tr key={alert.unique_id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-slate-900">{alert.Type}</td>
+                                                    <td className="px-6 py-4 text-slate-600 whitespace-normal">{alert.Message}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${alert.Priority === 'HIGH' ? 'bg-rose-100 text-rose-800' :
+                                                            alert.Priority === 'MEDIUM' ? 'bg-amber-100 text-amber-800' :
+                                                                'bg-slate-100 text-slate-800'
+                                                            }`}>
+                                                            {alert.Priority}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-xs text-slate-500 text-right">{alert.created_at}</td>
+                                                </tr>
+                                            ))
+                                        ) : (
                                             <tr>
-                                                <td className="px-6 py-4 text-center text-slate-500" colSpan={5}>
+                                                <td className="px-6 py-4 text-center text-slate-500" colSpan={4}>
                                                     <p className="text-sm font-medium text-slate-900 mb-1">No Alerts</p>
                                                     <p className="text-sm text-slate-500">
-                                                        Hello !,  You currently have no alerts or notifications
+                                                        Hello! You currently have no alerts or notifications.
                                                     </p>
                                                 </td>
                                             </tr>
                                         )}
-
                                     </tbody>
                                 </table>
                             </div>
                         )}
-
-
-
 
                         {shopDashboardSummary === "Low Stock" && (
                             <div className="overflow-x-auto">
@@ -320,59 +306,47 @@ export const DashboardOverview: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {(merchantProfile?._catalog_low_stock_items?.length ?? 0) > 0 && merchantProfile?._catalog_low_stock_items?.map((item) => (
-                                            <tr key={item.unique_id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-4 font-medium text-slate-900">{item.title}</td>
-                                                <td className="px-6 py-4 text-slate-600">{item.categoryPersist}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <span className="text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-md">{item.currentStock}</span>
-                                                </td>
-                                                <td className="px-6 py-4 text-slate-500 text-right">{item.minimumStockThreshhold}</td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <button className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
-                                                        Restock
-                                                    </button>
+                                        {merchantProfile?._catalog_low_stock_items?.length ? (
+                                            merchantProfile._catalog_low_stock_items.map((item) => (
+                                                <tr key={item.unique_id} className="hover:bg-slate-50/50 transition-colors">
+                                                    <td className="px-6 py-4 font-medium text-slate-900">{item.title}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{item.categoryPersist}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className="text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-md">{item.currentStock}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-500 text-right">{item.minimumStockThreshhold}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <button className="text-indigo-600 hover:text-indigo-800 font-medium text-sm">
+                                                            Restock
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (merchantProfile?._catalog_stock_items_overview?.length ?? 0) === 0 ? (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
+                                                    <h3 className="text-sm font-medium text-slate-900 mb-1">You have an Empty Catalog</h3>
+                                                    <p className="text-sm text-slate-500">You currently have no items added!</p>
                                                 </td>
                                             </tr>
-                                        ))}
-
-
-                                        {
-                                            (merchantProfile?._catalog_stock_items_overview?.length ?? 0) === 0 && (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
-                                                        <h3 className="text-sm font-medium text-slate-900 mb-1">You have an Empty Catalog </h3>
-                                                        <p className="text-sm text-slate-500">You currently have no items added !! .</p>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        }
-
-
-                                        {
-                                            (merchantProfile?._catalog_low_stock_items?.length ?? 0) === 0 && (merchantProfile?._catalog_stock_items_overview?.length ?? 0) > 0 && (
-                                                <tr>
-                                                    <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
-                                                        <h3 className="text-sm font-medium text-slate-900 mb-1">You Dont have any Item Below the limit  </h3>
-                                                        <p className="text-sm text-slate-500"> Your Ctalog is relatively stable !!.</p>
-                                                    </td>
-                                                </tr>
-                                            )
-                                        }
-
+                                        ) : (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
+                                                    <h3 className="text-sm font-medium text-slate-900 mb-1">No items below the limit</h3>
+                                                    <p className="text-sm text-slate-500">Your catalog is relatively stable!</p>
+                                                </td>
+                                            </tr>
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
                         )}
 
-
-
-
                         {shopDashboardSummary === "Inventory" && (
                             <div>
                                 {(merchantProfile?._catalog_stock_items_overview?.length ?? 0) > 0 && (
                                     <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
-                                        <p className="text-sm text-slate-600">You have <span className="font-semibold text-slate-900">{merchantProfile?._catalog_stock_items_overview?.length} + (plus)</span> items currently in your catalog.</p>
+                                        <p className="text-sm text-slate-600">You have <span className="font-semibold text-slate-900">{merchantProfile?._catalog_stock_items_overview?.length} +</span> items currently in your catalog.</p>
                                     </div>
                                 )}
 
@@ -388,26 +362,25 @@ export const DashboardOverview: React.FC = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {(merchantProfile?._catalog_stock_items_overview?.length ?? 0) > 0 && merchantProfile?._catalog_stock_items_overview?.map((item) => (
-                                                <tr key={item.sku} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-slate-900">{item.name}</td>
-                                                    <td className="px-6 py-4 font-mono text-xs text-slate-500">{item.sku}</td>
-                                                    <td className="px-6 py-4 text-right text-slate-600">${item.price.toFixed(2)}</td>
-                                                    <td className="px-6 py-4 text-right font-medium text-slate-900">{item.stock}</td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${item.stock > 10 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                                            }`}>
-                                                            {item.stock > 10 ? 'In Stock' : 'Low'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-
-                                            {(merchantProfile?._catalog_stock_items_overview?.length ?? 0) === 0 && (
+                                            {merchantProfile?._catalog_stock_items_overview?.length ? (
+                                                merchantProfile._catalog_stock_items_overview.map((item) => (
+                                                    <tr key={item.sku} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-slate-900">{item.name}</td>
+                                                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{item.sku}</td>
+                                                        <td className="px-6 py-4 text-right text-slate-600">${item.price.toFixed(2)}</td>
+                                                        <td className="px-6 py-4 text-right font-medium text-slate-900">{item.stock}</td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${item.stock > 10 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                                {item.stock > 10 ? 'In Stock' : 'Low'}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
                                                 <tr>
                                                     <td colSpan={5} className="px-6 py-4 text-center text-slate-500">
-                                                        <h3 className="text-sm font-medium text-slate-900 mb-1">You have an Empty Catalog </h3>
-                                                        <p className="text-sm text-slate-500">You currently have no items added !! .</p>
+                                                        <h3 className="text-sm font-medium text-slate-900 mb-1">You have an Empty Catalog</h3>
+                                                        <p className="text-sm text-slate-500">You currently have no items added!</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -417,13 +390,14 @@ export const DashboardOverview: React.FC = () => {
                             </div>
                         )}
 
-
-
                         {shopDashboardSummary === "Reviews" && (
                             <div>
-                                <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
-                                    <p className="text-sm text-slate-600">You have <span className="font-semibold text-slate-900">10</span> new customer reviews to attend to.</p>
-                                </div>
+                                {(merchantProfile?._incoming_reviews?.length ?? 0) > 0 && (
+                                    <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100">
+                                        <p className="text-sm text-slate-600">You have <span className="font-semibold text-slate-900">{merchantProfile?._incoming_reviews?.length}</span> new customer reviews to attend to.</p>
+                                    </div>
+                                )}
+
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left text-sm">
                                         <thead className="bg-slate-50 border-b border-slate-100">
@@ -435,25 +409,38 @@ export const DashboardOverview: React.FC = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {reviews.map((review) => (
-                                                <tr key={review.id} className="hover:bg-slate-50/50 transition-colors">
-                                                    <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{review.customer}</td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
-                                                        <div className="flex text-amber-400 text-lg">
-                                                            {"★".repeat(review.rating)}{"☆".repeat(5 - review.rating)}
-                                                        </div>
+                                            {merchantProfile?._incoming_reviews?.length ? (
+                                                merchantProfile._incoming_reviews.map((review) => (
+                                                    <tr key={review.unique_id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{review.customer}</td>
+                                                        <td className="px-6 py-4 whitespace-nowrap">
+                                                            <div className="flex text-amber-400 text-lg">
+                                                                {"★".repeat(parseInt(review.ratting, 10))}{"☆".repeat(5 - parseInt(review.ratting, 10))}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-slate-600 italic">"{review.comment}"</td>
+                                                        <td className="px-6 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{review.date}</td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan={4} className="px-6 py-4 text-center text-slate-500">
+                                                        <h3 className="text-sm font-medium text-slate-900 mb-1">No Reviews from Customers Yet</h3>
+                                                        <p className="text-sm text-slate-500">Reviews for you will be listed here!</p>
                                                     </td>
-                                                    <td className="px-6 py-4 text-slate-600 italic">"{review.comment}"</td>
-                                                    <td className="px-6 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{review.date}</td>
                                                 </tr>
-                                            ))}
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                         )}
                     </div>
+
+
                 </div>
+
+
 
                 {/* RIGHT COLUMN: BRANCH MATRIX */}
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm flex flex-col">
@@ -471,7 +458,7 @@ export const DashboardOverview: React.FC = () => {
                     </div>
 
                     <div className="p-6 flex-1 bg-slate-50/30">
-                        {merchantProfile?._business_branches && merchantProfile._business_branches.length > 0 ? (
+                        {merchantProfile?._business_branches?.length ? (
                             <div className="space-y-3">
                                 {merchantProfile._business_branches.map((branch) => (
                                     <div key={branch.unique_id} className="group flex items-start justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-indigo-200 hover:shadow transition-all">
@@ -484,25 +471,31 @@ export const DashboardOverview: React.FC = () => {
                                                 <p className="text-sm text-slate-500 mt-1">{branch.physicalAddress}</p>
                                             </div>
                                         </div>
-                                        <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${branch.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                                            }`}>
+                                        <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${branch.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
                                             {branch.isActive ? 'Active' : 'Inactive'}
                                         </span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-center space-y-4 py-8">
-                                <div className="rounded-full bg-slate-100 p-4">
-                                    <Store size={32} className="text-slate-400" />
+                            <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-white py-12 px-6 text-center transition-all hover:border-indigo-200 hover:bg-slate-50/50">
+
+                                {/* Optional: A subdued icon container adds a lot of professional polish to empty states */}
+                                <div className="mb-4 rounded-full bg-slate-100 p-3 text-slate-400">
+                                    <Store size={24} />
                                 </div>
-                                <div className="space-y-1">
-                                    <h5 className="font-medium text-slate-900">No Branches Found</h5>
-                                    <p className="text-sm text-slate-500 max-w-[200px]">Add a physical or virtual branch to start managing locations.</p>
-                                </div>
-                                <button className="mt-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 transition-colors flex items-center gap-2">
+
+                                <p className="text-sm font-medium text-slate-900">
+                                    No branches added yet.
+                                </p>
+                                <p className="mt-1 mb-6 text-sm text-slate-500">
+                                    Get started by creating your first business location.
+                                </p>
+
+                                <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                    {/* Removed color='yellow' so it inherits the white text color automatically */}
                                     <PlusSquare size={16} />
-                                    <span>Add Branch</span>
+                                    <span>New Branch</span>
                                 </button>
                             </div>
                         )}

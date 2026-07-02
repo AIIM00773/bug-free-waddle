@@ -85,11 +85,23 @@ export interface catalogLowStocItemsType {
     "unique_id": string,
     "title": string,
     "category": string,
-    "categoryPersist":string,
-    "currentStock": number| string,
+    "categoryPersist": string,
+    "currentStock": number | string,
     "minimumStockThreshhold": number | string,
     "price": number | string
 }
+
+
+
+
+export interface merchantIncomingReviewsType {
+    "unique_id":string | null;
+    "customer": string,
+    "ratting": string,
+    "comment": string,
+    "date": string
+}
+
 
 
 export interface InternalMerchantProfile {
@@ -101,6 +113,7 @@ export interface InternalMerchantProfile {
     "_catalog_low_stock_items": catalogLowStocItemsType[],
     "_merchant_alerts": merchantsAlertsType[],
     "_incoming_orders": merchantIncomingOrdersType[],
+    "_incoming_reviews": merchantIncomingReviewsType[]
 
 
     // ================================================
