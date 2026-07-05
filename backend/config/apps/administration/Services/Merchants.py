@@ -27,8 +27,7 @@ class MerchantUserSerializer(serializers.ModelSerializer):
             "is_phone_verified","onboarding_completed","created_at",
             "age"
         )    
-    
-        
+             
   
    
 class merchantProfileSerializer(serializers.ModelSerializer):
@@ -40,9 +39,6 @@ class merchantProfileSerializer(serializers.ModelSerializer):
             "bussinessRegisted","commissionCutPercent", "isCommissionFree",
             "verified", "payoutMethod", 'verificationStatus', 'owner', 'createdAt'
         )
-        
-        
-        
         
              
         
@@ -57,9 +53,6 @@ class MerchantListSerializer(serializers.ModelSerializer):
             "verified", "payoutMethod", 'verificationStatus', 'owner', 'createdAt'
         )
         
-
-
-
 
 
 class MerchantPagination(PageNumberPagination):
@@ -82,10 +75,7 @@ class MerchantsFetchView(APIView):
         serializer = MerchantListSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
     
-    
-    
-    
-        
+          
         
 
 class MerchantDetailFetchView(APIView):
@@ -159,10 +149,6 @@ class MerchantDetailFetchView(APIView):
 
 
 
-
-
-
-
 class ActivateMerchantView(APIView):
     permission_classes = [IsAdminStaff,IsAuthenticated] 
     
@@ -183,7 +169,6 @@ class ActivateMerchantView(APIView):
         owner.save()
         merchant.save()
         return Response({"message":"Merchnat Activated "}, status=status.HTTP_200_OK)
-    
     
     
     
@@ -209,9 +194,7 @@ class DeactivateMerchantView(APIView):
     
     
 
-
 class DeleteMerchantView(APIView):
-    # Enforces your bearer access check signature on the session storage tokens
     permission_classes = [IsAdminStaff,IsAuthenticated] 
 
 

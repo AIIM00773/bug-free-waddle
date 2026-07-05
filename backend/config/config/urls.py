@@ -49,8 +49,17 @@ urlpatterns = [
     
     # Core Domain App Feature Routers
     path("public/api/v1/users/", include("apps.users.urls")),
-    path("public/api/v1/conversations/", include("apps.Conversations.urls")),     
+    path("public/api/v1/conversations/", include("apps.Conversations.urls")),   
+    
+    
+    
+    
+    # ===============================================================================
+    # 3 MERCHAT ROUTES   
+    # ========================================================================
+
     path("public/api/v1/merchants/", include("apps.Merchants.urls")),
+    
 ]
 
 

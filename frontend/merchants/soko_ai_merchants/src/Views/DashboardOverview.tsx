@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../Providers/AuthProvider';
+
 import {
     ChartBarDecreasing,
     Check,
@@ -9,15 +10,20 @@ import {
     RefreshCw,
     SquareStackIcon,
     Star,
-    AlertCircle,
     Store,
-    MapPin,
     DollarSign,
     ShoppingCart,
     PackageOpen,
     TrendingUp,
-    ListChecks
+    ListChecks,
+    LayoutGrid,
+    MapPin,
+    Truck,
+    AlertCircle,
+    Plus
 } from 'lucide-react';
+
+import AddBranchForm from './onboarding/MerchnatStoreBranchAddForm';
 
 const DASHBOARD_TABS = [
     { label: "Alerts", icon: MessageCircle },
@@ -27,9 +33,12 @@ const DASHBOARD_TABS = [
     { label: "Reviews", icon: Star },
 ] as const;
 
-type ShopDashboardSummaryType = typeof DASHBOARD_TABS[number]["label"];
 
+
+type ShopDashboardSummaryType = typeof DASHBOARD_TABS[number]["label"];
 // --- CONSTANTS & HELPERS ---
+
+
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
     DELIVERED: 'bg-emerald-100 text-emerald-800',
@@ -42,14 +51,19 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
     DEFAULT: 'bg-slate-100 text-slate-800'
 };
 
+
+
 const getStatusColor = (status: string) => {
     return ORDER_STATUS_COLORS[status] || ORDER_STATUS_COLORS.DEFAULT;
 };
+
+
 
 // Type guard for session storage validation
 const isDashboardTab = (val: string | null): val is ShopDashboardSummaryType => {
     return DASHBOARD_TABS.some(t => t.label === val);
 };
+
 
 // --- COMPONENTS ---
 
@@ -60,6 +74,8 @@ interface StatCardProps {
     iconColor: string;
     iconBg: string;
 }
+
+
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, iconColor, iconBg }) => (
     <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:shadow-md flex flex-col justify-between">
@@ -77,13 +93,36 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, iconColor
     </div>
 );
 
+
+
+
+
+
+
+
+
+
 export const DashboardOverview: React.FC = () => {
     const { user, merchantProfile, fetchMerchantProfile } = useAuth();
+    const [MainBranchSetupResuest, setMainBranchSetupResuest] = useState<boolean>(false);
+    const [addNewBranch, setAddNewBranch] = useState<boolean>(false)
 
     const [shopDashboardSummary, setShopDashboardSummary] = React.useState<ShopDashboardSummaryType>(() => {
         const saved = sessionStorage.getItem('activeShopDashboardSummaryView');
         return isDashboardTab(saved) ? saved : "Alerts";
     });
+
+
+    useEffect(() => {
+        const branches = merchantProfile?._business_branches?.length as number;
+        if (branches < 1) {
+            setMainBranchSetupResuest(true);
+
+        }
+
+
+
+    }, [merchantProfile])
 
     useEffect(() => {
         if (shopDashboardSummary) {
@@ -93,8 +132,104 @@ export const DashboardOverview: React.FC = () => {
         }
     }, [shopDashboardSummary]);
 
+
+
+    if (addNewBranch) return (
+        <AddBranchForm  onCancel={()=>setAddNewBranch(false)}/>
+    )
+
     return (
+
+
         <div className="space-y-6 max-w-7xl mx-auto pb-10">
+
+
+
+            {MainBranchSetupResuest && (
+                <div className="fixed inset-0   absolute  flex items-center justify-center bg-emerald-950/85 backdrop-blur-sm p-0 t-0 l-0 b-0 r-0  animate-fade-in min-h-[100vh] max-h-[100vh] overflow-y-auto">
+                    <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-emerald-800/20 overflow-hidden transform transition-all scale-100 flex flex-col max-h-[97vh] overflow-auto">
+
+                        {/* Visual Header Banner */}
+                        <div className="bg-gradient-to-r from-emerald-800 to-teal-700 p-6 text-white text-center relative">
+                            <div className="absolute top-3 right-4 flex items-center space-x-1 bg-red-500/20 text-red-200 text-xs uppercase px-2 py-0.5 rounded-full border border-red-400/30">
+                                <AlertCircle className="w-3 h-3 mr-1" />
+                                <span>Setup Required</span>
+                            </div>
+                            <div className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
+                                <LayoutGrid className="w-7 h-7 text-emerald-100" />
+                            </div>
+                            <h2 className="text-2xl font-bold tracking-tight">Activate Your Merchant Profile</h2>
+                            <p className="text-emerald-100/80 text-sm mt-1">Before you can start trading, you need to configure your first business branch hub.</p>
+                        </div>
+
+                        {/* Content Body explaining the system */}
+                        <div className="p-6 md:p-8 space-y-6 overflow-y-auto max-h-[70vh]">
+
+                            {/* Section 1: What is it? */}
+                            <div className="flex gap-4 items-start">
+                                <div className="p-2.5 bg-emerald-50 text-emerald-800 rounded-xl dark:bg-emerald-900/20 dark:text-emerald-400 shrink-0">
+                                    <MapPin className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">What is a Store Branch?</h4>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                                        A branch represents a physical shop, distribution center, or regional warehouse where your inventory is housed. Even if you operate entirely online out of a single room, this setup serves as your foundational digital operational hub.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Section 2: What does it do? */}
+                            <div className="flex gap-4 items-start">
+                                <div className="p-2.5 bg-emerald-50 text-emerald-800 rounded-xl dark:bg-emerald-900/20 dark:text-emerald-400 shrink-0">
+                                    <LayoutGrid className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">What functions does it serve?</h4>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                                        It allows you to assign store managers, set custom operations schedules (opening/closing hours), log precise GPS markers for automated delivery dispatch coordinates, and organize localized stock points.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Why is it needed? */}
+                            <div className="flex gap-4 items-start">
+                                <div className="p-2.5 bg-emerald-50 text-emerald-800 rounded-xl dark:bg-emerald-900/20 dark:text-emerald-400 shrink-0">
+                                    <Truck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Why is it strictly required?</h4>
+                                    <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
+                                        Our automated system relies on a <strong className="text-emerald-700 dark:text-emerald-400 font-medium">Primary Fulfillment Center</strong> to route customer orders accurately. Without geotagged latitude/longitude records and verified operation metrics, delivery mapping APIs cannot quote shipping costs or assign courier dispatch tracks.
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Interactive Action Footer */}
+                        <div className="p-6 bg-zinc-50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center sm:text-left">
+                                Takes less than 2 minutes to fill out location, hours, and contacts.
+                            </p>
+                            <button
+                                onClick={() => {
+                                    // Trigger your navigation route or open your branch-creation sub-form here
+                                    // e.g., router.push('/dashboard/branches/create') or setOpenCreateModal(true)
+                                    setAddNewBranch(true);
+                                    setMainBranchSetupResuest(false);
+                                }}
+                                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-emerald-800 hover:bg-emerald-700 text-white font-medium text-sm px-6 py-3 rounded-xl shadow-md transition-all active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Create Primary Branch Now</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+
             {/* 1. TOP WELCOME OVERLAY BAR */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
                 <div className="space-y-2">
@@ -143,7 +278,7 @@ export const DashboardOverview: React.FC = () => {
             </div>
 
             {/* 2. STATS PERFORMANCE GRID */}
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3  lg:grid-cols-5">
                 <StatCard
                     title="Sales Today"
                     value={merchantProfile?._gross_sales_today ? `KES ${merchantProfile._gross_sales_today.toLocaleString()}` : 'KES 0'}
@@ -310,7 +445,7 @@ export const DashboardOverview: React.FC = () => {
                                             merchantProfile._catalog_low_stock_items.map((item) => (
                                                 <tr key={item.unique_id} className="hover:bg-slate-50/50 transition-colors">
                                                     <td className="px-6 py-4 font-medium text-slate-900">{item.title}</td>
-                                                    <td className="px-6 py-4 text-slate-600">{item.categoryPersist}</td>
+                                                    <td className="px-6 py-4 text-slate-600">{item.category}</td>
                                                     <td className="px-6 py-4 text-right">
                                                         <span className="text-rose-600 font-bold bg-rose-50 px-2.5 py-1 rounded-md">{item.currentStock}</span>
                                                     </td>
@@ -364,14 +499,14 @@ export const DashboardOverview: React.FC = () => {
                                         <tbody className="divide-y divide-slate-100">
                                             {merchantProfile?._catalog_stock_items_overview?.length ? (
                                                 merchantProfile._catalog_stock_items_overview.map((item) => (
-                                                    <tr key={item.sku} className="hover:bg-slate-50/50 transition-colors">
-                                                        <td className="px-6 py-4 font-medium text-slate-900">{item.name}</td>
+                                                    <tr key={item.unique_id} className="hover:bg-slate-50/50 transition-colors">
+                                                        <td className="px-6 py-4 font-medium text-slate-900">{item.title}</td>
                                                         <td className="px-6 py-4 font-mono text-xs text-slate-500">{item.sku}</td>
                                                         <td className="px-6 py-4 text-right text-slate-600">${item.price.toFixed(2)}</td>
-                                                        <td className="px-6 py-4 text-right font-medium text-slate-900">{item.stock}</td>
+                                                        <td className="px-6 py-4 text-right font-medium text-slate-900">{item.currentStock}</td>
                                                         <td className="px-6 py-4 text-center">
-                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${item.stock > 10 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                                                                {item.stock > 10 ? 'In Stock' : 'Low'}
+                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${item.currentStock > 10 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                                                                {item.currentStock > 10 ? 'In Stock' : 'Low'}
                                                             </span>
                                                         </td>
                                                     </tr>
@@ -468,7 +603,7 @@ export const DashboardOverview: React.FC = () => {
                                             </div>
                                             <div>
                                                 <h5 className="font-semibold text-slate-900">{branch.branchName}</h5>
-                                                <p className="text-sm text-slate-500 mt-1">{branch.physicalAddress}</p>
+                                                <p className="text-sm text-slate-500 mt-1">{branch.country}-{branch.county}-{branch.cityTown}</p>
                                             </div>
                                         </div>
                                         <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${branch.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
@@ -492,7 +627,7 @@ export const DashboardOverview: React.FC = () => {
                                     Get started by creating your first business location.
                                 </p>
 
-                                <button className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                <button onClick={()=>setAddNewBranch(true)} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                     {/* Removed color='yellow' so it inherits the white text color automatically */}
                                     <PlusSquare size={16} />
                                     <span>New Branch</span>
@@ -503,5 +638,6 @@ export const DashboardOverview: React.FC = () => {
                 </div>
             </div>
         </div>
+
     );
 };

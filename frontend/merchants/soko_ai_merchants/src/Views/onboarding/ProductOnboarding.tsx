@@ -390,7 +390,7 @@ export default function OnboardProductForm({ onClose }: OnboardProductFormProps)
 
                     {/* Action Footer */}
                     <div className="pt-6 flex justify-end">
-                        <button type="submit" disabled={isLoading} className="relative overflow-hidden group w-full md:w-auto px-12 py-4 bg-gray-900 text-white font-semibold tracking-widest uppercase text-sm rounded-full shadow-[0_10px_20px_rgb(0,0,0,0.15)] hover:shadow-[0_15px_30px_rgb(0,0,0,0.2)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none">
+                        <button type="submit" disabled={isLoading} className="relative overflow-hidden group cursor-pointer  w-full md:w-auto px-12 py-4 bg-gray-900 text-white font-semibold tracking-widest uppercase text-sm rounded-full shadow-[0_10px_20px_rgb(0,0,0,0.15)] hover:shadow-[0_15px_30px_rgb(0,0,0,0.2)] hover:-translate-y-1 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none">
                             <span className="relative z-10 flex items-center justify-center gap-3">
                                 {isLoading ? (
                                     <>

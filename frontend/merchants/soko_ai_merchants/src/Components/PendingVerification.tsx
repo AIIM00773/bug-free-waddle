@@ -55,12 +55,12 @@ export const PendingVerification = () => {
         
         {/* SIDEBAR: Navigation */}
         <div className="w-full md:w-80 bg-slate-50 p-6 border-r border-slate-100 flex flex-col">
-          <div className="mb-8">
+          <div className="mb-8 bg-red-400 p-6 rounded-2xl ">
             <div className="h-10 w-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center mb-3">
               <Clock className="h-5 w-5" />
             </div>
             <h2 className="font-bold text-slate-900">Verification Pending</h2>
-            <p className="text-xs text-slate-500 mt-1">Reviewing your store credentials...</p>
+            <p className="text-xs text-slate-50  mt-1">Reviewing your store credentials...</p>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-6">

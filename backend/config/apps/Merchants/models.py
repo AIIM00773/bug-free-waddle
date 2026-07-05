@@ -1,5 +1,7 @@
 
 
+
+# IMPORTS:: ===============================================================================
 import uuid
 from django.db import models
 from django.conf import settings
@@ -35,22 +37,25 @@ class InternalMerchantProfile(models.Model):
 
     # IDENTITY & RELATIONSHIPS
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True,  db_index=True)
-    vendorOwner = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        related_name='merchant_profile', db_column='vendor_owner_id'
-    )
+    vendorCode = models.CharField(max_length=200, null=True, blank=True)
+    vendorOwner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='merchant_profile', db_column='vendor_owner_id')
     
     # 
     shopName = models.CharField(max_length=255, db_index=True)
     shopDescription = models.TextField(null=True, blank=True)
     accountEmail = models.EmailField(help_text="Administrative business email for financial and billing workflows.")
-    
+    accountPhone = models.CharField(max_length=20, null=True, blank=True, help_text="Customer-facing support number")
+
     
     #
-    shop_logo_url = models.URLField(max_length=500, null=True, blank=True)
-    shop_banner_url = models.URLField(max_length=500, null=True, blank=True)
+    shopLogoPlaceHolder = models.URLField(default="", null=True, blank=True)
+    shopBannerPlaceHolder = models.URLField(default="" , null=True, blank=True)
+    
+    shopLogo = models.ImageField(upload_to="Merchants/ShopLogos/", null=True, blank=True)
+    shopBanner = models.ImageField(upload_to="Merchants/ShopBanners/", null=True, blank=True)
+    
     is_accepting_orders = models.BooleanField(default=True, help_text="Store vacation mode or temporary pause")
-    shopCategory = models.ManyToManyField(MerchantShopCategory)
+    shopCategory = models.CharField(max_length=200,null=True, blank=True)
     shopCategoryPersist = models.CharField(max_length=100, null=True, blank=True)
 
 
@@ -58,8 +63,8 @@ class InternalMerchantProfile(models.Model):
     bussinessRegisted = models.BooleanField(default=False)
     taxPin = models.CharField(max_length=50, null=True, blank=True, help_text="e.g., KRA PIN for tax compliance")
     businessRegistrationNumber = models.CharField(max_length=100, null=True, blank=True)
-    support_phone = models.CharField(max_length=20, null=True, blank=True, help_text="Customer-facing support number")
-    legalDocument = models.FileField (upload_to="merchant_legal_media/", null=True, blank=True)
+    legalDocument = models.FileField (upload_to="Merchants/BusinessVerificationDocuments/", null=True, blank=True)
+    
 
     #
     commissionCutPercent = models.DecimalField(max_digits=5, decimal_places=3, default=3.505,validators=[MinValueValidator(0.00), MaxValueValidator(100.00)])
@@ -71,17 +76,20 @@ class InternalMerchantProfile(models.Model):
     verificationStatus = models.CharField( max_length=20, choices=VERIFICATION_STATUS_CHOICES, default='pending_review', db_index=True)
     verified  = models.BooleanField(default=False)
     payoutMethod = models.CharField(max_length=25, choices=PAYOUT_METHOD_CHOICES, default='M-Pesa')
+    
+    
+    # PAYOUT ROUTES :: 
    
-    # Bank Transfer payour     
+    # Bank    
     bankAccountNumber = models.CharField(max_length= 200, null=True , blank=True)
     bankName = models.CharField(max_length=200, null=True, blank=True)
     
-    # paybill payout 
+    # paybill 
     payBillNumber = models.CharField(max_length=200, null=True, blank=True)
     accountNumber = models.CharField(max_length=200, null=True, blank=True)
     
-    # sendmoney - mpesa payout
-    accountPhone = models.CharField(max_length = 13, help_text="Bussiness Phone number for financial ")
+    # sendmoney 
+    sendMoneyPhone = models.CharField(max_length = 13, null=True, blank=True, help_text="Bussiness Phone number for financial ")
 
 
     # METADATA TIMESTAMPS
@@ -97,6 +105,7 @@ class InternalMerchantProfile(models.Model):
     def __str__(self):
         return f"{self.shopName} | {self.accountEmail}"
 
+
     def clean(self):
         super().clean()
         if self.taxPin:
@@ -106,7 +115,7 @@ class InternalMerchantProfile(models.Model):
 
 
 
-
+# BIZ BRANCHES
 
 class MerchantStoreBranch(models.Model):
     """
@@ -114,35 +123,53 @@ class MerchantStoreBranch(models.Model):
     """
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True,primary_key=True,  db_index=True)
     merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name='branches')
+    branchCode = models.CharField(max_length=200, null=True, blank=True)
+    branchId = models.UUIDField(default= uuid.uuid4)
     
+    # verifications By Admins 
+    branchVerified = models.BooleanField(default=False)
+    branchInspected = models.BooleanField(default=False)
+    branchBlocked = models.BooleanField(default=False)
+    
+    
+    # identity
     branchName = models.CharField(max_length=150)
-    phone = models.CharField(max_length=15, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
+    branchDescription = models.TextField(null=True)
+    branchCategory = models.CharField(max_length=100, null=True,blank=True)
     
-    # Location routing
-    county = models.CharField(max_length=100, default="Kiambu")
-    cityTown = models.CharField(max_length=100, default="Juja")
+    # Contacts
+    branchPhone = models.CharField(max_length=15, null=True, blank=True)
+    branchEmail = models.EmailField(null=True, blank=True)
+    branchPostalCode = models.TextField(null=True)
+    
+    
+    # Location 
+    country = models.CharField(max_length=200,default="Kenya")
+    county = models.CharField(max_length=100, null=True, blank=True)
+    cityTown = models.CharField(max_length=100, null=True, blank=True)
     physicalAddress = models.TextField(help_text="Detailed location info, e.g., Thika Road Mall, 2nd Floor")
+    buildingName = models.TextField(null=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True,  validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)],help_text="For last-mile delivery API routing")
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True,validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)])
     
-    # Geolocation & Logistics
+    
+    
+    # Logistics
+    isActive = models.BooleanField(default=True)
     isPrimary = models.BooleanField(default=False, help_text="Main fulfillment center for default routing")
-    latitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True, 
-        validators=[MinValueValidator(-90.0), MaxValueValidator(90.0)],
-        help_text="For last-mile delivery API routing"
-    )
-    longitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True,
-        validators=[MinValueValidator(-180.0), MaxValueValidator(180.0)]
-    )
+    isOnline = models.BooleanField(default=True)
+    isStocked = models.BooleanField(default=True)
+    isAcceptingOrders = models.BooleanField(default=True)
     
     opens = models.TimeField( null=True , blank=True)
     closes = models.TimeField (null=True, blank=True)
     operatingHours = models.CharField(max_length=100, null=True, blank=True, help_text="e.g., 'Mon-Sat: 8AM-6PM'")
     
-    isActive = models.BooleanField(default=True)
-    is_active = models.BooleanField(default=True)
-
+    # management 
+    managerName = models.CharField(max_length=200, null=True,blank=True)
+    managerPhone = models.CharField(max_length=15 , null=True,blank=True)
+    managerEmail = models.EmailField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -154,68 +181,112 @@ class MerchantStoreBranch(models.Model):
 
     def save(self, *args, **kwargs):
         if self.isPrimary:
-            MerchantStoreBranch.objects.filter(merchant=self.merchant, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+            MerchantStoreBranch.objects.filter(merchant=self.merchant, isPrimary=True).exclude(pk=self.pk).update(isPrimary=False)
         super().save(*args, **kwargs)
 
 
 
 
+class BranchSpecificInventory(models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, db_index=True)
+    parrentBranch = models.ForeignKey(MerchantStoreBranch , on_delete=models.PROTECT, related_name="branch_inventory")
+    inventoryID = models.UUIDField(default=uuid.uuid4)
+    inventoryTitle = models.CharField(max_length=200, null=True, blank=True)
+    inventoryDescription = models.TextField()
+    inventoryLocked = models.BooleanField(default=False)
+    totalProducts = models.PositiveIntegerField(default=0)
+    
+    @property
+    def total_products_in_inventory(self):
+        pass
+
+
+    def __str_(self):
+        return ("Hello world ")
+
+
 
 
 # 2 PRODUCT CATALOG & QUANTITATIVE INVENTORY
-
 class MerchantProductCatalog(models.Model):
     """
     The base merchant-owned inventory catalog.
     """
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, unique=True, db_index=True)
-    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name='products')
+    productDef = models.CharField (max_length=200, null=True,blank=True)
+    productCode = models.CharField(max_length=200, null=True, blank=True)
+    parrentInventory = models.ForeignKey(BranchSpecificInventory, on_delete=models.PROTECT, related_name="product_in_inventory")
+    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name="products", null=True)
+    
     
     # 
     title = models.CharField(max_length=255, db_index=True)
     sku = models.CharField(max_length=100, blank=True, null=True, help_text="Merchant's Stock Keeping Unit identifier")
     description = models.TextField(blank=True, null=True)
-    category = models.ForeignKey(Category, null=True , blank=True , on_delete=models.PROTECT)
-    brand =  models.ForeignKey(Brand, null=True , blank=True, on_delete=models.PROTECT)
-    categoryPersist = models.CharField(max_length=100, null=True, blank=True)
-    
-    color =  models.ForeignKey(Color, null=True , blank=True,  on_delete=models.PROTECT)
-    size =  models.ForeignKey(Size, null=True , blank=True,  on_delete=models.PROTECT)
-    shape =  models.ForeignKey(Shape, null=True , blank=True,  on_delete=models.PROTECT)
-    isRefurbished =  models.BooleanField(default=False)
-    isNew =  models.BooleanField(default=True)
-  
-    
-    #
-    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True, help_text="URL friendly title")
-    searchTags = models.ManyToManyField(Tag,  blank=True )
-    userAddedsearchTags = models.CharField(max_length=255, blank=True, null=True, help_text="Comma separated keywords")
-
-    
-    #
-    originalPrice = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)])
-    dealPrice = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)], help_text="Active selling price")
-    priceChangeRecord = models.JSONField(default=list , null=True,blank=True, help_text="record of all prices this product has had" )
-    priceCompetitionRecord = models.JSONField(default=list, null=True, blank=True, help_text="position in pricing and the defference from the most selling merchant")
-    
-    
-    
-    
-    #
+    category = models.CharField(max_length=200, null=True , blank=True)
+    brand =  models.CharField(max_length=200, null=True , blank=True)
+    color =  models.CharField(max_length=200, null=True , blank=True)
+    size =  models.CharField(max_length=200, null=True , blank=True)
+    shape =  models.CharField(max_length=200, null=True , blank=True)
+    length = models.FloatField(null=True, blank=True)
+    width = models.FloatField(null=True, blank=True)
+    height = models.FloatField(null=True, blank=True)
+    volume = models.FloatField(null=True, blank=True)
     weightKg = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Crucial for calculating shipping rates")
     isPhysical = models.BooleanField(default=True, help_text="False for digital downloads/services")
+    
+    # validity
+    isNew =  models.BooleanField(default=True)
+    isUsable = models.BooleanField(default=True)
+    
+    isRefurbished =  models.BooleanField(default=False)
+    isSecondHand =  models.BooleanField(default=False)
+    isDamaged =  models.BooleanField(default=False)
+    
+    
+    # made in 
+    manufacturer = models.CharField(max_length=300, null=True, blank=True)
+    madeIn = models.CharField(max_length=200, null=True, blank=True)
+    locallyMade = models.BooleanField(default=False)
+    
+
+    #
+    slug = models.SlugField(max_length=255, unique=True, null=True, blank=True, help_text="URL friendly title")
+    searchTerms = models.JSONField(default=list,  blank=True,null=True )
+    tags = models.JSONField(default=list,  blank=True,null=True )
+
+
+    #
+    originalPrice = models.DecimalField(max_digits=10, decimal_places=2,  validators=[MinValueValidator(0.00)])
+    recentPrice = models.DecimalField(max_digits=10, decimal_places=2, null=True, validators=[MinValueValidator(0.00)])
+    dealPrice = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0.00)], help_text="Active selling price")
+    priceChangeRecords = models.JSONField(default=list , null=True,blank=True, help_text="record of all prices this product has had" )
+    priceCompetitionRecords = models.JSONField(default=list, null=True, blank=True, help_text="position in pricing and the defference from the most selling merchant")
     isTaxExempt = models.BooleanField(default=False)
+ 
     
-    # Visual and Dynamic States
-    primaryIimageUrl = models.URLField(max_length=500)
-    secondaryImages = models.JSONField(default=list, blank=True, help_text="Array of supplemental image strings")
     
+    
+
+    # Visuals
+    placeHolderimageUrl = models.URLField(max_length=300, default="", null=True,blank=True)
+    primaryImage = models.ImageField(upload_to="Catalog/PrimaryImages/" , null=True)
+    
+    # secondary
+    seconaryImage_one = models.ImageField(upload_to="Catalog/SeconaryImages/" , null=True)
+    seconaryImage_two = models.ImageField(upload_to="Catalog/SeconaryImages/" , null=True)
+    seconaryImage_three = models.ImageField(upload_to="Catalog/SeconaryImages/" , null=True)
+    seconaryImage_four = models.ImageField(upload_to="Catalog/SeconaryImages/" , null=True)
+        
+    # metrics 
     isAvailable = models.BooleanField(default=True, db_index=True)
     clickCount = models.PositiveIntegerField(default=0, help_text="Tracks user engagement")
     minimumStockThreshold = models.BigIntegerField(default=4)
     stockQuantity = models.BigIntegerField(default=0)
-    stockAuantity = models.BigIntegerField(default=0)
-
+    reservedQuantity = models.IntegerField(default=0) 
+    shelfLocationSnapshot = models.TextField(null=True, blank=True)
+    
+    # Timestamps 
     createdAt = models.DateTimeField(auto_now_add=True, db_index=True)
     updatedAt = models.DateTimeField(auto_now=True)
 
@@ -232,7 +303,7 @@ class MerchantProductCatalog(models.Model):
         ordering = ['-createdAt']
 
     def __str__(self):
-        return f"{self.title} ({self.merchant.shopName})"
+        return f"{self.title} ({self.parrentInventory.parrentBranch.merchant.vendorOwner.first_name}'s  Inventory Item)"
 
     def clean(self):
         super().clean()
@@ -255,46 +326,10 @@ class MerchantProductCatalog(models.Model):
 
 
 
-class MerchantInventoryStock(models.Model):
-    """
-    Tracks inventory availability on a per-branch basis.
-    """
-    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.CASCADE, related_name='stock_allocations')
-    branch = models.ForeignKey(MerchantStoreBranch, on_delete=models.CASCADE, related_name='stocks')
-    
-    quantityInStock = models.PositiveIntegerField(default=0)
-    lowStockThreshold = models.PositiveIntegerField(default=5)
-    
-    # 
-    reservedQuantity = models.PositiveIntegerField(default=0, help_text="Stock currently locked in active orders but not yet shipped")
-    shelfLocation = models.CharField(max_length=50, null=True, blank=True, help_text="Warehouse bin/shelf identifier (e.g., Aisle 4, Bin B)")
-    lastRestocked = models.DateTimeField(auto_now=True)
-
-    @property
-    def availableToSell(self):
-        """The TRUE stock available to new customers."""
-        return max(0, self.quantityInStock - self.reservedQuantity)
-
-    class Meta:
-        db_table = 'soko_merchant_inventory_stock'
-        unique_together = ('product', 'branch')
-
-    def __str__(self):
-        return f"{self.product.title} at {self.branch.branchName}: {self.availableToSell} available"
-
-    def clean(self):
-        super().clean()
-        if self.reservedQuantity > self.quantityInStock:
-            raise ValidationError({
-                'reserved_quantity': _("Reserved stock allocation cannot exceed physical warehouse stock.")
-            })
-
-
 
 
 
 # 3 TRANSACTIONS, COURIERS, & FULFILLMENT EXECUTION
-
 class MerchantOrder(models.Model):
     """
     The core transaction document for a specific vendor.
@@ -312,17 +347,27 @@ class MerchantOrder(models.Model):
     )
 
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True,  primary_key=True, db_index=True)
-    order_id  = models.CharField(max_length=100, unique=True, help_text="Global order reference ID for cross-merchant tracking")
+    orderID  = models.CharField(max_length=100, unique=True, null=True, help_text="Global order reference ID for cross-merchant tracking")
+    orderCode = models.CharField(max_length=200, unique=True, null=True)
     merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name='incoming_orders')
     fulfillmentBranch = models.ForeignKey(MerchantStoreBranch, on_delete=models.PROTECT, related_name='branch_fulfillment_orders', help_text="The specific storefront or regional distribution hub fulfilling this order.")
 
     # Fulfillment Tracking
     status = models.CharField(max_length=30, choices=FULFILLMENT_STATUS_CHOICES, default='AWAITING_ALLOCATION', db_index=True)
+    waybillType = models.CharField(max_length=300, null=True, blank=True)
     waybillNumber = models.CharField(max_length=100, null=True, blank=True, db_index=True, help_text="Tracking code for the logistics dispatch runner (e.g., Sendy, Fargo, Boda rider).")
+    waybillPhone = models.CharField(max_length=100, null=True, blank=True) #transpoter phone
+    waybillEmail = models.CharField(max_length=100, null=True, blank=True) #trnspoter  email
+    waybillName = models.CharField(max_length=100, null=True, blank=True) #trnspoter  Name
     
-    # Internal Operational Priorities
+    
+    
+    
+    # Priorities
     isUrgent = models.BooleanField(default=False, help_text="Bypass standard batch queues (e.g., fresh foods, medical essentials)")
+    isDue  = models.BooleanField(default=False, help_text="Due")
     requiresColdChain = models.BooleanField(default=False, help_text="Requires refrigerated dispatch routing")
+
 
     # Pure Merchant Financial Snapshots
     currency = models.CharField(max_length=100, default="KES")
@@ -335,17 +380,21 @@ class MerchantOrder(models.Model):
     platformFeeDeducted = models.DecimalField(max_digits=12, decimal_places=2, help_text="Platform commission fee deducted from gross sales.")
     netVendorPayout = models.DecimalField(max_digits=12, decimal_places=2, db_index=True, help_text="The final net earnings added to the merchant's withdrawable ledger balance.")
     
+    
     # Customer Details Isolated for Delivery
     shippingCustomerName = models.CharField(max_length=255, help_text="Name printed on the packing slip")
-    shippingPhone = models.CharField(max_length=20)
-    shippingCounty = models.CharField(max_length=100)
-    shippingTown = models.CharField(max_length=100)
+    shippingPhone = models.CharField(max_length=20 , null=True, blank=True)
+    shippingCounty = models.CharField(max_length=100 , null=True, blank=True)
+    shippingTown = models.CharField(max_length=100 , null=True, blank=True)
+    shippingCity = models.CharField(max_length=100 , null=True, blank=True)
+    shippingStreet = models.TextField(null=True)
+    shippingBuildingName = models.TextField(null=True)
+    nearestIdentifier = models.TextField(null=True)
     shippingPhysicalAddress = models.TextField(help_text="Detailed drop-off coordinates or building/estate details.")
 
     # Auditing Dates
     createdAt = models.DateTimeField(auto_now_add=True, db_index=True)
     updatedAt = models.DateTimeField(auto_now=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     
 
     class Meta:
@@ -371,12 +420,13 @@ class MerchantOrderItem(models.Model):
     warehouse staff need to fulfill from their inventory stock.
     """
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True,  db_index=True)
-    merchantOrder = models.ForeignKey(MerchantOrder, on_delete=models.PROTECT, related_name='manifest_items', db_column='merchant_order_id')
+    merchantOrder = models.ForeignKey(MerchantOrder, on_delete=models.PROTECT, related_name='manifest_items', db_column='merchant_order_item')
     product = models.ForeignKey(MerchantProductCatalog, on_delete=models.PROTECT, related_name='historical_merchant_sales')
     
     # Frozen Product Manifest Information
     productTitle = models.CharField(max_length=255)
     productSku = models.CharField(max_length=100, blank=True, null=True, help_text="Vendor inventory SKU for picker verification")
+    productDescription = models.TextField(null=True)
     shelfLocationSnapshot = models.CharField(max_length=50, null=True, blank=True, help_text="Where the picker can locate the item inside the branch hub")
     
     # Pricing Metrics
@@ -393,6 +443,7 @@ class MerchantOrderItem(models.Model):
 
 
 
+
 # ================================================================================================================
 # 4. BALANCES & DISBURSEMENT AUDIT TRAILS
 # ================================================================================================================
@@ -406,6 +457,8 @@ class MpesaSendMoneyMerchnatPayoutDestination(models.Model):
     
     def __str__(self):
         return ("payout Route")
+    
+    
     
     
 class MpesaPaybillMerchnatPayoutDestination(models.Model):
@@ -628,6 +681,8 @@ class MerchantAlerts (models.Model):
  
 class MerchnatsNotifications (models.Model):
     unique_id = models.UUIDField  (default = uuid.uuid4 , primary_key =True, unique=True)
+    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name='merchant_notifications', null=True)
+
     message = models.TextField()
     resolved = models.BooleanField(default=True)
     urlPath = models.URLField(null=True)
@@ -640,7 +695,7 @@ class MerchnatsNotifications (models.Model):
     
 class MerchantReviews(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, db_index=True)
-    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name='reviews')
+    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name='merchant_reviews')
     reviewer_name = models.CharField(max_length=255)
     reviewer_email = models.EmailField()
     reviewer_phone = models.CharField(max_length=20, null=True, blank=True)

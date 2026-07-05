@@ -218,11 +218,6 @@ class UserRegistrationView(APIView):
 
 
 
-
-
-
-
-
 class UserLoginView(APIView):
     permission_classes = [permissions.AllowAny]
 

@@ -109,7 +109,7 @@ export function ProductContextProvider({ children }: { children: React.ReactNode
     const refreshProducts = useCallback(async () => {
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}`, {
+            const response = await fetch(`${API_BASE_URL}products/catalog/`, {
                 method: "GET",
                 headers: getHeaders()
             });
@@ -135,7 +135,7 @@ export function ProductContextProvider({ children }: { children: React.ReactNode
 
     const onboardProduct = useCallback(async (product: ProductType) => {
         try {
-            const response = await fetch(`${API_BASE_URL}new/`, {
+            const response = await fetch(`${API_BASE_URL}products/catalog/new/`, {
                 method: "POST",
                 headers: getHeaders(),
                 body: JSON.stringify(product),
