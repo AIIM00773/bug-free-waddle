@@ -36,6 +36,9 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
         model = InternalMerchantProfile
         fields = '__all__' 
 
+    
+    # management 
+    
     def get__business_branches(self, obj):
         branches = obj.branches.all()
         return [
@@ -46,11 +49,18 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
                 "county": branch.county, 
                 "cityTown": branch.cityTown, 
                 "isPrimary": branch.isPrimary, 
-                "isActive": branch.isActive
+                "isActive": branch.isActive,
+                "operatingHours":branch.operatingHours,
+                "managerName": branch.managerName,
+                "managerPhone": branch.managerPhone,
+                "managerEmail": branch.managerEmail,
+                
             } 
             for branch in branches
         ]
 
+
+    
     def get__branch_inventory(self, obj):
         output = []
         for branch in obj.branches.all():
@@ -60,7 +70,11 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
                     "inventoryID": inventory.inventoryID,     
                     "inventoryTitle": inventory.inventoryTitle,
                     "inventoryLocked": inventory.inventoryLocked,
-                    "totalProducts": getattr(inventory, 'total_products', 0) 
+                    "totalProducts": getattr(inventory, 'total_products', 0),  
+                    "totalInventoryValue":inventory.totalInventoryValue,
+                    "lowStockItems":inventory.lowStockItems,
+                    "outOfStockItems":inventory.outOfStockItems,
+                    
                 })
         return output
 
@@ -162,8 +176,6 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
         
 # 1. MERCHANT PROFILE & BRANCH SERIALIZERS
 
-
-
 class InternalMerchantProfileSerializer(serializers.ModelSerializer):
     unique_id = serializers.UUIDField(read_only=True)
     commissionCutPercent = serializers.DecimalField(max_digits=5, decimal_places=3, read_only=True)
@@ -208,6 +220,8 @@ class MerchantStoreBranchSerializer(serializers.ModelSerializer):
 
 
 
+
+
 # 2. CATALOG & INVENTORY SERIALIZERS
 
 class MerchantProductCatalogSerializer(serializers.ModelSerializer):
@@ -235,14 +249,55 @@ class MerchantProductCatalogSerializer(serializers.ModelSerializer):
 
 
 
+
 class MerchantInventorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = BranchSpecificInventory
         fields = '__all__'
+
+
+
+
+
+
+
+# COMBINED  BRATCH DETAILS SERIALIZER  ======================================================================================
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MerchantProductCatalog
+        fields = "__all__"
+
+class InventorySerializer(serializers.ModelSerializer):
+    # 'product_in_inventory' maps to the related_name on MerchantProductCatalog.parrentInventory
+    products = ProductSerializer(many=True, source='product_in_inventory', read_only=True)
+
+    class Meta:
+        model = BranchSpecificInventory
+        fields = "__all__"
+
+class BranchAndBranchIndividualsSerializer(serializers.ModelSerializer):
+    # 'branch_inventory' maps to the related_name on BranchSpecificInventory.parrentBranch
+    inventories = InventorySerializer(many=True, source='branch_inventory', read_only=True)
+
+    class Meta:
+        model = MerchantStoreBranch  
+        fields = "__all__"
+
+
+
+# =====================================================================================================================================
+
+
+
+
+
+
+
+
         
-
-
 
 
 

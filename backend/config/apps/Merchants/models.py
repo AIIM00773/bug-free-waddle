@@ -187,6 +187,8 @@ class MerchantStoreBranch(models.Model):
 
 
 
+
+
 class BranchSpecificInventory(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, db_index=True)
     parrentBranch = models.ForeignKey(MerchantStoreBranch , on_delete=models.PROTECT, related_name="branch_inventory")
@@ -195,6 +197,10 @@ class BranchSpecificInventory(models.Model):
     inventoryDescription = models.TextField()
     inventoryLocked = models.BooleanField(default=False)
     totalProducts = models.PositiveIntegerField(default=0)
+    totalInventoryValue = models.PositiveIntegerField(default=0)
+    lowStockItems = models.PositiveIntegerField(default=0)
+    outOfStockItems = models.PositiveIntegerField(default=0)
+    
     
     @property
     def total_products_in_inventory(self):
@@ -203,6 +209,23 @@ class BranchSpecificInventory(models.Model):
 
     def __str_(self):
         return ("Hello world ")
+
+
+
+
+
+
+class MerchantProductCatalogSupplier (models.Model):
+    unique_id = models.UUIDField(default=uuid.uuid4, unique=True,  primary_key=True, db_index=True)
+    name = models.CharField(max_length=200, null=True)
+    email = models.CharField(max_length=200, null=True)
+    phone = models.CharField(max_length=200, null=True)
+    
+    description  = models.TextField()
+
+    def __str__(self):
+        return self.name 
+    
 
 
 
@@ -217,6 +240,8 @@ class MerchantProductCatalog(models.Model):
     productCode = models.CharField(max_length=200, null=True, blank=True)
     parrentInventory = models.ForeignKey(BranchSpecificInventory, on_delete=models.PROTECT, related_name="product_in_inventory")
     merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.CASCADE, related_name="products", null=True)
+
+    productsSuplier = models.ForeignKey(MerchantProductCatalogSupplier, on_delete=models.CASCADE, null=True, related_name="suplier")
     
     
     # 
@@ -546,6 +571,7 @@ class MerchantPayoutLedger(models.Model):
         super().clean()
         if self.status == 'failed' and not self.admin_notes:
             raise ValidationError({'admin_notes': _("You must document administrative notes stating why this payout record flagged a failed status.")})
+        
         
         
         

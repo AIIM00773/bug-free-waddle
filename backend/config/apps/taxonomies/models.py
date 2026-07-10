@@ -29,7 +29,7 @@ class TimeStampedModel(models.Model):
 
 
 class Country(TimeStampedModel):
-    unique_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    unique_id = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, primary_key=True)
     name = models.CharField(_("Country Name"), max_length=200, unique=True)
     zip_code = models.CharField(_("ZIP / Postal Code"), max_length=50, unique=True, db_index=True)
     is_setup_for_operation = models.BooleanField(_("Is Operational"), default=True, db_index=True)
@@ -45,6 +45,30 @@ class Country(TimeStampedModel):
 
 
 
+class County (TimeStampedModel):
+    unique_id = models.UUIDField (default = uuid.uuid4, unique=True, editable=False, primary_key=True)
+    parrent_country  = models.ForeignKey(Country, on_delete=models.CASCADE , related_name="county")
+    name = models.CharField(max_length=200, unique=True)
+    code = models.CharField(_("Postal Code"), max_length=50, unique=True, db_index=True)
+    is_setup_for_operation = models.BooleanField( default=True, db_index=True)
+
+    def __str__(self):
+        return (self.name)
+    
+
+
+
+
+class CityTown (TimeStampedModel):
+    unique_id = models.UUIDField (default = uuid.uuid4, unique=True, editable=False, primary_key=True)
+    parrent_county  = models.ForeignKey(County, on_delete=models.CASCADE , related_name="city_town")
+    name = models.CharField(max_length=200, unique=True)
+    code = models.CharField(max_length=50, unique=True, null=True)
+    is_setup_for_operation = models.BooleanField( default=True, db_index=True)
+
+    def __str__(self):
+        return (self.name)
+    
 
 
 

@@ -8,33 +8,48 @@ from django.db import IntegrityError
 from django.db import transaction 
 from rest_framework import serializers
 import re 
-from ..taxonomies.models import Category, Shape,Size,Color,Brand,Tag
 import uuid
 from rest_framework.validators import ValidationError
 from  django.shortcuts import  get_object_or_404
+from django.db import transaction
+
+
+
+
+
+# Industry-Standard Regular Expressions
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+PHONE_REGEX = re.compile(r"^(?:\+254|0)[17]\d{8}$")  # Validates Kenyan format: 07..., 01..., +254..
+TIME_REGEX = re.compile(r"^(?:[01]\d|2[0-3]):[0-5]\d$")  # Validates 24HR HH:MM format
+
+
+
+
+
+from ..taxonomies.models import Category, Shape,Size,Color,Brand,Tag
+
+
 from .models import (
     InternalMerchantProfile,
     MpesaSendMoneyMerchnatPayoutDestination,
     MpesaPaybillMerchnatPayoutDestination,
     MpesaTillMerchnatPayoutDestination,
     BankTransfarMerchnatPayoutDestination,
-    MerchantActivityLog
-    
-    )
-from.utils import log_merchant_activity 
-
-
-from .models import (
-    InternalMerchantProfile,
+    MerchantActivityLog,
     MerchantStoreBranch,
     MerchantProductCatalog,
     MerchantOrder,
     MerchantPayoutLedger,
     BranchSpecificInventory
-)
+    
+    )
+
+
+from.utils import log_merchant_activity 
 
 
 
+# serilizers 
 from .Serializsers import (
     InternalMerchantProfileSerializer,
     MerchantStoreBranchSerializer,
@@ -42,14 +57,14 @@ from .Serializsers import (
     MerchantInventorySerializer,
     MerchantOrderSerializer,
     MerchantPayoutLedgerSerializer,
-    MerchantDashboardSerializer
+    MerchantDashboardSerializer,
+    InventorySerializer,
+    BranchAndBranchIndividualsSerializer
 )
 
 from django.db.models import Prefetch, Count
 
-
-
-
+# MERCHANT ONBOARDING ========================================================================================================
 
 class MerchantOnboardingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -217,154 +232,11 @@ class MerchantOnboardingView(APIView):
         except Exception as e:
             return Response({"error": "An unexpected error occurred: " + str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        
-        
-        
-        
- 
-#=======================================================================================================
-
-
-class MerchantProfileDashboardView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        inventory_queryset = BranchSpecificInventory.objects.annotate(
-            total_products=Count('product_in_inventory')
-        )
-
-        profile = get_object_or_404(
-            InternalMerchantProfile.objects.prefetch_related(
-                'branches',
-                Prefetch('branches__branch_inventory', queryset=inventory_queryset),
-                "incoming_orders",
-                "incoming_orders__merchant_order_item",
-                "merchant_mpesa_payout_route", 
-                "merchant_mpesa_paybill_payout_route",
-                "merchant_mpesa_till_payout_route",
-                "merchant_bank_transfar_payout_route",
-                "daily_sales_snapshots",
-                "activity_logs",
-                "merchant_alerts",
-                "merchant_notifications",
-                "merchant_reviews"
-            ), 
-            vendorOwner=request.user
-        )
-        
-        serializer = MerchantDashboardSerializer(profile)
-        return Response({
-            "merchant_profile": serializer.data
-        }, status=status.HTTP_200_OK)
-        
-        
-"""""
-
-    def put(self, request):
-        profile = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        serializer = InternalMerchantProfileSerializer(profile, data=request.data, partial=True)
-        
-        if serializer.is_valid():
-            try:
-                was_accepting_orders = profile.is_accepting_orders
-                updated_profile = serializer.save()
-                
-                if was_accepting_orders != updated_profile.isAcceptingOrders:
-                    log_merchant_activity(
-                        merchant=updated_profile,
-                        action_event="vacation_mode_toggled",
-                        category="profile",
-                        description=f"Store order acceptance set to {updated_profile.isAcceptingOrders}",
-                        request=request,
-                        severity="warning"
-                    )
-                else:
-                    log_merchant_activity(
-                        merchant=updated_profile,
-                        action_event="profile_updated",
-                        category="profile",
-                        description="Store parameters updated successfully.",
-                        request=request
-                    )
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            except DjangoValidationError as e:
-                return Response({"detail": e.message_dict}, status=status.HTTP_400_BAD_REQUEST)
-                
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-"""
-
-
-
-class BranchManagementListCreateView(APIView):
-    """
-    Lists all regional distribution nodes or appends a brand new physical branch.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        profile = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        branches = MerchantStoreBranch.objects.filter(merchant=profile)
-        serializer = MerchantStoreBranchSerializer(branches, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        profile = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        serializer = MerchantStoreBranchSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            # Force the branch allocation to this authenticated merchant profile
-            new_branch = serializer.save(merchant=profile)
-            
-            log_merchant_activity(
-                merchant=profile,
-                action_event="branch_node_created",
-                category="branch",
-                description=f"Added new distribution branch hub: '{new_branch.branch_name}' in {new_branch.city_town}.",
-                request=request
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-            
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
 
 
-# MODULE B: CATALOG & INVENTORY CONTROL
-
-
-class ProductCatalogView(APIView):
-    """
-    Handles listing your products and adding clean new inventory records with automated slugging.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        profile = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        products = MerchantProductCatalog.objects.filter(merchant=profile)
-        serializer = MerchantProductCatalogSerializer(products, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        profile = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        serializer = MerchantProductCatalogSerializer(data=request.data)
-        
-        if serializer.is_valid():
-            try:
-                new_product = serializer.save(merchant=profile)
-                log_merchant_activity(
-                    merchant=profile,
-                    action_event="catalog_item_added",
-                    category="catalog",
-                    description=f"Created product listing: '{new_product.title}' with SKU: {new_product.sku}",
-                    request=request,
-                    product_uuid=new_product.unique_id
-                )
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            except DjangoValidationError as e:
-                return Response({"detail": e.message_dict}, status=status.HTTP_400_BAD_REQUEST)
-                
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -403,6 +275,9 @@ frontEndPayloadStructure = {
  'createdAt': '2026-07-03T06:26:09.663Z', 
  'updatedAt': '2026-07-03T06:26:09.663Z'
  }
+
+
+
 
 
 class ProductCatalogInfillView(APIView):
@@ -502,19 +377,7 @@ class ProductCatalogInfillView(APIView):
         
         
         
-        
-        
-        
-
-
-class InventoryStockUpdateView(APIView):
-    """
-    Allows localized updates to a product's stock levels at a specific branch.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-    pass
-
-
+    
 # ================================================================================================================
 # MODULE C: ORDER EXECUTION PIPELINE
 # ================================================================================================================

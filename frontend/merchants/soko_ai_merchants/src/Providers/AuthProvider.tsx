@@ -38,6 +38,7 @@ export interface LoginPayloadType {
     password: string;
 }
 
+
 export interface BranchType {
     unique_id: string;
     branchName: string;
@@ -46,34 +47,46 @@ export interface BranchType {
     cityTown: string;
     isPrimary: string;
     isActive: string;
+    operatingHours:string;
+    managerName:string;
+    managerPhone:string;
+    managerEmail:string;
+    
+                
+    
 }
 
-export interface BranchInventoryType {
+export interface BranchInventoryType{
     parrentBranchID: string;
     inventoryID: string;
     inventoryTitle: string;
     inventoryLocked: boolean;
     totalProducts: number;
-}
+    totalInventoryValue: string | number | null;
+    lowStockItems: number;
+    outOfStockItems:number;
+    
+};
+
+
+
+
 
 export interface CatalogItemOverviewType {
     unique_id: string;
+    parrentInventory: string | null;
     sku: string;
     title: string;
     category: string;
     currentStock: number;
     minimumStockThreshhold: number;
     price: number;
-}
+};
 
-export interface CatalogLowStockItemsType {
-    unique_id: string;
-    title: string;
-    category: string;
-    currentStock: number;
-    minimumStockThreshhold: number;
-    price: number;
-}
+
+
+
+
 
 export interface MerchantsAlertsType {
     unique_id: string | null;
@@ -82,7 +95,9 @@ export interface MerchantsAlertsType {
     Message: string;
     created_at: string;
     Read: boolean;
-}
+};
+
+
 
 export interface MerchantIncomingOrdersType {
     unique_id: string | null;
@@ -93,7 +108,10 @@ export interface MerchantIncomingOrdersType {
     currency: string;
     status: string;
     createdAt: string | Date | any;
-}
+};
+
+
+
 
 export interface CatalogLowStocItemsType {
     unique_id: string;
@@ -125,6 +143,7 @@ export interface InternalMerchantProfile {
     _merchant_alerts: MerchantsAlertsType[];
     _incoming_orders: MerchantIncomingOrdersType[];
     _incoming_reviews: MerchantIncomingReviewsType[];
+    
     vendorCode: string | null;
     shopName: string;
     shopDescription: string;
@@ -155,7 +174,10 @@ export interface InternalMerchantProfile {
     createdAt: string | Date;
     updatedAt: string | Date;
     vendorOwner: string;
-}
+};
+
+
+
 
 export interface UserType {
     unique_id: string;
@@ -191,6 +213,7 @@ interface AuthContextType {
 
     // Core Setters & Background Synchronization Actions
     setUser: Dispatch<SetStateAction<UserType | null>>;
+    
     refreshUser: () => Promise<void>;
     fetchMerchantProfile: () => Promise<void>;
     updateMerchantState: (profile: InternalMerchantProfile) => Promise<void>;
@@ -214,7 +237,7 @@ interface AuthContextType {
 
 export const API_BASE_URL = "http://127.0.0.1:8000";
 
-const BASE_API_ROUTES = {
+export const BASE_API_ROUTES = {
     REGISTER: `${API_BASE_URL}/public/api/v1/users/register/`,
     LOGIN: `${API_BASE_URL}/public/api/v1/users/login/`,
     PROFILE: `${API_BASE_URL}/public/api/v1/users/profile/`,
@@ -225,7 +248,7 @@ const BASE_API_ROUTES = {
     VALIDATE_TOKEN: `${API_BASE_URL}/public/api/v1/users/validate-token/`,
 };
 
-const MERCHANTS_API_ROUTES = {
+export const MERCHANTS_API_ROUTES = {
     AUTHENTICATE: `${API_BASE_URL}/public/api/v1/merchants/authenticate/`,
     GETPROFILE: `${API_BASE_URL}/public/api/v1/merchants/`,
     ONBOARD: `${API_BASE_URL}/public/api/v1/merchants/merchant/onboard/`,
