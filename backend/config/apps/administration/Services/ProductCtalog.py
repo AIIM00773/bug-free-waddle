@@ -6,12 +6,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from .User import IsAdminStaff
-from ...Merchants.models import MerchantProductCatalog
+from ...Merchants.models import MerchantInventoryProduct
 
 
-class MerchantProductCatalogSerializer(ModelSerializer):
+class MerchantInventoryProductSerializer(ModelSerializer):
     class Meta:
-        model = MerchantProductCatalog
+        model = MerchantInventoryProduct
         fields = "__all__"
 
 
@@ -27,8 +27,8 @@ class BaseMerchantProductCatalogView(APIView):
         """
         Retrieves the entire product catalog data matrix.
         """
-        queryset = MerchantProductCatalog.objects.all()
-        serializer = MerchantProductCatalogSerializer(queryset, many=True)
+        queryset = MerchantInventoryProduct.objects.all()
+        serializer = MerchantInventoryProductSerializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     
@@ -43,7 +43,7 @@ class BaseMerchantProductCatalogView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        serializer = MerchantProductCatalogSerializer(data=request.data)
+        serializer = MerchantInventoryProductSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(
@@ -75,7 +75,7 @@ class MerchantProductCatalogDetailView(APIView):
         Helper method to safely isolate and retrieve a specific product state 
         or trigger a standard API 404 handler fallback.
         """
-        return get_object_or_404(MerchantProductCatalog, unique_id=product_id)
+        return get_object_or_404(MerchantInventoryProduct, unique_id=product_id)
 
 
     def get(self, request, product_id, *args, **kwargs):
@@ -85,7 +85,7 @@ class MerchantProductCatalogDetailView(APIView):
         product_id = request.query_params.get("product_id")
         
         product = self.get_object(product_id)
-        serializer = MerchantProductCatalogSerializer(product)
+        serializer = MerchantInventoryProductSerializer(product)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -106,7 +106,7 @@ class MerchantProductCatalogDetailView(APIView):
             )
 
         # Passing the isolated instance alongside the incoming data triggers standard update validation
-        serializer = MerchantProductCatalogSerializer(product, data=request.data)
+        serializer = MerchantInventoryProductSerializer(product, data=request.data)
         
         if serializer.is_valid():
             serializer.save()

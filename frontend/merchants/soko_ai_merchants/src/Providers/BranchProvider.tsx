@@ -5,12 +5,15 @@ import { getHeaders, useAuth } from "./AuthProvider";
 // --- API Configuration ---
 export const API_BASE_URL = "http://127.0.0.1:8000";
 export const BASE_API_ROUTES = {
-  ONBOARD: `${API_BASE_URL}/public/api/v1/merchants/branches/branch/onboard/`,
+  ONBOARD: `${API_BASE_URL}/public/api/v1/merchants/branches/onboard/`,
   GETBRANCHES: `${API_BASE_URL}/public/api/v1/merchants/branches/`,
   EDIT: `${API_BASE_URL}/public/api/v1/merchants/branches/branch/`,
-  DELETE: `${API_BASE_URL}/public/api/v1/merchants/branches/branch/`,
-  INDIVIDUAL: `${API_BASE_URL}/public/api/v1/merchants/branches/branch/`,
+  DELETE: `${API_BASE_URL}/public/api/v1/merchants/branches/`,
+  INDIVIDUAL: `${API_BASE_URL}/public/api/v1/merchants/branches/`,
 };
+
+
+
 
 // --- TypeScript Interfaces ---
 export interface BranchType {
@@ -18,7 +21,10 @@ export interface BranchType {
   unique_id?: string;
   branchName: string;
   [key: string]: any;
-}
+};
+
+
+
 
 export interface OnboardingFormBranchType {
   branchName: string;
@@ -41,7 +47,10 @@ export interface OnboardingFormBranchType {
   managerName: string;
   managerPhone: string;
   managerEmail: string;
-}
+};
+
+
+
 
 export interface BranchOnboardingErrorsType {
   branchName: string | null;
@@ -67,7 +76,11 @@ export interface BranchOnboardingErrorsType {
   onBoardingError: string | null; 
   runtime?: string | null; 
   server?: string | null; 
-}
+};
+
+
+
+
 
 export interface BranchContextType {
   branches: BranchType[];
@@ -83,7 +96,11 @@ export interface BranchContextType {
   editingBranch: (id: string, payload: Partial<OnboardingFormBranchType>) => Promise<void>;
   deletingBranch: (id: string) => Promise<void>;
   getIndividualBranch: (id: string) => Promise<BranchType | undefined>;
-}
+};
+
+
+
+
 
 // --- Initial States ---
 const initialFormState: OnboardingFormBranchType = {
@@ -225,7 +242,7 @@ export function BranchContextProvider({ children }: { children: ReactNode }) {
   const deletingBranch = useCallback(async (id: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_API_ROUTES.DELETE}${id}/`, {
+      const response = await fetch(`${BASE_API_ROUTES.DELETE}${id}/delete/`, {
         method: "DELETE",
         headers: getHeaders(),
       });
@@ -240,15 +257,15 @@ export function BranchContextProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // GET INDIVIDUAL BRANCH DETAILS
+
+
   const getIndividualBranch = useCallback(async (id: string): Promise<BranchType | undefined> => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BASE_API_ROUTES.INDIVIDUAL}details/${id}/`, { headers: getHeaders() });
+      const response = await fetch(`${BASE_API_ROUTES.INDIVIDUAL}${id}/`, { headers: getHeaders() });
       if (!response.ok) throw new Error(`Status: ${response.status}`);
       const data = await response.json();
       setSelectedBranch(data);
-      console.log(data);
       return data;
     } catch (error) {
       setOnboardingErrors(prev => ({ ...prev, runtime: error instanceof Error ? error.message : "Error" }));

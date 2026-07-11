@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Package, DollarSign, Image as ImageIcon, Info, Truck, Tag, Save, X, UploadCloud } from 'lucide-react';
 
 export function ProductCreateForm({ inventories = [], onSubmit, onCancel, isOpen = true }) {
+  
   const [formData, setFormData] = useState({
     parrentInventory: '',
     title: '',

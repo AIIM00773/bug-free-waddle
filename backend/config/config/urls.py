@@ -55,7 +55,7 @@ urlpatterns = [
     
     
     # ===============================================================================
-    # 3 MERCHAT ROUTES   
+    # 3 MERCHANT ROUTES   
     # ========================================================================
 
     path("public/api/v1/merchants/", include("apps.Merchants.urls")),

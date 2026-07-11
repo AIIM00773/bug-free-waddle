@@ -11,6 +11,9 @@ from ..models import InternalMerchantProfile
 from ..utils import log_merchant_activity
 from .permissions import IsVerifiedMerchant
 
+
+
+
 # =============================================================================
 # REGEX VALIDATORS
 # =============================================================================
@@ -34,24 +37,29 @@ class MerchantOnboardingView(APIView):
 
         if not PHONE_REGEX.match(str(data.get("support_phone", '')).strip()):
             errors['supportPhone'] = "Invalid support phone format. Must start with 07 or 01 and be 10 digits."
+
             
         if not EMAIL_REGEX.match(str(data.get("accountEmail", '')).strip()):
             errors['accountEmail'] = "Invalid email format."
+
             
         if data.get("bussinessRegisted"):
             tax_pin = str(data.get("taxPin", '')).strip().upper()
             if not KRA_PIN_REGEX.match(tax_pin):
                 errors['taxPin'] = "Invalid KRA PIN format. Must be 11 characters (Letter, 9 digits, Letter)."
 
+
         payout_method = data.get("payoutMethod")
         
         if payout_method == 'M-Pesa Send Money':
             if not PHONE_REGEX.match(str(data.get("accountPhone", '')).strip()):
                 errors['accountPhone'] = "Invalid M-Pesa phone number."
+
                 
         elif payout_method == 'M-pesa Paybill':
             if not NUMERIC_REGEX.match(str(data.get("payBillNumber", '')).strip()):
                 errors['payBillNumber'] = "Paybill must be numeric."
+                
             if not data.get("accountNumber"):
                 errors['accountNumber'] = "Paybill account number is required."
                 
@@ -64,6 +72,8 @@ class MerchantOnboardingView(APIView):
                 errors['bankDetails'] = "Bank Name and Account Number are required."
                 
         return errors
+
+
 
     def check_integrity(self, user, data):
         errors = {}
@@ -89,6 +99,9 @@ class MerchantOnboardingView(APIView):
             errors["supportPhone"] = f"The Phone Number {support_phone} is already registered."
                         
         return errors
+
+
+
     
     @transaction.atomic
     def post(self, request):
@@ -133,6 +146,8 @@ class MerchantOnboardingView(APIView):
             elif payout_method == 'Bank Transfer':
                 profile_kwargs["bankName"] = data.get("bankName", "").strip()
                 profile_kwargs["bankAccountNumber"] = data.get("bankAccountNumber", "").strip()
+
+
 
             merchant = InternalMerchantProfile(**profile_kwargs)
             merchant.save()

@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import ModelSerializer
 from .models import Conversation, Message
-from ..Merchants.models import MerchantProductCatalog 
+from ..Merchants.models import MerchantInventoryProduct 
 
 from .Serializers import (
     ConversationSerializer, 
@@ -18,7 +18,7 @@ from .Serializers import (
 
 class ProductSerializer (ModelSerializer):
     class Meta:
-        model = MerchantProductCatalog
+        model = MerchantInventoryProduct
         fields = "__all__"
 
 
@@ -70,7 +70,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
         )
 
         # 3. Process merchant database recommendations
-        products = MerchantProductCatalog.objects.all()[:10]
+        products = MerchantInventoryProduct.objects.all()[:10]
         products_serialized = ProductSerializer(products, many=True)
         
         Message.objects.create(
@@ -101,6 +101,8 @@ class ConversationViewSet(viewsets.ModelViewSet):
         conversation = self.get_object()
         serialized = ConversationSerializer(conversation, many=False)
         return Response({"conversation": serialized.data}, status=status.HTTP_200_OK)
+
+
 
 
 

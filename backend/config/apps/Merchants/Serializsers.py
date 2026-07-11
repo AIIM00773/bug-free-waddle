@@ -278,6 +278,9 @@ class InventorySerializer(serializers.ModelSerializer):
         model = BranchSpecificInventory
         fields = "__all__"
 
+
+
+
 class BranchAndBranchIndividualsSerializer(serializers.ModelSerializer):
     # 'branch_inventory' maps to the related_name on BranchSpecificInventory.parrentBranch
     inventories = InventorySerializer(many=True, source='branch_inventory', read_only=True)

@@ -16,13 +16,7 @@ from django.core.exceptions import PermissionDenied
 
 # 1 MERCHANT PROFILE & LOGISTICS NODES
 
-class InternalMerchantProfile(models.Model):
-    """
-    Stores storefront parameters, payout configs, and transaction cut allocations.
-    Links directly to the base authentication User model via a OneToOne relationship.
-    """
-    
-    
+class InternalMerchantProfile(models.Model):    
     VERIFICATION_STATUS_CHOICES = (
         ('verified', 'Verified Active'),
         ('pending_review', 'Pending Review'),
@@ -112,6 +106,15 @@ class InternalMerchantProfile(models.Model):
             self.taxPin = self.taxPin.strip().upper()
             if len(self.taxPin) != 11:
                 raise ValidationError({'tax_pin': _("A valid KRA PIN must be exactly 11 characters long.")})
+
+
+
+
+
+
+
+
+
 
 
 
@@ -574,30 +577,7 @@ class MerchantPayoutLedger(models.Model):
         
         
         
-        
-        
-#Daily gross sales snapshot for each merchant, used for analytics and reporting 
-class GrossSalesSnapshot(models.Model):
-    """
-    A daily snapshot of gross sales for each merchant, used for analytics and reporting.
-    """
-    unique_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True, db_index=True)
-    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name='daily_sales_snapshots')
-    
-    date = models.DateField(db_index=True)
-    gross_sales_amount = models.DecimalField(max_digits=12, decimal_places=2, help_text="Total revenue generated before any deductions")
-    
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        db_table = 'soko_merchant_gross_sales_snapshot'
-        ordering = ['-date']
-        unique_together = ('merchant', 'date')
-
-    def __str__(self):
-        return f"Gross Sales Snapshot for {self.merchant.shopName} on {self.date}: {self.gross_sales_amount}"
-    
-    
 
 # ====================================================================================================================================
 class MerchantActivityLog(models.Model):

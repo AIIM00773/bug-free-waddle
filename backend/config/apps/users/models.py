@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.core.validators import MinValueValidator, MaxValueValidator
-from apps.Merchants.models  import InternalMerchantProfile , MerchantProductCatalog
+# from apps.Merchants.models  import InternalMerchantProfile , MerchantProductCatalog
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.utils.translation import gettext_lazy as _
@@ -280,7 +280,7 @@ class CartGroup(models.Model):
 class SubCart(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     cart_group = models.ForeignKey(CartGroup, on_delete=models.PROTECT, related_name="sub_carts")
-    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name="sub_carts_related_merchant")
+    merchant = models.ForeignKey("Merchants.InternalMerchantProfile", on_delete=models.PROTECT, related_name="sub_carts_related_merchant")
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
@@ -310,10 +310,12 @@ class SubCart(models.Model):
 
 
 
+
+
 class SubCartItem(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     sub_cart = models.ForeignKey(SubCart, on_delete=models.CASCADE, related_name="items")
-    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.PROTECT, related_name="cart_items")
+    product = models.ForeignKey("Merchants.MerchantInventoryProduct", on_delete=models.PROTECT, related_name="cart_items")
     
     # Financial snapshot data - using DecimalField for precise money handling
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -382,7 +384,7 @@ class UserOrderGroup(models.Model):
 class UserSubOrder(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     order_group = models.ForeignKey(UserOrderGroup, on_delete=models.PROTECT, related_name="sub_orders")
-    merchant = models.ForeignKey(InternalMerchantProfile, on_delete=models.PROTECT, related_name="sub_orders_rlated_merchant")
+    merchant = models.ForeignKey("Merchants.InternalMerchantProfile", on_delete=models.PROTECT, related_name="sub_orders_rlated_merchant")
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     
@@ -412,7 +414,7 @@ class UserSubOrder(models.Model):
 class UserSubOrderItem(models.Model):
     unique_id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     sub_order = models.ForeignKey(UserSubOrder, on_delete=models.PROTECT, related_name="items")
-    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.PROTECT, related_name="order_items")
+    product = models.ForeignKey("Merchants.MerchantInventoryProduct", on_delete=models.PROTECT, related_name="order_items")
     
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     product_title = models.CharField(max_length=255, null=True, blank=True)
@@ -598,7 +600,7 @@ class UserReview(models.Model):
 
 class UserReviewItem(models.Model):
     parent = models.ForeignKey(UserReview, on_delete=models.CASCADE, related_name="reviews")
-    target_item = models.ForeignKey(MerchantProductCatalog, on_delete=models.CASCADE, related_name="product_reviews")
+    target_item = models.ForeignKey("Merchants.MerchantInventoryProduct", on_delete=models.CASCADE, related_name="product_reviews")
     
     review_text = models.TextField()
     rating = models.PositiveIntegerField(
@@ -641,7 +643,7 @@ class UserAlertItem(models.Model):
     )
 
     parent = models.ForeignKey(UserAlert, on_delete=models.CASCADE, related_name="alerts")
-    product = models.ForeignKey(MerchantProductCatalog, on_delete=models.CASCADE, related_name="tracked_alerts", null=True, blank=True)
+    product = models.ForeignKey("Merchants.MerchantInventoryProduct", on_delete=models.CASCADE, related_name="tracked_alerts", null=True, blank=True)
     alert_type = models.CharField(max_length=50, choices=ALERT_TYPE_CHOICES, default="price_drop")
     target_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, help_text="Target budget match value in KSh")
     is_triggered = models.BooleanField(default=False)
@@ -743,6 +745,11 @@ class UserShippingAddress(models.Model):
     
     
     
+
+
+
+
+
 
 
 # ========================================================================================================
