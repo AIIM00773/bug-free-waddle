@@ -39,7 +39,7 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
       const response = await fetch(`${MERCHANTS_API_ROUTES.GETPROFILE}inventories/${branch_id}`, {method: "GET",headers: {"Content-Type": "application/json",...getHeaders(),},});
       if (!response.ok) { throw new Error(`An error occurred fetching the inventories!!`);}
       const data = await response.json();
-      setBranchInventories(data);} 
+      setBranchInventories(data.inventories);} 
       
    catch (error) {setInventoryFetchingError("An  error occurred when fetching your invetotries!! ");}
    finally {setInventoryLoading(false);}

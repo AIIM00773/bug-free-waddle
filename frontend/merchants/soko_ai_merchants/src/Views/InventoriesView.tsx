@@ -3,11 +3,14 @@ import { useAuth } from '../Providers/AuthProvider';
 import { useBranch } from '../Providers/BranchProvider'; 
 import { useInventory } from '../Providers/InventoryProvider';
 import { ProductCreateForm } from './onboarding/ProductCreateForm';
+import { SmartProductOnboardForm } from './onboarding/smartProductOnbardForm';
 import { InventoryFilterDrawer } from './onboarding/InventoryFilterDrawer';
+
 import { 
   Search, Plus, Filter, MoreHorizontal, MapPin, Package, 
   ArrowRightLeft, Store, Lock, ChevronDown, AlertCircle, 
-  Loader2, Eye, EyeOff, Maximize2, Minimize2 
+  Loader2, Eye, EyeOff, Maximize2, Minimize2 ,Sparkles ,
+  PlusSquare
 } from 'lucide-react';
 
 // =============================================================================
@@ -61,6 +64,7 @@ export function InventoryView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [openInventoryFilterDrawer, setOpenInventoryFilterDrawer] = useState(false);
   const [openProductCreateForm, setOpenProductCreateForm] = useState(false);
+  const [openSmartProducOnboard, setOpenSamrtProductOnboard] = useState(false); 
   const [showSummary, setShowSummary] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false); 
   
@@ -203,43 +207,55 @@ export function InventoryView() {
         <main className="max-w-7xl mx-auto px-6 mt-6">
           
           {/* LEDGER TAB CONTROL DECKS */}
-          {activeBranch && branchInventories?.length > 0 && !inventoryFetchingError && !isFullscreen && (
-            <div className="border-b border-slate-200 mb-6 flex flex-row items-center justify-between w-full pb-1 overflow-x-auto scrollbar-hide">
-              <nav className="-mb-px flex space-x-4" aria-label="Tabs">
-                {branchInventories
-                  .filter((invent: Inventory) => {
-                    const targetId = String(invent.parrentBranch?.unique_id || invent.parrentBranch || '');
-                    const currentId = String(activeBranch.unique_id || activeBranch.id || '');
-                    return targetId === currentId;
-                  })
-                  .map((inv: Inventory) => {
-                    const isActive = activeInventory?.inventoryID === inv.inventoryID;
-                    return (
-                      <button
-                        key={inv.inventoryID}
-                        onClick={() => setActiveInventory(inv)}
-                        className={`
-                          group inline-flex items-center gap-2 cursor-pointer whitespace-nowrap border-b-[1px] py-1 px-0  text-sm font-medium transition-all duration-200
-                          ${isActive 
-                            ? 'border-slate-950 text-slate-950 font-semibold' 
-                            : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}
-                        `}
-                      >
-                        {inv.inventoryTitle}
-                        {inv.inventoryLocked && <Lock className="h-3.5 w-3.5 text-slate-400" />}
-                        <span
-                          className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold font-mono transition-colors ${
-                            isActive ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
-                          }`}
-                        >
-                          {inv.products?.length || 0}
-                        </span>
-                      </button>
-                    );
-                  })}
-              </nav>
-            </div>
-          )}
+         {activeBranch && branchInventories?.length > 0 && !inventoryFetchingError && !isFullscreen && (
+  <div className="border-b border-slate-200 mb-6 w-full">
+    <nav 
+      className="flex space-x-6 overflow-x-auto pb-px scrollbar-hide" 
+      aria-label="Inventory Tabs"
+    >
+      {branchInventories
+        .filter((invent: Inventory) => {
+          const targetId = String(invent.parrentBranch?.unique_id || invent.parrentBranch || '');
+          const currentId = String(activeBranch.unique_id || activeBranch.id || '');
+          return targetId === currentId;
+        })
+        .map((inv: Inventory) => {
+          const isActive = activeInventory?.inventoryID === inv.inventoryID;
+          
+          return (
+            <button
+              key={inv.inventoryID}
+              onClick={() => setActiveInventory(inv)}
+              className={`
+                group inline-flex items-center gap-2 cursor-pointer whitespace-nowrap 
+                border-b-2 py-2.5 px-1 text-sm font-medium transition-all duration-200 -mb-px
+                ${isActive 
+                  ? 'border-slate-900 text-slate-900 font-semibold' 
+                  : 'border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300'}
+              `}
+            >
+              <span className="tracking-wide">{inv.inventoryTitle}</span>
+              
+              {inv.inventoryLocked && (
+                <Lock className="h-3.5 w-3.5 text-slate-400 group-hover:text-slate-500 transition-colors" />
+              )}
+              
+              <span
+                className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold font-mono transition-colors ${
+                  isActive 
+                    ? 'bg-slate-900 text-white' 
+                    : 'bg-slate-100 text-slate-600 group-hover:bg-slate-200'
+                }`}
+              >
+                {inv.products?.length || 0}
+              </span>
+            </button>
+          );
+        })}
+    </nav>
+  </div>
+)}
+
 
           {/* INTERNAL ROUTING UI STATIONS */}
           {inventoryLoading && (
@@ -285,7 +301,7 @@ export function InventoryView() {
                 onClick={() => setOpenProductCreateForm(true)}
                 className="mt-6 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800 cursor-pointer"
               >
-                <Plus className="h-4 w-4" /> Initialize Inventory Ledger
+                <Plus className="h-4 w-4" /> create Inventory Ledger
               </button>
             </div>
           )}
@@ -339,16 +355,29 @@ export function InventoryView() {
                       onClick={() => setOpenInventoryFilterDrawer(true)}
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-950 cursor-pointer"
                     >
-                      <Filter className="h-3.5 w-3.5" /> Filter Matrix
+                      <Filter className="h-3.5 w-3.5" /> Filter
                     </button>
                     
                     <button
                       onClick={() => setOpenProductCreateForm(true)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800 cursor-pointer"
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800 cursor-pointer"
                     >
-                      <Plus className="h-3.5 w-3.5" /> New Ledger Item
+                      <PlusSquare className="h-3.5 w-3.5" /> 
                     </button>
 
+
+
+                    <button
+                      onClick={() => setOpenSamrtProductOnboard(true)}
+                      className="inline-flex items-center justify-center gap-2 rounded-md bg-slate-950 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-800 cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" color={"pink"} /> 
+                      <PlusSquare className="h-3.5 w-3.5" color={"white"}  /> 
+
+                    </button>
+
+
+                    
                     <div className="h-8 w-px bg-slate-200 mx-1 hidden sm:block" />
 
                     {!isFullscreen && (
@@ -486,12 +515,23 @@ export function InventoryView() {
       </div>
 
       {/* DETACHED OVERLAY INJECTIONS */}
-      {openProductCreateForm && (
-        <ProductCreateForm onCancel={() => setOpenProductCreateForm(false)} isOpen={openProductCreateForm} />
+      {openProductCreateForm &&  !openSmartProducOnboard && (
+        <ProductCreateForm onCancel={() => setOpenProductCreateForm(false)} isOpen={openProductCreateForm} active_inventory={activeInventory} />
       )}
-      {openInventoryFilterDrawer && (
-        <InventoryFilterDrawer onClose={() => setOpenInventoryFilterDrawer(false)} />
+
+      {openSmartProducOnboard && !openProductCreateForm && (
+      <SmartProductOnboardForm onCancel={()=>setOpenSamrtProductOnboard(false)} /> 
+      
       )}
+
+      
+      {openInventoryFilterDrawer &&  !openProductCreateForm && !openSmartProducOnboard && (
+        <InventoryFilterDrawer isOpen={openInventoryFilterDrawer} onClose={() => setOpenInventoryFilterDrawer(false)} />
+      )}
+
+
+
+      
     </>
   );
 }

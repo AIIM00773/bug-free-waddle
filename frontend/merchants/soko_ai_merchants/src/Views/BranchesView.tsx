@@ -44,9 +44,7 @@ export default function BranchesView() {
       {/* Refined Modal Overlay with Backdrop Blur */}
       {addNewBranch && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 sm:p-6 transition-all duration-300">
-          <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200 animate-in fade-in zoom-in-95 duration-200">
             <AddBranchForm onCancel={() => setAddNewBranch(false)} />
-          </div>
         </div>
       )}
 

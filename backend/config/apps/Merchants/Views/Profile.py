@@ -17,7 +17,7 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
      #Aggregated fields ------------------------------------
      
     _business_branches = serializers.SerializerMethodField()
-    _branch_inventory = serializers.SerializerMethodField()
+    _branch_inventories = serializers.SerializerMethodField()
     _gross_net_payout = serializers.SerializerMethodField()
     _gross_sales_today = serializers.SerializerMethodField()
     _awaiting_orders_queue = serializers.SerializerMethodField()
@@ -49,7 +49,7 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
             for branch in obj.branches.all()
         ]
 
-    def get__branch_inventory(self, obj):
+    def get__branch_inventories(self, obj):
         output = []
         for branch in obj.branches.all():
             for inventory in branch.branch_inventory.all():

@@ -181,7 +181,7 @@ export default function AddBranchForm({ onCancel }: AddBranchFormProps) {
     }
     
     return (
-        <div className="w-full max-w-2xl xl:mt-14 mx-auto bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden transition-all duration-300">
+        <div className="w-full max-w-2xl xl:mt-1 mx-auto bg-white dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-900 rounded-xl shadow-sm overflow-hidden transition-all duration-300">
             
             {/* Visual Step Indicator Progress Bar */}
             <div className="pt-6 px-8 flex items-center justify-between gap-2">

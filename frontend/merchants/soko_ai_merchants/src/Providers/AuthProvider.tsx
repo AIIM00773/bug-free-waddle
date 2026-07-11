@@ -134,7 +134,7 @@ export interface MerchantIncomingReviewsType {
 export interface InternalMerchantProfile {
     unique_id: string;
     _business_branches: BranchType[];
-    _branch_inventory: BranchInventoryType[];
+    _branch_inventories: BranchInventoryType[];
     _gross_net_payout: number;
     _gross_sales_today: number;
     _awaiting_orders_queue: number;
@@ -327,6 +327,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+
+
     const fetchMerchantProfile = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -343,6 +346,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         if (!prev) return null;
                         return { ...prev, merchant_profile: data.merchant_profile };
                     });
+                    
                 }
             }
         } catch (error) {
@@ -351,6 +355,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         }
     }, []);
+
+
+
+
 
     const userSignup = useCallback(async (payload: SignupPayloadType) => {
         try {
@@ -387,6 +395,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+
+    
+
     const userLogin = useCallback(async (payload: LoginPayloadType) => {
         try {
             setIsLoading(true);
@@ -422,6 +434,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+    
+
     const userLogout = useCallback(async () => {
         try {
             setIsLoading(true);
@@ -445,6 +460,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         }
     }, []);
+
+
+    
 
     // Account Recovery & Verification Management
     const forgotPassword = useCallback(async (email: string) => {
@@ -470,6 +488,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+    
+
     const resetPassword = useCallback(async (authenticationCode: string | number, newPassword: string) => {
         try {
             setIsLoading(true);
@@ -492,6 +513,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         }
     }, []);
+
+
+    
 
     // Merchant Ecosystem Subroutines
     const merchantOnboarding = useCallback(async (payload: any) => {
@@ -536,6 +560,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     }, []);
 
+
+    
+
     const updateMerchantState = useCallback(async (updatedProfile: InternalMerchantProfile) => {
         try {
             setIsLoading(true);
@@ -563,6 +590,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setIsLoading(false);
         }
     }, []);
+
+
+
+    
 
     // Runtime Initialization Trigger
     useEffect(() => {
