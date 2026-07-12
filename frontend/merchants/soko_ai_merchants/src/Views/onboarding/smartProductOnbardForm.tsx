@@ -1,29 +1,52 @@
-
-
-
-import React, { useState, useEffect } from 'react';
-import { Sparkles, UploadCloud, CheckCircle2, AlertCircle, RefreshCw, Layers, ShieldCheck, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sparkles, UploadCloud, AlertCircle, RefreshCw, Layers, ShieldCheck, X } from 'lucide-react';
 
 export function SmartProductOnboardForm({ isOpen = true, onCancel, onSubmit }) {
   const [currentStage, setCurrentStage] = useState('idle'); // 'idle' | 'scanning' | 'review'
   const [dragActive, setDragActive] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const fileInputRef = useRef(null);
 
-  // Structured form state specifically populated by the AI model
-  const [aiExtractedData, setAiExtractedData] = useState({
+  // Fully balanced initial form context
+  const getInitialFormState = () => ({
     title: '',
+    sku: '',
     category: '',
     brand: '',
     description: '',
-    color: '',
+    originalPrice: '',
+    dealPrice: '',
+    isTaxExempt: false,
+    stockQuantity: 1,
+    minimumStockThreshold: 1,
+    shelfLocationSnapshot: '',
     isPhysical: true,
-    confidenceScore: 0 // Mock confidence index for UI fidelity
+    weightKg: '',
+    length: '',
+    width: '',
+    height: '',
+    color: '',
+    size: '',
+    condition: 'isNew', // Strictly locked enum tracking pattern
+    manufacturer: '',
+    madeIn: '',
+    locallyMade: false,
+    confidenceScore: 0
   });
+
+  const [aiExtractedData, setAiExtractedData] = useState(getInitialFormState());
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -34,9 +57,12 @@ export function SmartProductOnboardForm({ isOpen = true, onCancel, onSubmit }) {
 
   const processFile = (file) => {
     if (!file || !file.type.startsWith('image/')) {
-      alert("Please upload a valid image file.");
+      setErrorMessage("Please upload a valid image file to trigger vision classification nodes.");
       return;
     }
+    setErrorMessage('');
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    
     setPreviewUrl(URL.createObjectURL(file));
     simulateAIScan();
   };
@@ -50,22 +76,38 @@ export function SmartProductOnboardForm({ isOpen = true, onCancel, onSubmit }) {
     }
   };
 
-  // Simulated AI analysis sequence for the "Coming Soon" preview architecture
+  // Simulated vision response structure utilizing clean schema defaults
   const simulateAIScan = () => {
     setCurrentStage('scanning');
     
     setTimeout(() => {
       setAiExtractedData({
         title: "Nike Air Max 270 Running Shoes",
-        category: "Apparel & Footwear > Sneakers",
+        sku: `FTW-NIK-${Math.floor(1000 + Math.random() * 9000)}`,
+        category: "Footwear",
         brand: "Nike",
-        description: "High-performance lifestyle sneaker featuring a prominent Max Air unit for maximum cushioning, knit upper composite construct, and asymmetric lacing metrics.",
-        color: "Black / Anthracite-White",
+        description: "High-performance lifestyle sneaker featuring a prominent Max Air unit for maximum cushioning.",
+        originalPrice: "14500",
+        dealPrice: "12999",
+        isTaxExempt: false,
+        stockQuantity: 12,
+        minimumStockThreshold: 3,
+        shelfLocationSnapshot: "Aisle 4, Shelf C",
         isPhysical: true,
-        confidenceScore: 94
+        weightKg: "0.85",
+        length: "32",
+        width: "20",
+        height: "12",
+        color: "Black / Anthracite",
+        size: "42",
+        condition: "isNew",
+        manufacturer: "Nike Operations",
+        madeIn: "Vietnam",
+        locallyMade: false,
+        confidenceScore: 96
       });
       setCurrentStage('review');
-    }, 3200); // Radar animation duration
+    }, 3200);
   };
 
   const handleFieldChange = (e) => {
@@ -76,179 +118,267 @@ export function SmartProductOnboardForm({ isOpen = true, onCancel, onSubmit }) {
     }));
   };
 
-  const handleCommit = () => {
-    if (onSubmit) onSubmit(aiExtractedData);
-    alert("Smart Onboarding Synchronized with Catalog!");
+  // Data Sanitize Engine: Stops broken data formats from corrupting DB metrics
+  const validateAndCommit = () => {
+    setErrorMessage('');
+    
+    if (!aiExtractedData.title.trim()) {
+      setErrorMessage("Inventory asset requires a valid identifier string.");
+      return;
+    }
+
+    // Parse values safely to protect numeric inventory records
+    const cleanOriginalPrice = Math.max(0, parseFloat(aiExtractedData.originalPrice) || 0);
+    const cleanDealPrice = Math.max(0, parseFloat(aiExtractedData.dealPrice) || 0);
+    const cleanStock = Math.max(0, parseInt(aiExtractedData.stockQuantity, 10) || 0);
+    const cleanThreshold = Math.max(0, parseInt(aiExtractedData.minimumStockThreshold, 10) || 1);
+
+    // Guard fallback patterns for logistics arrays
+    const sanitizedPayload = {
+      ...aiExtractedData,
+      title: aiExtractedData.title.trim(),
+      sku: aiExtractedData.sku.trim() || `SKU-AUTO-${Date.now()}`,
+      brand: aiExtractedData.brand.trim() || 'Generic',
+      category: aiExtractedData.category.trim() || 'Uncategorized',
+      originalPrice: cleanOriginalPrice,
+      dealPrice: cleanDealPrice > cleanOriginalPrice ? cleanOriginalPrice : cleanDealPrice, // Prevent deal metrics exceeding base
+      stockQuantity: cleanStock,
+      minimumStockThreshold: cleanThreshold,
+      weightKg: Math.max(0, parseFloat(aiExtractedData.weightKg) || 0),
+      length: Math.max(0, parseFloat(aiExtractedData.length) || 0),
+      width: Math.max(0, parseFloat(aiExtractedData.width) || 0),
+      height: Math.max(0, parseFloat(aiExtractedData.height) || 0),
+      condition: ['isNew', 'isRefurbished', 'isUsed'].includes(aiExtractedData.condition) ? aiExtractedData.condition : 'isNew'
+    };
+
+    if (onSubmit) {
+      onSubmit(sanitizedPayload);
+    }
   };
 
   if (!isOpen) return null;
 
-  const labelStyle = "block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5";
-  const inputStyle = "w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-sm text-slate-900 focus:bg-white focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all";
+  const labelStyle = "block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1";
+  const inputStyle = "w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm text-slate-950 placeholder-slate-400 focus:bg-white focus:border-slate-950 focus:outline-none focus:ring-1 focus:ring-slate-950 transition-all shadow-sm";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 antialiased">
-      
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onCancel} />
+      <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm transition-opacity" onClick={onCancel} />
 
-      {/* Modal Viewbox Container */}
-      <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.15)] ring-1 ring-slate-200/60 flex flex-col max-h-[85vh] overflow-hidden">
+      <div className="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300" role="dialog" aria-modal="true">
         
-        {/* Sticky Modular Header */}
-        <div className="flex items-center justify-between px-8 py-5 border-b border-slate-100 shrink-0 bg-white">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0 bg-white">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 text-white shadow-md animate-pulse">
-              <Sparkles className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 text-white shadow-md">
+              <Sparkles className="h-5 w-5 animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-tight text-slate-900">Smart AI Onboarding</h1>
-                <span className="bg-slate-900 text-white text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider uppercase">Beta Preview</span>
+                <h1 className="text-base font-bold text-slate-950">Smart AI Onboarding</h1>
+                <span className="bg-slate-950 text-white text-[10px] font-bold px-2 py-0.5 rounded-md tracking-wider uppercase">Vision Guard Active</span>
               </div>
-              <p className="text-xs text-slate-500">Zero-typing catalog management powered by computer vision.</p>
+              <p className="text-xs text-slate-500 font-medium">Automatic system generation with clean input sanitation arrays.</p>
             </div>
           </div>
-          <button onClick={onCancel} className="p-1.5 hover:bg-slate-100 rounded-full transition-colors">
-            <X className="h-5 w-5 text-slate-400" />
+          <button onClick={onCancel} className="p-1.5 hover:bg-slate-50 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Scrollable Workspace */}
-        <div className="overflow-y-auto p-8 flex-1 bg-[#FAFBFD]">
+        {/* Dynamic Error Status Banner */}
+        {errorMessage && (
+          <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs font-semibold text-amber-800 animate-in fade-in duration-200">
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Content Workspace */}
+        <div className="overflow-y-auto p-6 md:p-8 flex-1 bg-slate-50/50">
           
-          {/* STAGE 1: IDLE / DROPZONE STAGE */}
           {currentStage === 'idle' && (
             <div 
               onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop}
-              className={`max-w-2xl mx-auto border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer bg-white min-h-[40vh] ${
-                dragActive ? 'border-purple-500 bg-purple-50/30' : 'border-slate-200 hover:border-slate-300'
+              onClick={() => fileInputRef.current?.click()}
+              className={`max-w-2xl mx-auto border-2 border-dashed rounded-2xl p-12 flex flex-col items-center justify-center text-center transition-all cursor-pointer bg-white min-h-[42vh] shadow-sm group ${
+                dragActive ? 'border-purple-500 bg-purple-50/30 ring-4 ring-purple-500/10' : 'border-slate-200 hover:border-slate-400'
               }`}
             >
-              <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <UploadCloud className="h-6 w-6 text-slate-400" />
+              <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={(e) => processFile(e.target.files[0])} />
+              <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-100 shadow-inner flex items-center justify-center mb-4">
+                <UploadCloud className="h-6 w-6 text-slate-400 group-hover:text-slate-600 transition-colors" />
               </div>
-              <h3 className="text-sm font-bold text-slate-800">Drop your product photo here</h3>
-              <p className="text-xs text-slate-400 max-w-sm mt-1 mb-6">Our system extracts dimensions, brand markings, specifications, and categorical taxonomy instantly.</p>
-              
-              <label className="bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-lg hover:bg-slate-800 shadow transition cursor-pointer">
-                Select Photo Asset
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => processFile(e.target.files[0])} />
-              </label>
+              <h3 className="text-sm font-bold text-slate-800">Drop your product photo here, or <span className="text-indigo-600">browse</span></h3>
+              <p className="text-xs text-slate-400 max-w-sm mt-1.5 leading-relaxed font-medium">Extract system parameters securely into validation schemas.</p>
             </div>
           )}
 
-
-
-
-          {/* STAGE 2: RADAR RADIAL SCANNING ACTIVE ANIMATION */}
           {currentStage === 'scanning' && (
-            <div className="flex flex-col items-center justify-center py-12 text-center min-h-[40vh]">
+            <div className="flex flex-col items-center justify-center py-12 text-center min-h-[42vh]">
               <div className="relative mb-6">
-                {/* Simulated Radar Target Frame */}
-                {previewUrl && (
-                  <img src={previewUrl} alt="Scanning source" className="h-36 w-36 object-cover rounded-xl border border-slate-200 shadow" />
-                )}
-                {/* Horizontal Sweeping Laser Line */}
-                <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-bounce" style={{ animationDuration: '2s' }} />
-                <div className="absolute inset-0 bg-purple-500/10 rounded-xl animate-pulse" />
+                {previewUrl && <img src={previewUrl} alt="Scanning source" className="h-40 w-40 object-cover rounded-xl border border-slate-200 shadow-md" />}
+                <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent shadow-[0_0_12px_rgba(168,85,247,1)] animate-bounce top-0 bottom-0" style={{ animationDuration: '2.4s' }} />
+                <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent rounded-xl animate-pulse" />
               </div>
-              
-              <div className="flex items-center gap-2 justify-center text-slate-800 font-bold text-sm">
-                <RefreshCw className="h-4 w-4 animate-spin text-purple-600" /> 
-                Running Visual Cognitive Extraction...
+              <div className="flex items-center gap-2 justify-center text-slate-900 font-bold text-sm tracking-wide">
+                <RefreshCw className="h-4 w-4 animate-spin text-purple-600" /> Running Sanitized Extraction Pipeline...
               </div>
-              <p className="text-xs text-slate-400 mt-1 max-w-xs">Isolating geometric parameters, checking brand vectors, and compiling schema fields.</p>
             </div>
           )}
 
-          
-
-          {/* STAGE 3: HYDRATED DATA PREVIEW & EDIT REVIEW GRID */}
           {currentStage === 'review' && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start animate-in fade-in duration-300">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-in fade-in duration-300">
               
-              {/* Left Column: Image Asset Reference */}
+              {/* Left Column Controls */}
               <div className="space-y-4">
                 <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm p-2">
-                  <img src={previewUrl} alt="Extracted resource" className="w-full aspect-square object-cover rounded-lg" />
+                  <img src={previewUrl} alt="Extracted asset" className="w-full aspect-square object-cover rounded-lg" />
                 </div>
                 
-                {/* Confidence Metrics Component Block */}
                 <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4 flex items-start gap-3">
                   <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="text-xs font-bold text-emerald-800">High Confidence Extract ({aiExtractedData.confidenceScore}%)</h4>
-                    <p className="text-[11px] text-emerald-700/80 mt-0.5">The engine parsed this data directly from clear product labels and contours.</p>
+                    <h4 className="text-xs font-bold text-emerald-800">Type Integrity Guards Active</h4>
+                    <p className="text-[11px] text-emerald-700/80 mt-0.5 leading-relaxed font-medium">All numbers, prices, and classification enums are run through type sanitizers before sync hooks fire.</p>
                   </div>
                 </div>
 
-                <button 
-                  type="button" onClick={() => setCurrentStage('idle')}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 text-xs font-semibold border border-slate-200 rounded-lg hover:bg-white text-slate-600 shadow-sm transition"
-                >
-                  <RefreshCw className="h-3 w-3" /> Rescan Alternate Angle
+                <button type="button" onClick={() => { setAiExtractedData(getInitialFormState()); setCurrentStage('idle'); }} className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold border border-slate-200 rounded-xl hover:bg-white bg-slate-50 text-slate-700 shadow-sm transition-all uppercase tracking-wide">
+                  <RefreshCw className="h-3.5 w-3.5" /> Reset Image Asset
                 </button>
               </div>
 
-              {/* Right Column: Dynamic Form Fields Hydration */}
-              <div className="md:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-5">
-                <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                  <Layers className="h-4 w-4 text-slate-400" />
-                  <h3 className="text-xs font-bold text-slate-700 tracking-wider uppercase">Extracted Matrix Review</h3>
-                </div>
-
+              {/* Right Column Fields */}
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm p-6 space-y-6">
+                
+                {/* Identity Block */}
                 <div className="space-y-4">
-                  <div>
-                    <label className={labelStyle}>AI Product Title Suggestion</label>
-                    <input type="text" name="title" value={aiExtractedData.title} onChange={handleFieldChange} className={inputStyle} />
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                    <Layers className="h-4 w-4 text-slate-400" />
+                    <h3 className="text-xs font-bold text-slate-900 tracking-wider uppercase">1. Core Identity & Enums</h3>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className={labelStyle}>Product Title *</label>
+                      <input type="text" name="title" value={aiExtractedData.title} onChange={handleFieldChange} className={inputStyle} required />
+                    </div>
                     <div>
-                      <label className={labelStyle}>Identified Brand</label>
+                      <label className={labelStyle}>Category Schema</label>
+                      <input type="text" name="category" value={aiExtractedData.category} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Brand Vector</label>
                       <input type="text" name="brand" value={aiExtractedData.brand} onChange={handleFieldChange} className={inputStyle} />
                     </div>
                     <div>
-                      <label className={labelStyle}>Color Profile Snapshot</label>
-                      <input type="text" name="color" value={aiExtractedData.color} onChange={handleFieldChange} className={inputStyle} />
+                      <label className={labelStyle}>SKU Identification Tracker</label>
+                      <input type="text" name="sku" value={aiExtractedData.sku} onChange={handleFieldChange} className={`${inputStyle} font-mono text-xs`} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Product Condition Matrix</label>
+                      <select name="condition" value={aiExtractedData.condition} onChange={handleFieldChange} className={inputStyle}>
+                        <option value="isNew">Brand New Stock (isNew)</option>
+                        <option value="isRefurbished">Refurbished Matrix (isRefurbished)</option>
+                        <option value="isUsed">Used Stock Layer (isUsed)</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className={labelStyle}>Narrative Description Summary</label>
+                      <textarea name="description" rows={2} value={aiExtractedData.description} onChange={handleFieldChange} className={`${inputStyle} resize-none leading-relaxed`} />
                     </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label className={labelStyle}>Taxonomy Classification Category</label>
-                    <input type="text" name="category" value={aiExtractedData.category} onChange={handleFieldChange} className={inputStyle} />
+                {/* Financial Safety Block */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900 tracking-wider uppercase">2. Financial Layers & Sanitation Check</span>
                   </div>
-
-                  <div>
-                    <label className={labelStyle}>Rich Generated Description</label>
-                    <textarea name="description" rows={3} value={aiExtractedData.description} onChange={handleFieldChange} className={`${inputStyle} resize-none`} />
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <input type="checkbox" name="isPhysical" id="smart-phys" checked={aiExtractedData.isPhysical} onChange={handleFieldChange} className="h-4 w-4 rounded border-slate-300 accent-slate-950" />
-                    <label htmlFor="smart-phys" className="text-xs font-semibold text-slate-700 select-none cursor-pointer">Confirm this requires physical shipping logistics</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelStyle}>Base Price (KES)</label>
+                      <input type="number" min="0" name="originalPrice" value={aiExtractedData.originalPrice} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Markdown Offer Price (KES)</label>
+                      <input type="number" min="0" name="dealPrice" value={aiExtractedData.dealPrice} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
                   </div>
                 </div>
-              </div>
 
+                {/* Storage Controls */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900 tracking-wider uppercase">3. Inventory Count Limits</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className={labelStyle}>Stock Quantity</label>
+                      <input type="number" min="0" name="stockQuantity" value={aiExtractedData.stockQuantity} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Safety Alert Threshold</label>
+                      <input type="number" min="0" name="minimumStockThreshold" value={aiExtractedData.minimumStockThreshold} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Storage Section Tag</label>
+                      <input type="text" name="shelfLocationSnapshot" value={aiExtractedData.shelfLocationSnapshot} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Physical Integrity Specs */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900 tracking-wider uppercase">4. Dimension Variables</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div>
+                      <label className={labelStyle}>Weight (Kg)</label>
+                      <input type="number" step="0.01" min="0" name="weightKg" value={aiExtractedData.weightKg} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Length (cm)</label>
+                      <input type="number" min="0" name="length" value={aiExtractedData.length} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Width (cm)</label>
+                      <input type="number" min="0" name="width" value={aiExtractedData.width} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div>
+                      <label className={labelStyle}>Height (cm)</label>
+                      <input type="number" min="0" name="height" value={aiExtractedData.height} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelStyle}>Colors</label>
+                      <input type="text" name="color" value={aiExtractedData.color} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                    <div className="col-span-2">
+                      <label className={labelStyle}>Sizes</label>
+                      <input type="text" name="size" value={aiExtractedData.size} onChange={handleFieldChange} className={inputStyle} />
+                    </div>
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
 
         </div>
 
-        {/* Sticky Control Hub Footer */}
-        <div className="flex items-center justify-between px-8 py-4 bg-slate-50 border-t border-slate-100 shrink-0">
-          <p className="text-[11px] text-slate-400 font-medium">
-            {currentStage === 'review' ? "💡 Edit any text field above if the AI made a mistake before saving." : "Ready Process ."}
+        {/* Footer Navigation */}
+        <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100 shrink-0">
+          <p className="text-[11px] text-slate-400 font-semibold">
+            {currentStage === 'review' ? "🛡️ Sanitation active: numeric inputs are stripped of negative metrics instantly." : "Awaiting visual merchant array asset payload..."}
           </p>
           <div className="flex gap-3">
-            <button onClick={onCancel} className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold shadow-sm hover:bg-slate-50 transition">
-              Close Preview
+            <button type="button" onClick={onCancel} className="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-slate-50 transition-all uppercase tracking-wide">
+              Close Panel
             </button>
             {currentStage === 'review' && (
-              <button onClick={handleCommit} className="bg-slate-900 text-white px-5 py-2 rounded-lg text-xs font-semibold shadow hover:bg-slate-800 transition">
-                Confirm & Push to Inventory
+              <button type="button" onClick={validateAndCommit} className="bg-slate-950 text-white px-5 py-2 rounded-xl text-xs font-bold shadow hover:bg-slate-800 transition-all uppercase tracking-wide">
+                Confirm & Sync Clean Catalog
               </button>
             )}
           </div>

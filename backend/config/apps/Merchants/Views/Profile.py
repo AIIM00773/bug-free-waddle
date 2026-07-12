@@ -87,9 +87,9 @@ class MerchantDashboardSerializer(serializers.ModelSerializer):
             {
                 "unique_id": product.unique_id, 
                 "title": product.title, 
-                "category": product.categoryPersist, 
+                "category": product.category, 
                 "currentStock": product.stockQuantity, 
-                "minimumStockThreshhold": product.minimumStockThreshhold,   
+                "minimumStockThreshhold": product.minimumStockThreshold,   
                 "price": product.dealPrice 
             } for product in products
         ]

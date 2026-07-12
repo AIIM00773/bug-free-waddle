@@ -23,5 +23,5 @@ urlpatterns = [
 
     # PRODUCT RELATED ROUTES 
     path("products/onboard/",MerchantInventoryProductOnboardView.as_view(), name="onboard_product" ),
-    path("products/<str:product_id>/", MerchantInventoryIndividualProductView.as_view(), name="individual_product" ),
+    path("products/<str:product_unique_id>/", MerchantInventoryIndividualProductView.as_view(), name="individual_product" ),
 ]

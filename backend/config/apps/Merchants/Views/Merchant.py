@@ -10,6 +10,7 @@ from rest_framework import status
 from ..models import InternalMerchantProfile
 from ..utils import log_merchant_activity
 from .permissions import IsVerifiedMerchant
+from rest_framework.permissions import AllowAny
 
 
 
@@ -30,7 +31,7 @@ NUMERIC_REGEX = re.compile(r"^\d+$")
 # =============================================================================
 
 class MerchantOnboardingView(APIView):
-    permission_classes = [IsVerifiedMerchant]
+    permission_classes = [AllowAny]
 
     def validate_inputs(self, data):
         errors = {}

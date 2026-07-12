@@ -192,10 +192,11 @@ AUTH_USER_MODEL = "users.User"
 
 
 
-
-from pathlib import Path
-
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 MEDIA_URL = '/merchant_legal_media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'merchant_legal_media'),
+# Ensure there is no comma at the end of this line
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+

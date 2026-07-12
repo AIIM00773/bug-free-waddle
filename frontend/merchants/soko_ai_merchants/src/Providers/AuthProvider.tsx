@@ -255,12 +255,21 @@ export const MERCHANTS_API_ROUTES = {
     UPDATE: `${API_BASE_URL}/public/api/v1/merchants/update/`,
 };
 
-export function getHeaders() {
-    const token = sessionStorage.getItem("soko_ai_merchant_auth_token_access");
-    return {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    };
+
+
+
+export const MERCHANTS_PRODUCTS_API_ROUTES = {
+    ONBOARD: `${API_BASE_URL}/public/api/v1/merchants/products/onboard/`
+};
+
+
+export function getHeaders(setcontentType = true) {
+  const token = sessionStorage.getItem("soko_ai_merchant_auth_token_access");
+  
+  return {
+    ...(setcontentType ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
 // ============================================================================
@@ -330,6 +339,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
 
+
+
+
     const fetchMerchantProfile = useCallback(async () => {
         setIsLoading(true);
         try {
@@ -349,16 +361,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     
                 }
             }
+
+                        setIsLoading(false);
+
         } catch (error) {
             console.error("Failed to hydrate merchant profile", error);
+                        setIsLoading(false);
+
         } finally {
             setIsLoading(false);
         }
     }, []);
 
 
-
-
+    
 
     const userSignup = useCallback(async (payload: SignupPayloadType) => {
         try {
