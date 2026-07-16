@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../Providers/AuthProvider';
-import { useBranch } from '../Providers/BranchProvider'; 
 import { useInventory } from '../Providers/InventoryProvider';
 import { ProductCreateForm } from './onboarding/ProductCreateForm';
 import { SmartProductOnboardForm } from './onboarding/smartProductOnbardForm';
@@ -32,23 +31,19 @@ export interface Product {
   isAvailable?: boolean;
 }
 
-export interface Branch {
-  id?: string | number;
-  unique_id?: string;
-  branchName: string;
-  isPrimary?: boolean;
-}
 
 export interface Inventory {
   inventoryID: string | number;
   inventoryTitle: string;
   inventoryLocked?: boolean;
-  parrentBranch?: Branch | string | null; // Improved from 'any'
+  parentMerchant?:string | null; 
   products?: Product[];
   totalInventoryValue?: number;
   lowStockItems?: number;
   outOfStockItems?: number;
 }
+
+
 
 type ModalState = 'none' | 'create' | 'smart' | 'filter';
 

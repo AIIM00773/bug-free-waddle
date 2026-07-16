@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from ..models import InternalMerchantProfile
-from ..utils import log_merchant_activity
+from ..utils.loggers.log_merchant_activity  import log_merchant_activity
 from .permissions import IsVerifiedMerchant
 from rest_framework.permissions import AllowAny
 

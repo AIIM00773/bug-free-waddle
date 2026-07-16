@@ -370,4 +370,35 @@ const EXTENSIVE_MOCK_DATABASE: Product[] = [
 
 
 
-export {EXTENSIVE_MOCK_DATABASE}
+
+
+const NEIGHBORHOODS = [
+  { id: 'kasarani', name: 'Kasarani (Clay City)', lat: -1.2201, lng: 36.8964 },
+  { id: 'juja', name: 'Juja (Gachororo Road)', lat: -1.1834, lng: 37.0143 },
+  { id: 'roysambu', name: 'Roysambu (TRM Drive)', lat: -1.2189, lng: 36.8886 },
+  { id: 'kilimani', name: 'Kilimani (Yaya Area)', lat: -1.2892, lng: 36.7904 }
+];
+
+const LOCAL_CATALOG = [
+  { id: 'p1', name: 'Fresh Sukuma Wiki (Bunch)', price: 30, category: 'Groceries', shop: 'Mama Njoroge Fresh Veggies', distance: '45m' },
+  { id: 'p2', name: 'Ripe Tomatoes (4 large)', price: 50, category: 'Groceries', shop: 'Mama Njoroge Fresh Veggies', distance: '45m' },
+  { id: 'p3', name: 'Red Onions (1/2 Kg)', price: 60, category: 'Groceries', shop: 'Mama Njoroge Fresh Veggies', distance: '45m' },
+  { id: 'p4', name: 'Jogoo Maize Meal (2kg)', price: 140, category: 'Essentials', shop: 'Baba Otis Kiosk & Gas', distance: '120m' },
+  { id: 'p5', name: 'Premium Cooking Oil (1L)', price: 180, category: 'Essentials', shop: 'Baba Otis Kiosk & Gas', distance: '120m' },
+  { id: 'p6', name: 'Safe Gas Refill (6KG)', price: 950, category: 'Essentials', shop: 'Baba Otis Kiosk & Gas', distance: '120m' },
+  { id: 'p7', name: 'USB-C Fast Charger Cable', price: 350, category: 'Electronics', shop: 'Tech Hub Kasarani', distance: '350m' },
+  { id: 'p8', name: 'Heavy Duty Powerbank (10K)', price: 1500, category: 'Electronics', shop: 'Tech Hub Kasarani', distance: '350m' }
+];
+
+const SUGGESTIONS = [
+  { label: "Sukuma wiki na nyanya jioni", query: "Nipatie sukuma wiki na nyanya za kupika jioni karibu nami" },
+  { label: "Kitu ya kupika Ugali leo", query: "Kuna unga ya ugali na mafuta ya kupika?" },
+  { label: "Type-C Fast charger", query: "Natafuta USB-C charger cable ya haraka" },
+  { label: "Safe Gas refill 6kg", query: "Niko na mtungi ya gas 6kg inahitaji refill sasa hivi" }
+];
+
+
+
+
+export {EXTENSIVE_MOCK_DATABASE,NEIGHBORHOODS,LOCAL_CATALOG,SUGGESTIONS}
+

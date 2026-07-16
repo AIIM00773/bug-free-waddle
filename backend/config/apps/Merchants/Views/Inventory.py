@@ -4,16 +4,15 @@ from rest_framework.views import APIView
 from rest_framework.serializers import ModelSerializer
 from django.shortcuts import get_object_or_404
 
-from ..models import InternalMerchantProfile, MerchantStoreBranch, BranchSpecificInventory, MerchantInventoryProduct
+from ..models import InternalMerchantProfile, MerchantInventory, MerchantInventoryProduct
 from .permissions import IsVerifiedMerchant
 
 # --- Serializers ---
 
 class InventorySerializer(ModelSerializer):
     class Meta:
-        model = BranchSpecificInventory
+        model = MerchantInventory
         fields = "__all__"
-        read_only_fields = ['parrentBranch']  
 
 
 class SlimMerchantProductSerializer(ModelSerializer):
@@ -47,36 +46,24 @@ class BaseMerchantView(APIView):
 
 
 class InventoriesView(BaseMerchantView):
-    
-    def _get_branch(self, user, unique_id):
-        merchant = self._get_merchant(user)
-        return get_object_or_404(MerchantStoreBranch, merchant=merchant, unique_id=unique_id)
+
         
     def get(self, request, unique_id):
-        branch = self._get_branch(request.user, unique_id)
         
-        # 1. Grab the inventories for this branch
-        inventories = BranchSpecificInventory.objects.filter(parrentBranch=branch)
+        # 1. Grab the inventory  for this merchant 
+        inventory = MerchantInventory.objects.get(parentMerchant = request.user , unique_id=unique_id)
         
-        # 2. Extract the actual products inside these inventories
+        # 2. Extract the actual products inside this inventory 
         # Using prefetch_related or a direct filter to keep DB trips minimal
-        products = MerchantInventoryProduct.objects.filter(parrentInventory__in=inventories)
+        products = MerchantInventoryProduct.objects.filter(parrentInventory = inventory )
         
         # 3. Combine inventory metadata and slim product items into one clean response
         return Response({
-            "inventories": InventorySerializer(inventories, many=True).data,
-            "products": SlimMerchantProductSerializer(products[:100], many=True).data  # Sliced at 100 max for peak UX
+            "inventory": InventorySerializer(inventory, many=False).data,
+            "products": SlimMerchantProductSerializer(products[:100], many=True).data
         }, status=status.HTTP_200_OK)
-        
 
-    def post(self, request, unique_id):
-        branch = self._get_branch(request.user, unique_id)
-        serializer = InventorySerializer(data=request.data)
         
-        if serializer.is_valid():
-            serializer.save(parrentBranch=branch)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -9,11 +9,10 @@ from django.shortcuts import get_object_or_404
 
 from ..models import (
     InternalMerchantProfile, 
-    MerchantStoreBranch, 
-    BranchSpecificInventory, 
+    MerchantInventory, 
     MerchantInventoryProduct
 )
-from ..utils import log_merchant_activity
+from ..utils.loggers.log_merchant_activity  import log_merchant_activity
 from .permissions import IsVerifiedMerchant
 
 
@@ -61,11 +60,9 @@ class MerchantInventoryProductOnboardView(APIView):
     def post(self, request, *args, **kwargs):
         data = request.data
         print(data)
-        print("\n\n===================GOOD1")
         # Fetch related parent models
         merchant = get_object_or_404(InternalMerchantProfile, vendorOwner=request.user)
-        branch = get_object_or_404(MerchantStoreBranch, merchant=merchant, unique_id=data.get('parrentBranch'))
-        inventory = get_object_or_404(BranchSpecificInventory, parrentBranch=branch, unique_id=data.get('parrentInventory'))
+        inventory = get_object_or_404(BranchSpecificInventory, parentMerchant=merchant, unique_id=data.get('parrentInventory'))
 
         #  getlist()  ==>  get the full array of InMemoryUploadedFiles
         images = data.getlist('productImages')
@@ -75,26 +72,22 @@ class MerchantInventoryProductOnboardView(APIView):
                 "details": {"productImages": ["At least one product image is required."]}
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        print("\n\n===================GOOD2")
 
         # Type-casting helpers
         def parse_bool(val):
             if isinstance(val, bool): return val
             return str(val).strip().lower() in ['true', '1', 'yes']
 
-        print("\n\n===================GOOD3")
 
 
         def parse_numeric(val):
             if val in [None, '', 'null']: return None
             return val
 
-        print("\n\n===================GOOD4")
 
 
         condition = data.get('condition', '')
 
-        print("\n\n===================GOOD5")
 
         try:
             with transaction.atomic():
@@ -144,19 +137,15 @@ class MerchantInventoryProductOnboardView(APIView):
 
                 # 5. Manually trigger model validations
                 product.full_clean() 
-                print("\n\n===================GOOD6")
 
                 # 6. Save to database
                 product.save()
-                print("\n\n===================GOOD7")
 
             return Response({
                 "message": "Product successfully onboarded.",
                 "product_id": product.unique_id
             }, status=status.HTTP_201_CREATED)
             
-            print("\n\n===================GOOD8")
-
         except DjangoValidationError as e:
             return Response({
                 "error": "Validation Failed", 
@@ -174,6 +163,9 @@ class MerchantInventoryProductOnboardView(APIView):
                 "error": "Internal Server Error", 
                 "details": str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 
 

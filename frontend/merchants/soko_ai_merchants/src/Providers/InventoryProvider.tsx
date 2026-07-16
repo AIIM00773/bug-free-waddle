@@ -10,10 +10,8 @@ import {
 // import { Inventory } from "./types"; 
 
 interface InventoryContextType {
-  branchInventories: any[]; // Consider replacing 'any' with your 'Inventory' type
-  activeInventory: any | null;
-  setActiveInventory: (inventory: any | null) => void;
-  fetchBranchInventories: (branch_id: string) => Promise<void>;
+  inventory: any|null; 
+  fetchInventory:() => Promise<void>;
   inventoryFetchingError: string | null;
   inventoryLoading: boolean;
   onboardNewItem: (newItem: any) => Promise<void>;
@@ -26,8 +24,7 @@ const InventoryContext = createContext<InventoryContextType | undefined>(undefin
 
 export function InventoryContextProvider({ children }: { children: React.ReactNode }) {
   // State Management
-  const [branchInventories, setBranchInventories] = useState<any[]>([]);
-  const [activeInventory, setActiveInventory] = useState<any | null>(null);
+  const [inventory, setInventory] = useState<any| null>(null);
   const [inventoryFetchingError, setInventoryFetchingError] = useState<string | null>(null);
   const [inventoryLoading, setInventoryLoading] = useState<boolean>(false);
   
@@ -37,12 +34,12 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
   const [productLoadingError, setProductLoadingError] = useState<string | null>(null);
 
   // 1. Fetch Inventories
-  const fetchBranchInventories = useCallback(async (branch_id: string) => {
+  const fetchInventory = useCallback(async () => {
     setInventoryLoading(true);
     setInventoryFetchingError(null);
 
     try {
-      const response = await fetch(`${MERCHANTS_API_ROUTES.GETPROFILE}inventories/${branch_id}`, {
+      const response = await fetch(`${MERCHANTS_API_ROUTES.GETPROFILE}inventory`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -51,32 +48,34 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
       });
 
       if (!response.ok) {
-        throw new Error("An error occurred fetching the inventories.");
+        throw new Error("An error occurred fetching the inventory.");
       }
 
       const data = await response.json();
-      setBranchInventories(data.inventories);
+      setInventory(data.inventory);
     } catch (error) {
       console.error(error);
-      setInventoryFetchingError("An error occurred when fetching your inventories.");
+      setInventoryFetchingError("An error occurred when fetching your inventory .");
     } finally {
       setInventoryLoading(false);
     }
   }, []);
 
+
+
+
+
+
+
   // 2. Onboard New Item
-  // Wrapped in useCallback to keep the context value stable
   const onboardNewItem = useCallback(async (item: any) => {
-    // Reset previous states before starting a new request
     setProductOnboardingError(null);
     setProductOnboardingSuccess(null);
     setProductLoadingError(null);
 
     try {
-      // Removed the unnecessary 'await' here
       const formData = new FormData();
 
-      // Process standard text fields
       Object.keys(item).forEach((key) => {
         if (key !== "productImages") {
           const value = item[key];
@@ -88,7 +87,7 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
         }
       });
 
-      // Process image files cleanly outside the loop
+      // Processing  image files  outside the loop
       if (item.productImages && Array.isArray(item.productImages)) {
         item.productImages.forEach((file: File) => {
           formData.append("productImages", file);
@@ -124,13 +123,15 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
     }
   }, []);
 
-  // 3. Memoize Context Value
+
+
+
+
+  // 3. Memoizing  Context Value
   const value = useMemo(
     () => ({ 
-      branchInventories, 
-      activeInventory, 
-      setActiveInventory,  
-      fetchBranchInventories, 
+      inventory, 
+      fetchInventory, 
       inventoryFetchingError, 
       inventoryLoading,
       onboardNewItem,
@@ -139,11 +140,9 @@ export function InventoryContextProvider({ children }: { children: React.ReactNo
       productOnboardingSuccess
     }),
     [ 
-      branchInventories,
-      activeInventory,
-      setActiveInventory,
-      fetchBranchInventories,
-      inventoryFetchingError,
+      inventory, 
+      fetchInventory, 
+      inventoryFetchingError, 
       inventoryLoading,
       onboardNewItem,
       productLoadingError,

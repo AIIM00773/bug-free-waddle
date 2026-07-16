@@ -10,7 +10,6 @@ import { DashboardOverview } from "./Views/DashboardOverview";
 import MerchantAuthPage from "./Views/onboarding/BaseAuth";
 import MerchantOnboarding from "./Views/onboarding/MerchantOnboardingWizard";
 import { PendingVerification } from "./Components/PendingVerification";
-import BranchesView from "./Views/BranchesView";
 import { InventoryView } from "./Views/InventoriesView";
 import { OrdersView } from "./Views/OrdersView";
 import { FinancesView } from "./Views/FinancesView";
@@ -26,7 +25,6 @@ type ViewId = "dashboard" | "inventory" | "orders" | "finances" | "branches" | "
 
 const NAV_LINKS = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "branches", label: "Branches", icon: MapPin },
   { id: "inventory", label: "Inventory", icon: Package },
   { id: "orders", label: "Orders", icon: ShoppingCart },
   { id: "finances", label: "Finances", icon: Wallet },
@@ -71,9 +69,9 @@ export default function App() {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
-      <aside className={`flex flex-col border-r border-slate-200 bg-white transition-all duration-300 ${sidebarOpen ? "w-64" : "w-20"}`}>
+      <aside className={`flex flex-col border-none    bg-white transition-all duration-300 ${sidebarOpen ? "w-64" : "w-20"}`}>
         {/* Header */}
-        <div className="flex h-16 items-center justify-between px-4 border-b">
+        <div className="flex h-16 items-center justify-between px-4 ">
           {sidebarOpen && (
             <div className="flex items-center gap-2">
               <Store className="h-6 w-6 text-emerald-600" />
@@ -101,7 +99,7 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="p-4">
           <button onClick={userLogout} className="flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-rose-600 hover:bg-rose-50">
             <LogOut className="h-5 w-5" />
             {sidebarOpen && <span>Sign Out</span>}
@@ -112,7 +110,6 @@ export default function App() {
       <main className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
         <div className="mx-auto max-w-7xl">
           {activeView === "dashboard" && <DashboardOverview />}
-          {activeView === "branches" && <BranchesView />}
           {activeView === "inventory" && <InventoryView />}
           {activeView === "orders" && <OrdersView />}
           {activeView === "finances" && <FinancesView />}
