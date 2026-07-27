@@ -1,135 +1,102 @@
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
 
 
-
-
-
-import re
-from django.contrib.auth import get_user_model, authenticate
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email as django_validate_email
-from rest_framework import permissions, status
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from django.db import transaction
 
-# Explicitly import all updated backend schemas for the atomic pipeline
-from ..models import  UserReview, UserAlert, UserSearches, CartGroup, SubCart, SubCartItem , UserOrderGroup, UserSubOrder, UserSubOrderItem
 
-# AUTH VALIDATION HELPERS
-from  ..utils.validators.auth_validation_helpers import validate_email,validate_name,validate_password,validate_phone  
+
+
 User = get_user_model()
 
+class UserSerializer(serializers.ModelSerializer):
+    age = serializers.ReadOnlyField()
+    full_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = User
+        exclude = ['password', 'account_validation_code', 'is_staff', 'is_superuser']
 
 
-# ---------------------------------------------------------
-# API CONTROLLER VIEWS
-# ---------------------------------------------------------
+
+
+# imports
+from ..models import UserReview, UserAlert, UserSearches, CartGroup
+from ..utils.validators.auth_validation_helpers import (
+    validate_password as custom_password_validator,
+    validate_phone as custom_phone_validator
+)
+
 
 
 
 class UserRegistrationView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @transaction.atomic
-    def post(self, request, *args, **kwargs):
+    def post(self, request):
         data = request.data
-
-        first_name = (data.get("first_name") or "").strip().capitalize()
-        last_name = (data.get("last_name") or "").strip().capitalize()
-        email = (data.get("email") or "").strip().lower()
-        password = (data.get("password") or "").strip()
+        
+        # 1. Extract and Basic Validation
+        full_name = (data.get("full_name") or "").strip()
         phone = (data.get("phone") or "").strip()
+        password = (data.get("password") or "").strip()
 
-        if not all([first_name, email, password, phone]):
-            return Response(
-                {"error": "First name, email, password and phone are required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if not all([full_name, phone, password]):
+            return Response({"error": "Missing required fields."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not validate_name(first_name):
-            return Response(
-                {"error": "Invalid first name format. Use alphabetical text characters only (min 2)."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # 2. Logic Validation (Re-using your existing helpers)
+        names = full_name.split()
+        if len(names) < 2 or not all(n.isalpha() for n in names):
+            return Response({"error": "Full name must be at least two alphabetical names."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if last_name and not validate_name(last_name):
-            return Response(
-                {"error": "Invalid last name format. Use alphabetical text characters only."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if not custom_phone_validator(phone):
+            return Response({"error": "Invalid phone number or already registered."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not validate_email(email):
-            return Response(
-                {"error": "Invalid email address format or email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        if not custom_password_validator(password):
+            return Response({"error": "Password requirements not met."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not validate_password(password):
-            return Response(
-                {"error": "Password must contain uppercase, lowercase, digit, special character and be at least 4 characters long."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # 3. (Wrapped in Atomic to ensure all-or-nothing)
+        try:
+            with transaction.atomic():
 
-        if not validate_phone(phone):
-            return Response(
-                {"error": "Invalid phone number format or phone number is already registered."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+                user = User.objects.create_user(
+                    username=phone,
+                    phone=phone,
+                    password=password,
+                    first_name=names[0],
+                    last_name=names[-1],
+                    email = None,
+                )
 
-        # --- ATOMIC CREATION PIPELINE BLOCK ---
-        user = User.objects.create_user(
-            username=phone, 
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            password=password,
-            phone=phone,
-        )
+                # Initialize related models
+                CartGroup.objects.create(user=user)
+                UserReview.objects.create(user=user)
+                UserAlert.objects.create(user=user)
+                UserSearches.objects.create(user=user)
 
-        CartGroup.objects.create(user=user)
-        UserReview.objects.create(user=user)
-        UserAlert.objects.create(user=user)
-        UserSearches.objects.create(user=user)  
+        except Exception as e:
+            print(f"Registration Error: {str(e)}")
+            return Response({"error": "Database error during registration."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 4. Token Generation
         refresh = RefreshToken.for_user(user)
 
-        return Response(
-            {
-                "message": "User registered successfully.",
-                "user": {
-                    "uuid": str(user.unique_id),
-                    "phone": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "full_name":user.full_name,
-                    "is_active": user.is_active,
-                    "is_merchant": user.is_merchant,
-                    "is_banned":user.is_banned,
-                    "is_suspended":user.is_suspended ,
-                    "is_blocked":user.is_blocked , 
-                    "is_email_verified": user.is_email_verified,
-                    "is_phone_verified":user.is_phone_verified ,
-                    "onboarding_completed": user.onboarding_completed,
-                    "mfa_required":user.mfa_required ,
-                    "age": user.age,
-                    "created_at":user.created_at,
-                    "is_merchant_verified":user.is_merchant_verified      
-                },
-                "tokens": {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                },
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        # 5. Serialization for Response
+        serializer = UserSerializer(user)
+
+        return Response({
+            "message": "User registered successfully.",
+            "user": serializer.data,
+            "tokens": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }
+        }, status=status.HTTP_201_CREATED)
 
 
 
-
-
-
-
-
-
+        

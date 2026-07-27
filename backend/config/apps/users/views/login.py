@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
-
+from rest_framework import serializers
 # Explicitly import all updated backend schemas for the atomic pipeline
 from ..models import  UserReview, UserAlert, UserSearches, CartGroup, SubCart, SubCartItem , UserOrderGroup, UserSubOrder, UserSubOrderItem
 
@@ -27,6 +27,16 @@ User = get_user_model()
 # ---------------------------------------------------------
 # API CONTROLLER VIEWS
 # ---------------------------------------------------------
+
+class UserSerializer(serializers.ModelSerializer):
+    age = serializers.ReadOnlyField()
+    full_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = User
+        exclude = ['password', 'account_validation_code', 'is_staff', 'is_superuser']
+
+
 
 
 class UserLoginView(APIView):
@@ -58,37 +68,15 @@ class UserLoginView(APIView):
             )
 
         refresh = RefreshToken.for_user(user)
-        
-        return Response(
-            {
-                "message": "User registered successfully.",
-                "user": {
-                    "unique_id": str(user.unique_id),
-                    "phone": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "full_name":user.full_name,
-                    "is_active": user.is_active,
-                    "is_merchant": user.is_merchant,
-                    "is_banned":user.is_banned,
-                    "is_suspended":user.is_suspended ,
-                    "is_blocked":user.is_blocked , 
-                    "is_email_verified": user.is_email_verified,
-                    "is_phone_verified":user.is_phone_verified ,
-                    "onboarding_completed": user.onboarding_completed,
-                    "mfa_required":user.mfa_required ,
-                    "age": user.age,
-                    "created_at":user.created_at,
-                    "is_merchant_verified":user.is_merchant_verified      
-                },
-                "tokens": {
-                    "refresh": str(refresh),
-                    "access": str(refresh.access_token),
-                },
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        serializer = UserSerializer(user)
+        return Response({
+            "message": "User registered successfully.",
+            "user": serializer.data,
+            "tokens": {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }
+        }, status=status.HTTP_201_CREATED)
 
 
 

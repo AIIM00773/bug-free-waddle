@@ -45,15 +45,8 @@ export function ChatInput({ onSendMessage, activeEstate }) {
             <Send size={14} />
           </button>
         </form>
-        
-        {/* Footnote */}
-        <p className="text-[10px] text-stone-500 text-center mt-2.5 font-medium hidden md:flex ">
-          Soko AI is geofenced to physical kiosk coordinates. Orders are delivered via direct runners.
-        </p>
-
-
-        <p className="text-[10px] text-stone-500 text-center mt-2.5 font-medium flex md:hidden ">
-          Soko AI is geofenced and might be inaccurate 
+        <p className="text-[10px] text-stone-500 text-center mt-2.5 font-medium flex-row items-center justify-center   align-center  ">
+          Soko AI is geofenced and might be inaccurate  confirm important details 
         </p>
         
       </div>

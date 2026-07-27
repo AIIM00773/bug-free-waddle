@@ -1,28 +1,47 @@
-import React, { useState } from 'react';
-import { 
-  Plus, 
-  MessageSquare, 
-  Trash2, 
-  Settings, 
-  CreditCard,
+import React, { useEffect } from 'react';
+import {
+  Sparkles,
+  Plus,
+  Monitor,
+  Grid,
+  Box,
+  SlidersHorizontal,
+  History,
   User,
+  MoreHorizontal,
   PanelLeftClose,
-  Menu
+  PanelLeftOpen,
+  Trash2,
+  X,
 } from 'lucide-react';
 
-export function Sidebar({ 
+import { useCart } from '../../Providers/CartContext';
+import { useAuth } from '../../Providers/profileContext';
+import { useSidebar } from '../../Providers/ui/sidebar';
+
+export function Sidebar({
   sessions = [],
   activeSessionId,
   setActiveSessionId,
-  handleDeleteSession
+  handleDeleteSession,
+  setIsProfileOpen,
+  settingOpen,
+  setSettingOpen,
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { cart, openCart, setOpenCart } = useCart();
+  const { user, isAuthenticated, setProceedWithoutAuth } = useAuth();
 
-  // Safe navigation helper for responsive viewports
+  // Consume mobile & desktop states/actions from sidebarContext
+  const { onMobile, onDesktop } = useSidebar();
+
+  // Unified state for whether the sidebar is currently open/expanded
+  const isExpanded = onMobile.open || !onDesktop.minimized;
+
+  // Safe navigation helper for responsive mobile viewports
   const handleNavigation = (action) => {
     action();
-    if (window.innerWidth < 768) {
-      setSidebarOpen(false);
+    if (window.innerWidth < 768 && onMobile.open) {
+      onMobile.toggleOpen();
     }
   };
 
@@ -30,154 +49,231 @@ export function Sidebar({
     handleNavigation(() => setActiveSessionId(null));
   };
 
+  const handleToggleSidebar = () => {
+    if (window.innerWidth < 768) {
+      onMobile.toggleOpen();
+    } else {
+      onDesktop.toggleMinimize();
+    }
+  };
+
+  const handleProtectedAction = (action) => {
+    if (isAuthenticated) {
+      action();
+    } else {
+      setProceedWithoutAuth(false);
+    }
+  };
+
+  // Keyboard Shortcut: CMD+K / CTRL+K to trigger New Chat
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        handleNewChat();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <>
-      {/* Mobile Floating Toggle Button (Visible only when sidebar is completely closed) */}
-      {!sidebarOpen && (
-        <button 
-          onClick={() => setSidebarOpen(true)}
-          className="fixed top-4 left-4 z-45 p-2 bg-[#384959] hover:bg-[#2e3b48] rounded-lg text-stone-200 border border-stone-600/30 md:hidden transition-all shadow-md"
-          title="Open sidebar"
-        >
-          <Menu size={20} />
-        </button>
+      {/* Mobile Backdrop Overlay */}
+      {onMobile.open && (
+        <div
+          onClick={() => onMobile.toggleOpen()}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity md:hidden"
+          aria-hidden="true"
+        />
       )}
 
-      <aside 
-        className={`fixed md:relative inset-y-0 left-0 z-50 flex flex-col justify-between bg-[#384959] border-r border-stone-700/40 transition-all duration-300 ease-in-out px-3 py-3.5 h-screen select-none
-          ${sidebarOpen ? 'w-[260px] translate-x-0' : 'w-0 -translate-x-full md:w-[68px] md:translate-x-0 md:px-2'}
-        `}
-      >
-        {!sidebarOpen ? (
-          /* COLLAPSED STATE (Saves desktop space, displays icon-only actions) */
-          <div className="hidden md:flex flex-col items-center gap-4 h-full justify-between">
-            <div className="flex flex-col items-center gap-4 w-full">
-              <button 
-                onClick={() => setSidebarOpen(true)}
-                className="p-2 hover:bg-stone-700/50 rounded-lg text-stone-300 hover:text-white transition-all"
-                title="Open sidebar"
-              >
-                <Menu size={18} />
-              </button>
-              <button 
-                onClick={handleNewChat}
-                className="p-2 bg-stone-700/35 hover:bg-stone-700/60 rounded-lg text-stone-200 hover:text-white transition-all border border-stone-600/30"
-                title="New Chat"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-            
-            <div className="flex flex-col items-center gap-3 w-full">
-              <button className="p-2 hover:bg-stone-700/50 rounded-lg text-stone-300 hover:text-white transition-all" title="Upgrade Plan">
-                <CreditCard size={18} />
-              </button>
-              <button className="p-2 hover:bg-stone-700/50 rounded-lg text-stone-300 hover:text-white transition-all" title="Settings">
-                <Settings size={18} />
-              </button>
-              <div className="w-8 h-8 rounded-full bg-stone-700 flex items-center justify-center text-stone-200 border border-stone-600/55 cursor-pointer" title="User Account">
-                <User size={16} />
+      {/* Main Container */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#262626] bg-[#141414] p-3 select-none transition-all
+         duration-300 ease-in-out md:static ${isExpanded ? 'w-60' : 'w-16'} ${onMobile.open? 'translate-x-0': '-translate-x-full md:translate-x-0'}`}>
+         
+        <div className="flex flex-col space-y-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+          {/* Top Logo & Toggle Header */}
+          <div className={`flex items-center ${ isExpanded ? 'justify-between px-1 py-1' : 'justify-center py-1'}`} >
+            <div onClick={handleNewChat} className="flex cursor-pointer items-center gap-2.5 rounded-lg p-1 transition-opacity hover:opacity-80" title="Home" >
+
+             {isExpanded &&(
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400  ">
+                <Sparkles className="h-4 w-4" />
               </div>
+             )}
+
+              {isExpanded && (<span className="text-sm font-bold tracking-wide text-white"> Soko AI</span>)}
             </div>
+            <button type="button" onClick={handleToggleSidebar} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#222222] hover:text-white" title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}>
+              {isExpanded ? (<PanelLeftClose className="h-4 w-4" />) : (<PanelLeftOpen className="h-4 w-4" />)}
+            </button>
           </div>
-        ) : (
-          /* EXPANDED STATE */
-          <div className="flex flex-col h-full justify-between w-full overflow-hidden">
-            {/* Main Header & Session History List */}
-            <div className="space-y-4 flex-1 flex flex-col min-h-0">
-              <div className="flex items-center justify-between gap-2">
-                <button 
-                  onClick={handleNewChat}
-                  className="flex-1 flex items-center justify-between py-2 px-3 bg-stone-700/30 hover:bg-stone-700/50 active:scale-95 rounded-lg border border-stone-600/40 text-xs font-semibold text-stone-200 transition-all shadow-xs"
-                >
-                  <div className="flex items-center gap-2">
-                    <Plus size={16} className="text-stone-300" />
-                    <span>New chat</span>
-                  </div>
-                  <span className="text-[10px] text-stone-400 font-mono">⌘K</span>
-                </button>
 
-                <button 
-                  onClick={() => setSidebarOpen(false)} 
-                  className="p-2 hover:bg-stone-700/50 rounded-lg text-stone-300 hover:text-white transition-all shrink-0"
-                  title="Close sidebar"
-                >
-                  <PanelLeftClose size={16} />
-                </button>
+
+          {/* New Thread CTA Button */}
+          <button type="button" onClick={handleNewChat}
+            className={`flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#1c1c1c] text-sm font-medium text-gray-200 transition-all hover:bg-[#262626] hover:text-white active:scale-95 ${isExpanded ? 'w-full justify-between px-3 py-2.5' : 'justify-center p-2.5' }`} title="New Chat (Ctrl+K)" >
+            <div className="flex items-center gap-2.5">
+              <Plus className="h-4 w-4 text-teal-400" />
+              {isExpanded && <span>New Thread</span>}
+            </div>
+            {isExpanded && (
+              <kbd className="hidden rounded bg-[#111111] px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 sm:inline-block">
+                ⌘K
+              </kbd>
+            )}
+          </button>
+
+          {/* Navigation Items */}
+          <nav className="space-y-1 text-sm text-gray-400">
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Computer"
+            >
+              <Monitor className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Computer</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Spaces"
+            >
+              <Grid className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Spaces</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Artifacts"
+            >
+              <Box className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Artifacts</span>}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSettingOpen?.(!settingOpen)}
+              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Customize"
+            >
+              <SlidersHorizontal className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Customize</span>}
+            </button>
+          </nav>
+
+          <div className="my-2 border-t border-[#262626]" />
+
+          {/* Query Session History */}
+          <div className="flex-1 space-y-1">
+            {isExpanded ? (
+              <div className="mb-2 flex items-center justify-between px-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+                <span className="flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
+                  History
+                </span>
+                {sessions.length > 0 && (
+                  <span className="text-[10px] text-gray-600">
+                    {sessions.length}
+                  </span>
+                )}
               </div>
+            ) : (
+              <div className="flex justify-center py-2 text-gray-500" title="History">
+                <History className="h-4 w-4" />
+              </div>
+            )}
 
-              <div className="flex-1 overflow-y-auto space-y-1.5 min-h-0">
-                <div className="text-[10px] text-stone-400 font-bold uppercase tracking-wider px-2 py-1">
-                  Chat History
-                </div>
-                
-                <div className="space-y-0.5">
-                  {sessions.length > 0 ? (
-                    sessions.map((session) => {
-                      const isActive = activeSessionId === session.id;
-                      return (
-                        <div 
-                          key={session.id}
-                          onClick={() => handleNavigation(() => setActiveSessionId(session.id))}
-                          className={`group w-full py-2 px-2.5 rounded-lg text-xs flex items-center justify-between gap-2 cursor-pointer transition-all ${
-                            isActive 
-                              ? 'bg-stone-700/60 text-white font-medium border border-stone-600/30' 
-                              : 'text-stone-300 hover:bg-stone-700/30 hover:text-white' 
-                          }`}
-                        >
-                          <div className="flex items-center gap-2.5 truncate flex-1">
-                            <MessageSquare size={14} className={`shrink-0 ${isActive ? 'text-white' : 'text-stone-400'}`} />
-                            <span className="truncate">{session.title}</span>
-                          </div>
-                          
-                          <button 
+            <div className="space-y-0.5">
+              {sessions.map((session) => {
+                const isActive = activeSessionId === session.id;
+                return (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => handleNavigation(() => setActiveSessionId(session.id))}
+                    title={session.title}
+                    className={`group relative flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-all ${
+                      !isExpanded && 'justify-center px-0'
+                    } ${
+                      isActive
+                        ? 'bg-[#222222] font-medium text-white border-l-2 border-teal-400'
+                        : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-gray-200'
+                    }`}
+                  >
+                    {isExpanded ? (
+                      <>
+                        <span className="truncate pr-2">{session.title}</span>
+                        {handleDeleteSession && (
+                          <div
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevents clicking delete from selecting the tab
-                              handleDeleteSession(session.id, e);
-                            }} 
-                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-stone-600/55 rounded text-stone-400 hover:text-rose-400 transition-all shrink-0" 
-                            title="Delete Chat"
+                              e.stopPropagation();
+                              handleDeleteSession(session.id);
+                            }}
+                            className="rounded p-1 text-gray-500 opacity-0 transition-opacity hover:bg-[#333333] hover:text-red-400 group-hover:opacity-100"
+                            title="Delete Session"
                           >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8 text-stone-400 text-xs italic">
-                      No active conversations
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Account & Navigation Footer */}
-            <div className="border-t border-stone-700/50 pt-2 mt-auto space-y-1">
-              <button className="w-full flex items-center gap-2.5 py-2 px-2.5 rounded-lg text-xs text-stone-300 hover:bg-stone-700/40 hover:text-white transition-all">
-                <CreditCard size={15} className="text-stone-400" />
-                <span className="font-medium">Upgrade Plan</span>
-              </button>
-
-              <button className="w-full flex items-center gap-2.5 py-2 px-2.5 rounded-lg text-xs text-stone-300 hover:bg-stone-700/40 hover:text-white transition-all">
-                <Settings size={15} className="text-stone-400" />
-                <span className="font-medium">Settings</span>
-              </button>
-
-              <div className="flex items-center justify-between bg-transparent p-1.5 rounded-lg hover:bg-stone-700/40 cursor-pointer transition-all">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-7 h-7 rounded-full bg-stone-700 flex items-center justify-center text-stone-200 shrink-0 border border-stone-600/40">
-                    <User size={14} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-stone-200 truncate font-medium">User Account</p>
-                    <p className="text-[10px] text-stone-400 truncate">user@sokoai.com</p>
-                  </div>
-                </div>
-              </div>
+                            <Trash2 className="h-3 w-3" />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          isActive ? 'bg-teal-400' : 'bg-gray-600'
+                        }`}
+                      />
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-        )}
+        </div>
+
+        {/* User Auth Footer Button */}
+        <div className="pt-2 border-t border-[#262626]">
+          <button
+            type="button"
+            onClick={() => handleProtectedAction(() => setIsProfileOpen(true))}
+            className={`flex w-full items-center gap-2.5 rounded-xl p-2 text-xs font-medium text-gray-300 transition-colors hover:bg-[#222222] hover:text-white ${
+              !isExpanded && 'justify-center'
+            }`}
+            title={isAuthenticated ? user?.name || 'Profile' : 'Sign In'}
+          >
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-900/50 border border-teal-500/30 text-teal-300 font-semibold">
+              {isAuthenticated && user?.name ? (
+                user.name.charAt(0).toUpperCase()
+              ) : (
+                <User className="h-3.5 w-3.5" />
+              )}
+            </div>
+            {isExpanded && (
+              <div className="flex flex-col text-left truncate">
+                <span className="truncate font-medium text-gray-200">
+                  {isAuthenticated ? user?.name || 'Account' : 'Sign In'}
+                </span>
+                {isAuthenticated && user?.email && (
+                  <span className="truncate text-[10px] text-gray-500">
+                    {user.email}
+                  </span>
+                )}
+              </div>
+            )}
+          </button>
+        </div>
       </aside>
     </>
   );

@@ -1,60 +1,131 @@
-
-import re
-from django.contrib.auth import get_user_model, authenticate
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email as django_validate_email
-from rest_framework import permissions, status
+from django.contrib.auth import get_user_model
+from rest_framework import permissions, status, serializers
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
+from rest_framework.permissions import IsAuthenticated
 
-# Explicitly import all updated backend schemas for the atomic pipeline
-from ..models import  UserReview, UserAlert, UserSearches, CartGroup, SubCart, SubCartItem , UserOrderGroup, UserSubOrder, UserSubOrderItem
+# Models
+from ..models import (
+    UserReview, UserAlert, UserSearches, CartGroup, 
+    SubCart, SubCartItem, UserOrderGroup, UserSubOrder, UserSubOrderItem
+)
 
+# Custom Validation Helpers
+from ..utils.validators.auth_validation_helpers import (
+    validate_email, 
+    validate_name, 
+    validate_password, 
+    validate_phone
+)
 
-
-# AUTH VALIDATION HELPERS
-from  ..utils.validators.auth_validation_helpers import validate_email,validate_name,validate_password,validate_phone  
 User = get_user_model()
 
+# ---------------------------------------------------------
+# SERIALIZERS
+# ---------------------------------------------------------
+
+class UserSerializer(serializers.ModelSerializer):
+    age = serializers.ReadOnlyField()
+    full_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = User
+        exclude = ['password', 'account_validation_code', 'is_staff', 'is_superuser']
 
 
-
-
-
+# ---------------------------------------------------------
+# VIEWS
+# ---------------------------------------------------------
 
 class UserProfileView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
+        serializer = UserSerializer(request.user)
+        return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+
+
+class UserProfileIdentityUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
         user = request.user
+        data = request.data
         
-        # Safely extract search metadata attributes via the related search profile interface
-        search_profile = getattr(user, 'search_profile', None)
-        search_meta = {
-            "eligible": getattr(search_profile, 'eligible', True),
-            "is_on_free_tier": getattr(search_profile, 'is_on_free_tier', True),
-            "free_tier_search_limit": getattr(search_profile, 'free_tier_search_limit', 20),
-            "current_tier_use": getattr(search_profile, 'current_tier_use', 0),
-        }
+        # Extract and clean inputs
+        email = data.get("email", "").strip().lower()
+        national_id = data.get("national_id_number", "").strip()
+        dob = data.get("dob", "").strip()
+        gender = data.get("gender", "").strip().lower()
 
-        return Response(
-            {
-                "uuid": str(user.unique_id),
-                "phone": user.phone if user.phone else user.username,
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "is_merchant": user.is_merchant,
-                "onboarding_completed": user.onboarding_completed,
-                "search_allowance": search_meta 
-            },
-            status=status.HTTP_200_OK,
-        )
+        print(data)
+
+        # Update logic
+        if email:
+            user.email = email
+            
+        if national_id:
+            user.national_id_number = national_id
+
+        if dob and not user.date_of_birth:
+            user.date_of_birth = dob
+
+        if gender and not user.gender:
+            user.gender = gender
+
+        user.save()
+        
+        serializer = UserSerializer(user)
+        return Response({"user": serializer.data}, status=status.HTTP_200_OK)
+
+
+
+
+
+
+class UserProfileLogisticsUpdateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        data = request.data
+        
+        # Extract and clean inputs
+        county = data.get("county", "").strip().lower()
+        sub_county = data.get("sub_county", "").strip()
+        street = data.get("street", "").strip()
+        estate_area_neighborhood = data.get("estate_area_neighborhood", "").strip().lower()
+        apartment_court_or_Door_id = data.get("apartment_court_or_Door_id", "").strip().lower()
+        location_explanation = data.get("location_explanation", "").strip().lower()
         
 
+
+        # Update logic
+        if county:
+            user.county = county
+            
+        if sub_county:
+            user.sub_county = sub_county
+
+        if street:
+            user.street = street
+
+        if estate_area_neighborhood:
+            user.estate_area_neighborhood = estate_area_neighborhood
+
+
+        if apartment_court_or_Door_id:
+            user.apartment_door_id = apartment_court_or_Door_id
+
+        if location_explanation:
+            user.location_explanation = location_explanation
+            
+            
+
+        user.save()
+        
+        serializer = UserSerializer(user)
+        return Response({"user": serializer.data}, status=status.HTTP_200_OK)
 
 
 

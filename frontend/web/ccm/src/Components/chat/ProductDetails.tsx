@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  X, Plus, Minus, ShoppingBag, MapPin, Store, Clock, 
-  ShieldCheck, Send, Sparkles, MessageSquareText 
+  X, Plus, Minus, ShoppingCart, MapPin, Store, Clock, 
+  ShieldCheck, Send, Sparkles, MessageSquareText, Star 
 } from 'lucide-react';
 
 export function ProductDetails({ 
@@ -16,10 +16,9 @@ export function ProductDetails({
   
   // Local Q&A history initialized with a contextual welcome message
   const [qaHistory, setQaHistory] = useState([]);
-
   const qaEndRef = useRef(null);
 
-  // Initialize and reset local states when modal opens/changes products
+  // Initialize and reset local states when drawer opens/changes products
   useEffect(() => {
     if (isOpen && product) {
       setQuantity(1);
@@ -32,7 +31,12 @@ export function ProductDetails({
           text: `Ask me anything about these fresh ${product.name} from ${product.shop || 'our vendor'}! I can verify availability, size, or harvest details.`
         }
       ]);
+      // Prevent background scrolling when sider is active
+      document.body.style.overflow = 'hidden';
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen, product]);
 
   // Smooth-scroll the mini Q&A feed to the bottom when history changes
@@ -40,7 +44,7 @@ export function ProductDetails({
     qaEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [qaHistory, isTyping]);
 
-  // Handle Escape key to close details modal
+  // Handle Escape key to close details slider
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose();
@@ -91,7 +95,6 @@ export function ProductDetails({
   const handleSendQuestion = (questionText) => {
     if (!questionText.trim()) return;
 
-    // Append user's question
     const userMsg = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -101,7 +104,6 @@ export function ProductDetails({
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate Soko AI engine thinking
     setTimeout(() => {
       const aiReply = {
         id: `ai-${Date.now()}`,
@@ -113,130 +115,151 @@ export function ProductDetails({
     }, 900);
   };
 
-  // Contextual follow-up suggestions based on product category
   const suggestedFollowUps = [
     { label: "Is it fresh today?", query: "Is this product fresh today?" },
     { label: "What portion size is this?", query: "What size or portion is this package?" },
-    { label: "How fast is the delivery?", query: "How fast will this get to my location?" }
+    { label: "How fast is delivery?", query: "How fast will this get to my location?" }
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end md:items-stretch md:justify-end overflow-hidden font-sans">
       
-      {/* Premium Dark Backdrop Blur */}
+      {/* Backdrop */}
       <div 
         onClick={onClose} 
-        className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
       />
 
-      {/* Product Card Container */}
-      <div 
-        className="relative w-full mx-1 max-h-[98vh] md:max-w-xl  md:h-[90vh] bg-stone-900 md:border-t md:border border-stone-850 md:rounded-2xl rounded-t-sm  shadow-2xl flex flex-col overflow-hidden z-10 transition-all duration-300 animate-in slide-in-from-bottom-10"
-      >
+      {/* Slide-over Sider Container */}
+      <div className="relative w-full md:w-[540px] max-h-[92vh] md:max-h-screen bg-slate-950 border-t md:border-t-0 md:border-l border-slate-800/80 text-slate-100 flex flex-col overflow-hidden z-10 transition-all duration-300 ease-out animate-in slide-in-from-bottom-10 md:slide-in-from-right rounded-t-2xl md:rounded-t-none shadow-2xl">
         
-        {/* Mobile Swipe-indicator bar */}
-        <div className="w-12 h-1.5 bg-stone-800 rounded-full mx-auto mt-3 mb-1 md:hidden shrink-0" />
+        {/* Mobile Drag Indicator */}
+        <div className="w-12 h-1 bg-slate-800 rounded-full mx-auto mt-3 mb-1 md:hidden shrink-0" />
 
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute right-4 top-4 md:top-4 z-20 p-2 bg-stone-950/80 hover:bg-stone-900 rounded-full border border-stone-800/80 text-stone-300 hover:text-white transition-all active:scale-90"
-          title="Close details"
-        >
-          <X size={16} />
-        </button>
+        {/* Floating Header Actions */}
+        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
+          <div className="flex gap-2 pointer-events-auto">
+            <span className="text-[10px] bg-slate-900/90 backdrop-blur-md text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
+              {product.category || "Fresh Produce"}
+            </span>
+          </div>
+          
+          <button 
+            onClick={onClose}
+            className="pointer-events-auto p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full border border-slate-700/80 shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
+            title="Close panel"
+          >
+            <X size={16} strokeWidth={2.5} />
+          </button>
+        </div>
 
-        {/* Scrollable Frame */}
-        <div className="overflow-y-auto flex-1 pb-28 md:pb-32">
+        {/* Scrollable Frame Content */}
+        <div className="overflow-y-auto flex-1 pb-28 subtle-scrollbar">
           
           {/* Hero Banner Image */}
-          <div className="relative w-full h-56 md:h-48 bg-stone-950 shrink-0">
+          <div className="relative w-full h-64 md:h-72 bg-slate-900 shrink-0">
             <img 
               src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80"} 
               alt={product.name} 
               onError={handleImageError}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-stone-900/10 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
             
-            {/* Overlay Category Tag */}
-            <div className="absolute bottom-4 left-4 flex gap-2">
-              <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                {product.category || "Fresh Produce"}
-              </span>
-              <span className="text-[10px] bg-amber-500/15 text-amber-400 border border-amber-500/25 font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                <Clock size={10} />
-                <span>15 mins delivery</span>
-              </span>
+            <div className="absolute bottom-3 right-4 bg-slate-950/80 backdrop-blur-md border border-slate-800 text-amber-400 px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-md">
+              <Star size={12} className="fill-amber-400" />
+              <span>{product.rating || "4.8"}</span>
             </div>
           </div>
 
-          {/* Core Specs Information */}
-          <div className="px-5 pt-4 space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-stone-50 leading-tight">{product.name}</h3>
-              <p className="text-xl font-black text-amber-400 mt-1">KES {product.price}</p>
-            </div>
-
-            {/* Micro Metadata Metrics */}
-            <div className="grid grid-cols-2 gap-2 bg-stone-950/40 p-3 rounded-xl border border-stone-850/60 text-xs">
-              <div className="flex items-center gap-2 text-stone-300">
-                <Store size={14} className="text-stone-500 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-stone-500 block">Vendor Shop</span>
-                  <span className="font-semibold truncate block">{product.shop}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-stone-300">
-                <MapPin size={14} className="text-stone-500 shrink-0" />
-                <div className="min-w-0">
-                  <span className="text-[10px] text-stone-500 block">Distance</span>
-                  <span className="font-semibold truncate block">{product.distance || "Kiosk nearby"}</span>
-                </div>
+          {/* Core Content Body */}
+          <div className="px-6 pt-2 space-y-6">
+            
+            {/* Title & Price Section */}
+            <div className="space-y-1">
+              <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">{product.name}</h3>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-emerald-400">KES {Number(product.price).toLocaleString()}</span>
+                <span className="text-xs text-slate-400 font-medium">/ unit</span>
               </div>
             </div>
 
-            {/* Description Paragraph */}
-            <div className="space-y-1.5">
-              <h4 className="text-[11px] font-bold text-stone-400 uppercase tracking-wider">Product Info</h4>
-              <p className="text-xs text-stone-300 leading-relaxed bg-stone-950/20 p-3 rounded-lg border border-stone-850/40">
-                {product.description || "Freshly sourced high-quality item directly retrieved from our catalog partners in your local neighborhood kiosk. Hand-selected for premium quality."}
+            {/* Vendor & Location Metrics */}
+            <div className="grid grid-cols-2 gap-3 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 text-xs">
+              <div className="flex items-center gap-2.5 text-slate-300">
+                <div className="p-2 bg-slate-800 rounded-lg border border-slate-700/60 text-emerald-400 shrink-0">
+                  <Store size={14} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">Merchant</span>
+                  <span className="font-semibold text-slate-200 truncate block">{product.shop || "Verified Merchant"}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2.5 text-slate-300">
+                <div className="p-2 bg-slate-800 rounded-lg border border-slate-700/60 text-emerald-400 shrink-0">
+                  <MapPin size={14} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">Distance</span>
+                  <span className="font-semibold text-slate-200 truncate block">{product.distance || "Nearby Local Shop"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Product Overview */}
+            <div className="space-y-2">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Product Overview</h4>
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/40 p-4 rounded-xl border border-slate-800/60">
+                {product.description || "Freshly sourced high-quality item directly retrieved from our partner catalog in your local neighborhood. Inspected for premium quality."}
               </p>
             </div>
 
-            {/* Quality Check Banner */}
-            <div className="flex items-center gap-2.5 bg-emerald-950/10 border border-emerald-900/35 p-2.5 rounded-lg text-[10px] text-emerald-400">
-              <ShieldCheck size={16} className="shrink-0" />
-              <span>Sourced from verified merchants, covered by our fresh guarantee.</span>
+            {/* Delivery Status Tag */}
+            <div className="flex items-center gap-2.5 bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-xs text-slate-300">
+              <Clock size={14} className="text-emerald-400 shrink-0" />
+              <span>Direct dispatch: estimated delivery <strong className="text-white font-semibold">within 15 mins</strong>.</span>
             </div>
 
-            {/* --- PREMIUM AI INTERACTION AREA --- */}
-            <div className="border-t border-stone-800/80 pt-4 space-y-3">
-              <div className="flex items-center gap-1.5">
-                <MessageSquareText size={15} className="text-amber-500" />
-                <h4 className="text-[11px] font-bold text-stone-300 uppercase tracking-wider">
-                  Inquire More (Soko AI Assistant)
-                </h4>
+            {/* Quality Guarantee Shield */}
+            <div className="flex items-center gap-3 bg-emerald-950/30 border border-emerald-500/20 p-3.5 rounded-xl text-xs text-emerald-300">
+              <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
+              <span className="font-medium">Backed by Soko Freshness & Quality Assurance.</span>
+            </div>
+
+            {/* AI Assistant Chat Section */}
+            <div className="border-t border-slate-800/80 pt-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <MessageSquareText size={14} className="text-emerald-400" />
+                  </div>
+                  <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    Item AI Assistant
+                  </h4>
+                </div>
+                <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Chat
+                </span>
               </div>
 
-              {/* Dynamic Scrollable Inline Chat Feed */}
-              <div className="bg-stone-950/50 border border-stone-850 p-3 rounded-xl space-y-3 max-h-48 overflow-y-auto">
+              {/* Chat Feed */}
+              <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl space-y-3 max-h-52 overflow-y-auto shadow-inner">
                 {qaHistory.map((qa) => (
                   <div 
                     key={qa.id} 
-                    className={`flex gap-2 max-w-[90%] ${qa.sender === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
+                    className={`flex gap-2 max-w-[88%] ${qa.sender === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
                   >
                     {qa.sender === 'ai' && (
-                      <div className="w-5 h-5 rounded bg-emerald-950/80 border border-emerald-850/50 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles size={10} />
+                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Sparkles size={12} />
                       </div>
                     )}
                     <div 
-                      className={`rounded-xl px-3 py-2 text-xs leading-relaxed ${
+                      className={`rounded-xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
                         qa.sender === 'user' 
-                          ? 'bg-amber-500/10 border border-amber-500/20 text-amber-300' 
-                          : 'bg-stone-900 text-stone-200'
+                          ? 'bg-emerald-600 text-white font-medium rounded-tr-none' 
+                          : 'bg-slate-800 border border-slate-700/70 text-slate-200 rounded-tl-none'
                       }`}
                     >
                       {qa.text}
@@ -244,52 +267,52 @@ export function ProductDetails({
                   </div>
                 ))}
                 
-                {/* Simulated AI Typing Loader */}
+                {/* Typing Indicator */}
                 {isTyping && (
-                  <div className="flex gap-2 items-center text-[10px] text-stone-500 animate-pulse">
-                    <Sparkles size={11} className="text-emerald-400 shrink-0" />
-                    <span>Soko AI is verifying kiosk stock...</span>
+                  <div className="flex gap-2 items-center text-[11px] text-slate-400 font-medium animate-pulse">
+                    <Sparkles size={12} className="text-emerald-400 shrink-0" />
+                    <span>Checking product details...</span>
                   </div>
                 )}
                 <div ref={qaEndRef} />
               </div>
 
-              {/* Quick Prompt Suggestion Chips */}
+              {/* Follow-up Chips */}
               <div className="flex flex-wrap gap-1.5">
                 {suggestedFollowUps.map((chip, idx) => (
                   <button
                     key={idx}
                     disabled={isTyping}
                     onClick={() => handleSendQuestion(chip.query)}
-                    className="text-[10px] text-stone-400 bg-stone-955 border border-stone-800 hover:border-amber-500/40 hover:text-stone-200 hover:bg-stone-950 transition-all px-2.5 py-1.5 rounded-lg cursor-pointer active:scale-95 disabled:opacity-50"
+                    className="text-[11px] font-medium text-slate-300 bg-slate-900 border border-slate-800 hover:border-emerald-500/40 hover:text-white transition-all px-2.5 py-1 rounded-lg cursor-pointer active:scale-95 disabled:opacity-50"
                   >
                     {chip.label}
                   </button>
                 ))}
               </div>
 
-              {/* Inline Questions Input Form */}
+              {/* Chat Input */}
               <form 
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendQuestion(inputValue);
                 }}
-                className="flex items-center gap-1.5 bg-stone-950 border border-stone-850 rounded-xl p-1 focus-within:border-amber-500/40 transition-all"
+                className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1 focus-within:border-emerald-500/50 transition-all"
               >
                 <input 
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   disabled={isTyping}
-                  placeholder="Ask if fresh, portion size..."
-                  className="flex-1 bg-transparent px-2.5 py-2 text-xs text-stone-200 placeholder-stone-500 focus:outline-none disabled:opacity-50"
+                  placeholder="Ask about portion, quality, origin..."
+                  className="flex-1 bg-transparent px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none disabled:opacity-50"
                 />
                 <button 
                   type="submit"
                   disabled={!inputValue.trim() || isTyping}
-                  className="p-2 bg-stone-900 hover:bg-stone-850 hover:text-amber-400 text-stone-400 rounded-lg transition-all active:scale-95 cursor-pointer disabled:opacity-40"
+                  className="p-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 disabled:bg-slate-800 disabled:text-slate-600 font-bold rounded-lg transition-all active:scale-95 cursor-pointer"
                 >
-                  <Send size={13} />
+                  <Send size={12} />
                 </button>
               </form>
             </div>
@@ -297,33 +320,33 @@ export function ProductDetails({
           </div>
         </div>
 
-        {/* Checkout Bottom Action Bar (Sticky at bottom) */}
-        <div className="absolute bottom-0 inset-x-0 bg-stone-900 border-t border-stone-850 p-4 flex items-center justify-between gap-4 z-10 shadow-2xl">
+        {/* Sticky Action Footer */}
+        <div className="absolute bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-4 flex items-center justify-between gap-3 z-20 backdrop-blur-md">
           
-          {/* Custom Styled Quantity Controls */}
-          <div className="flex items-center justify-between bg-stone-950 border border-stone-850 p-1 rounded-xl shrink-0">
+          {/* Quantity Controls */}
+          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-1 rounded-xl shrink-0">
             <button 
               onClick={handleDecrement}
-              className="p-1.5 hover:bg-stone-900 rounded-lg text-stone-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white active:scale-90 transition-all cursor-pointer"
             >
-              <Minus size={14} />
+              <Minus size={12} strokeWidth={2.5} />
             </button>
-            <span className="text-xs font-bold text-stone-100 px-3 w-8 text-center">{quantity}</span>
+            <span className="text-xs font-bold text-white px-2.5 w-7 text-center">{quantity}</span>
             <button 
               onClick={handleIncrement}
-              className="p-1.5 hover:bg-stone-900 rounded-lg text-stone-400 hover:text-white active:scale-95 transition-all cursor-pointer"
+              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white active:scale-90 transition-all cursor-pointer"
             >
-              <Plus size={14} />
+              <Plus size={12} strokeWidth={2.5} />
             </button>
           </div>
 
-          {/* Add to Basket Action */}
+          {/* Add to Basket Action Trigger */}
           <button 
             onClick={handleAddToBasketWithQty}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition-all text-stone-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer"
+            className="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] transition-all text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60 cursor-pointer tracking-wide"
           >
-            <ShoppingBag size={14} strokeWidth={2.5} />
-            <span>Add • KES {product.price * quantity}</span>
+            <ShoppingCart size={14} strokeWidth={2.5} />
+            <span>Add to Basket • KES {(product.price * quantity).toLocaleString()}</span>
           </button>
         </div>
 
