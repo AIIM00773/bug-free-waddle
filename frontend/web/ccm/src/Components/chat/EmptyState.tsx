@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -6,12 +6,18 @@ import {
   Monitor,
   Mic,
   AudioLines,
+  Check,
 } from 'lucide-react';
-import { useSearch } from '../../Providers/SearchContext';
 
-interface CardItem {
+import { useSearch, SEARCH_TYPES } from '../../Providers/SearchContext';
+
+// ==========================================
+// Types & Interfaces
+// ==========================================
+
+export interface CardItem {
   id: string;
-  icon: React.ElementType;
+  icon:any;
   title: string;
   badge?: string;
   description: string;
@@ -19,6 +25,22 @@ interface CardItem {
   gradient: string;
   accentColor: string;
 }
+
+export interface SearchTypesDropdownProps {
+  searchTypes?: readonly string[];
+  activeSearchType?: string;
+  setActiveSearchType?: (type: SearchType) => void;
+  onSelectType?: (type: SearchType) => void;
+}
+
+export interface EmptyStateProps {
+  onSendSuggested?: (query: string) => void;
+  onSendMessage?: (text: string) => void;
+}
+
+// ==========================================
+// Default Data
+// ==========================================
 
 const DEFAULT_CARDS: CardItem[] = [
   {
@@ -43,10 +65,91 @@ const DEFAULT_CARDS: CardItem[] = [
   },
 ];
 
-interface EmptyStateProps {
-  onSendSuggested?: (query: string) => void;
-  onSendMessage?: (text: string) => void;
+// ==========================================
+// Search Types Dropdown Component
+// ==========================================
+
+export function SearchTypesDropdown({
+  searchTypes = SEARCH_TYPES,
+  activeSearchType = 'Direct Search',
+  setActiveSearchType,
+  onSelectType,
+}: SearchTypesDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelect = (type: SearchType) => {
+    setActiveSearchType?.(type);
+    onSelectType?.(type);
+    setIsOpen(false);
+  };
+
+  return (
+    <div ref={dropdownRef} className="relative inline-block text-left">
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#242424] px-2.5 py-1.5 text-xs font-medium text-gray-200 transition-all hover:border-[#444444] hover:bg-[#2c2c2c] active:scale-95"
+      >
+        <Search className="h-3.5 w-3.5 text-teal-400" />
+        <span>{activeSearchType !== 'Direct Search' ? activeSearchType : 'Search Types'}</span>
+        <ChevronDown
+          className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-white' : ''
+          }`}
+        />
+      </button>
+
+      {/* Floating Menu */}
+      {isOpen && (
+        <div className="absolute bottom-full left-0 z-50 mb-2 min-w-[160px] overflow-hidden rounded-xl border border-[#333333] bg-[#1a1a1a]/95 p-1.5 shadow-2xl backdrop-blur-md transition-all duration-150 ease-out">
+          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            Filter Results
+          </div>
+
+          <div className="flex flex-col gap-0.5">
+            {searchTypes.map((st) => {
+              const isSelected = activeSearchType === st;
+              return (
+                <button
+                  key={st}
+                  type="button"
+                  onClick={() => handleSelect(st as SearchType)}
+                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    isSelected
+                      ? 'bg-teal-500/10 text-teal-400'
+                      : 'text-gray-300 hover:bg-[#282828] hover:text-white'
+                  }`}
+                >
+                  <span>{st}</span>
+                  {isSelected && <Check className="h-3.5 w-3.5 text-teal-400" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
+
+
+
+// ==========================================
+// Empty State Component
+// ==========================================
 
 export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) {
   const {
@@ -54,9 +157,13 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
     setInputText,
     handleSendMessage: providerSendMessage,
     activeEstate,
+    searchTypes,
+    activeSearchType,
+    setActiveSearchType,
+    defaultCards = DEFAULT_CARDS,
   } = useSearch();
 
-  // Prefer passed prop handler if provided, otherwise fallback to provider action
+  // Send handler with fallback to context action
   const dispatchSendMessage = (text: string) => {
     if (onSendMessage) {
       onSendMessage(text);
@@ -88,7 +195,7 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
 
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col justify-center px-4 py-12 text-slate-100">
-      {/* Title Header */}
+      {/* Header */}
       <div className="mb-6 space-y-2 text-left">
         <span className="text-sm font-medium text-gray-400">
           SokoAI • {activeEstate?.name || 'Local Search'}
@@ -98,20 +205,24 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
         </h1>
       </div>
 
-      {/* Main Central Input Container */}
+
+
+
+
+      {/* Text Area Input */}
       <div className="group relative mb-8 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 shadow-xl transition-all focus-within:border-[#383838]">
         <textarea
           rows={3}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Hello! what product would you like to find...?"
+          placeholder="...type anything"
           className="w-full resize-none bg-transparent text-base text-white placeholder-gray-400 focus:outline-none"
         />
 
-        {/* Input Bar Footer Controls */}
+        {/* Action Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-          {/* Left Actions */}
+          {/* Left Controls */}
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -121,29 +232,26 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
               <Plus className="h-5 w-5" />
             </button>
 
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-xl border border-[#2d2d2d] bg-[#222222] px-3 py-1.5 text-xs font-medium text-gray-300 transition-colors hover:bg-[#2a2a2a]"
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>Search Types</span>
-              <ChevronDown className="h-3 w-3 text-gray-400" />
-            </button>
+            <SearchTypesDropdown
+              searchTypes={searchTypes}
+              activeSearchType={activeSearchType}
+              setActiveSearchType={setActiveSearchType}
+            />
           </div>
 
-          {/* Right Actions */}
+          {/* Right Controls */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
             >
-              <span>Model</span>
+              <span>Base Model</span>
               <ChevronDown className="h-3 w-3" />
             </button>
 
             <button
               type="button"
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
+              className="hidden rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
               title="Voice Input"
             >
               <Mic className="h-4 w-4" />
@@ -152,7 +260,7 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
             <button
               type="button"
               onClick={handleSubmit}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-black transition-transform hover:bg-white active:scale-95"
+              className="hidden h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-black transition-transform hover:bg-white active:scale-95"
             >
               <AudioLines className="h-4 w-4" />
             </button>
@@ -160,9 +268,11 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
         </div>
       </div>
 
-      {/* Bottom Suggestion Cards */}
+      
+
+      {/* Suggestion Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {DEFAULT_CARDS.map((card) => {
+        {defaultCards.map((card) => {
           const Icon = card.icon;
           return (
             <button

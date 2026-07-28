@@ -12,7 +12,6 @@ export function Header({
   setActiveTab = () => {},
   setFiltersOpen,
   filtersOpen = false,
-  onShare,
 }) {
   // Access sidebar context for mobile menu trigger if needed
   const sidebarContext = useSidebar?.();
@@ -69,20 +68,8 @@ export function Header({
             }`}
           >
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Filters</span>
           </button>
         )}
-
-        {/* Share Button */}
-        <button
-          type="button"
-          onClick={onShare}
-          aria-label="Share thread"
-          className="flex items-center gap-1.5 rounded-full border border-[#333333] bg-[#222222] px-3 py-1.5 text-xs font-medium text-white transition-all hover:border-[#444444] hover:bg-[#2a2a2a] active:scale-95"
-        >
-          <Share2 className="h-3.5 w-3.5 text-gray-300" />
-          <span className="hidden sm:inline">Share</span>
-        </button>
       </div>
     </header>
   );

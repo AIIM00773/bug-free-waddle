@@ -89,8 +89,10 @@ export default function App() {
   };
 
   return (
+  <>
+         <AuthOverlay />
+
     <div className="flex h-screen overflow-hidden bg-[#191919] font-sans text-[#e3e3e3] antialiased">
-      <AuthOverlay />
 
       {notification && <HomeNotificationToast notification={notification} />}
 
@@ -158,5 +160,6 @@ export default function App() {
         <UserSettings onBackToChat={() => setSettingOpen(false)} />
       )}
     </div>
+    </> 
   );
 }

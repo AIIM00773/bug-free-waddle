@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { 
-  ArrowLeft, 
   Bell, 
   MessageSquare, 
   Shield, 
   Trash2, 
   Globe, 
   CheckCircle2, 
-  Eye,
-  Sparkles,
-  Settings,
-  X
+  Eye, 
+  Sparkles, 
+  X,
+  ChevronDown,
+  Loader2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export function UserSettings({ onBackToChat }) {
   const [activeTab, setActiveTab] = useState('notifications');
   const [isSaving, setIsSaving] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
 
-  // Customer-centric preferences state
   const [settings, setSettings] = useState({
     pushNotifications: true,
     whatsappAlerts: true,
@@ -26,7 +26,7 @@ export function UserSettings({ onBackToChat }) {
     autoScrollChat: true,
     enterToSend: true,
     highContrastChat: false,
-    language: 'en', // 'en' or 'sw'
+    language: 'en',
   });
 
   const handleToggle = (key) => {
@@ -49,201 +49,247 @@ export function UserSettings({ onBackToChat }) {
   };
 
   const handleClearCache = () => {
-    if (window.confirm('Clear local chat cache? active transaction channels will remain intact.')) {
-      // Logic for purging local state/cache goes here
+    if (window.confirm('Clear local chat cache? Active transaction channels will remain intact.')) {
       alert('Local workspace optimized.');
     }
   };
 
-  return (
-    /* TRUE FLOATING OVERLAY: Matches UserProfile depth and backdrop mechanics */
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-200">
-      
-      {/* CARD BODY PANEL */}
-      <div className="w-full h-full md:max-w-3xl md:h-[85vh] bg-[#0b0f14] text-zinc-200 font-sans flex flex-col relative rounded-none md:rounded-2xl border-none md:border md:border-zinc-800/60 shadow-2xl overflow-hidden">
-        
-        {/* ================= PREMIUM HEADER ================= */}
-        <div className="px-6 md:px-8 pt-8 pb-6 flex flex-col gap-6 shrink-0 border-b border-zinc-900/60 bg-gradient-to-b from-zinc-900/20 to-transparent">
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={onBackToChat}
-              className="group flex items-center gap-2 text-xs font-medium text-zinc-500 hover:text-white transition-colors cursor-pointer border border-[1px] border-red-500 px-3 py-1 rounded-3xl "
-            >
-              <X size={14} className="transition-transform group-hover:-translate-x-0.5" />
-              <span>Close </span>
-            </button>
+  const tabs = [
+    { id: 'notifications', label: 'Alerts & Pings', icon: Bell },
+    { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
+    { id: 'privacy', label: 'Data & Privacy', icon: Shield }
+  ];
 
-            <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800/80 px-2.5 py-1 rounded-full">
-              <Settings size={11} className="text-emerald-400" />
+  return (
+    <div className="fixed inset-0 z-50 bg-[#07080a]/80 backdrop-blur-lg flex items-center justify-center p-0 md:p-6 animate-in fade-in duration-150">
+      <div className="w-full h-full md:max-w-3xl md:h-[85vh] bg-[#0d0f12] text-zinc-200 font-sans flex flex-col relative rounded-none md:rounded-2xl border border-white/[0.08] shadow-2xl overflow-hidden">
+        
+        {/* HEADER */}
+        <div className="px-6 py-4 flex items-center justify-between border-b border-white/[0.06] bg-[#11141a]/60 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+              <Sparkles size={16} className="text-cyan-400" />
+            </div>
+            <div>
+              <h2 className="text-xs font-semibold text-zinc-100 tracking-wide font-sans">App Settings</h2>
+              <span className="text-[10px] text-zinc-500 font-mono tracking-tight flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                SYSTEM PREFERENCES
+              </span>
             </div>
           </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-white tracking-tight">App Settings</h2>
-            <p className="text-xs text-zinc-500 font-mono mt-0.5">Configure your hyper-local interface experience</p>
-          </div>
+          
+          <button 
+            type="button"
+            onClick={onBackToChat} 
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] text-zinc-400 hover:text-zinc-200 text-xs transition-all duration-150"
+          >
+            <X size={14} />
+            <span className="text-xs font-medium">Close</span>
+          </button>
         </div>
 
-        {/* ================= TAB NAVIGATION ================= */}
-        <div className="flex px-6 md:px-8 border-b border-zinc-900/40 bg-[#0b0f14] sticky top-0 z-10">
-          {[
-            { id: 'notifications', label: 'Alerts & Pings', icon: Bell },
-            { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
-            { id: 'privacy', label: 'Data & Privacy', icon: Shield }
-          ].map(tab => {
-            const isSelected = activeTab === tab.id;
+        {/* SEGMENTED CONTROL TABS */}
+        <div className="flex items-center border-b border-white/[0.06] bg-[#0d0f12] px-6 py-2 overflow-x-auto no-scrollbar gap-1.5 shrink-0">
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
             return (
-              <button
-                key={tab.id}
+              <button 
                 type="button"
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 mr-6 py-4 text-xs font-medium relative transition-all cursor-pointer
-                  ${isSelected ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}
-                `}
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id)} 
+                className={`relative flex items-center gap-2 px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-150 whitespace-nowrap ${
+                  isActive 
+                    ? 'bg-white/[0.08] text-cyan-300 border border-cyan-500/30' 
+                    : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.03]'
+                }`}
               >
+                <tab.icon size={14} className={isActive ? 'text-cyan-400' : 'text-zinc-500'} /> 
                 <span>{tab.label}</span>
-                {isSelected && (
-                  <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-emerald-400" />
-                )}
               </button>
             );
           })}
         </div>
 
-        {/* ================= TAB PANELS ================= */}
-        <div className="flex-1 overflow-y-auto px-6 md:px-8 py-8 custom-scrollbar">
-          <form onSubmit={handleSaveSettings} className="space-y-8 max-w-xl">
-            
-            {/* TAB 1: NOTIFICATIONS */}
-            {activeTab === 'notifications' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <p className="text-xs text-zinc-500 leading-relaxed">
-                  Choose how runners and automated order checkpoints pipeline updates to your devices.
-                </p>
+        {/* CONTENT AREA */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 bg-[#0d0f12] custom-scrollbar">
+          <form onSubmit={handleSaveSettings} className="max-w-xl mx-auto space-y-6 pb-20">
+            <AnimatePresence mode="wait">
+              
+              {/* TAB 1: NOTIFICATIONS */}
+              {activeTab === 'notifications' && (
+                <motion.div 
+                  key="notifications"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4 bg-[#13161c] p-5 rounded-xl border border-white/[0.06]"
+                >
+                  <p className="text-xs text-zinc-400 font-sans leading-relaxed border-b border-white/[0.06] pb-3">
+                    Choose how runners and automated order checkpoints pipeline updates to your devices.
+                  </p>
 
-                <div className="space-y-4">
-                  {/* Toggle Option Row */}
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-900/40">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">In-App Push Alerts</h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">Real-time status changes inside the viewport browser</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle('pushNotifications')}
-                      className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${settings.pushNotifications ? 'bg-emerald-500' : 'bg-zinc-800'}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${settings.pushNotifications ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
+                  <div className="space-y-3">
+                    <PerplexityToggle 
+                      title="In-App Push Alerts" 
+                      description="Real-time status changes inside the viewport browser" 
+                      checked={settings.pushNotifications} 
+                      onChange={() => handleToggle('pushNotifications')} 
+                    />
+
+                    <PerplexityToggle 
+                      title="WhatsApp Dispatch Alerts" 
+                      description="Receive runner map links directly on your connected M-Pesa line" 
+                      checked={settings.whatsappAlerts} 
+                      onChange={() => handleToggle('whatsappAlerts')} 
+                    />
+
+                    <PerplexityToggle 
+                      title="Fallback SMS Pings" 
+                      description="Standard text messages when off-grid or offline" 
+                      checked={settings.smsTracking} 
+                      onChange={() => handleToggle('smsTracking')} 
+                    />
                   </div>
+                </motion.div>
+              )}
 
-                  {/* WhatsApp Alerts */}
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-900/40">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">WhatsApp Dispatch Alerts</h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">Receive runner map links directly on your connected M-Pesa line</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle('whatsappAlerts')}
-                      className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${settings.whatsappAlerts ? 'bg-emerald-500' : 'bg-zinc-800'}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${settings.whatsappAlerts ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-
-                  {/* SMS Tracking */}
-                  <div className="flex items-center justify-between py-3 border-b border-zinc-900/40">
-                    <div>
-                      <h4 className="text-sm font-medium text-white">Fallback SMS Pings</h4>
-                      <p className="text-xs text-zinc-500 mt-0.5">Standard text messages when off-grid or offline</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle('smsTracking')}
-                      className={`w-10 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${settings.smsTracking ? 'bg-emerald-500' : 'bg-zinc-800'}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-transform duration-200 ${settings.smsTracking ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: INTERFACE / FEED MECHANICS */}
-            {activeTab === 'interface' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="space-y-4">
-                  
-                  {/* Language Selection Dropdown */}
-                  <div className="group flex flex-col gap-2 border-b border-zinc-900 pb-4">
-                    <label className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold flex items-center gap-1.5">
-                      <Globe size={12} />
-                      <span>Display Language / Lugha</span>
+              {/* TAB 2: INTERFACE / FEED MECHANICS */}
+              {activeTab === 'interface' && (
+                <motion.div 
+                  key="interface"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4 bg-[#13161c] p-5 rounded-xl border border-white/[0.06]"
+                >
+                  <div className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-[#181c24] border border-white/[0.06] focus-within:border-cyan-500/50 transition-all">
+                    <label className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-medium flex items-center gap-1.5">
+                      <Globe size={12} className="text-zinc-500" />
+                      Display Language / Lugha
                     </label>
-                    <select
-                      value={settings.language}
-                      onChange={(e) => handleSelectChange('language', e.target.value)}
-                      className="w-full bg-zinc-900/60 border border-zinc-850 text-xs text-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-700 transition-colors"
-                    >
-                      <option value="en">English (Default)</option>
-                      <option value="sw">Kiswahili</option>
-                    </select>
+                    <div className="relative flex items-center">
+                      <select
+                        value={settings.language}
+                        onChange={(e) => handleSelectChange('language', e.target.value)}
+                        className="w-full bg-transparent text-xs text-zinc-100 outline-none appearance-none cursor-pointer pr-4"
+                      >
+                        <option value="en" className="bg-[#13161c]">English (Default)</option>
+                        <option value="sw" className="bg-[#13161c]">Kiswahili</option>
+                      </select>
+                      <ChevronDown size={12} className="absolute right-0 text-zinc-500 pointer-events-none" />
+                    </div>
                   </div>
 
-     
-                </div>
-              </div>
-            )}
+                  <div className="space-y-3 pt-2 border-t border-white/[0.06]">
+                    <PerplexityToggle 
+                      title="Auto-Scroll Feed" 
+                      description="Automatically scroll down as new responses and offers arrive" 
+                      checked={settings.autoScrollChat} 
+                      onChange={() => handleToggle('autoScrollChat')} 
+                    />
 
-            {/* TAB 3: PRIVACY & SYSTEM DATA */}
-            {activeTab === 'privacy' && (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="p-4 rounded-xl bg-zinc-950 border border-zinc-900/80 space-y-3">
-                  <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                    <Eye size={12} className="text-zinc-500" />
-                    Workspace Encryption
-                  </h4>
-                  <p className="text-xs text-zinc-500 leading-relaxed">
-                    Chat payloads, local micro-logistics tags, and sync routes are secured peer-to-peer. Clearing local app structures improves platform computation speeds.
-                  </p>
-                </div>
+                    <PerplexityToggle 
+                      title="Enter Key to Send" 
+                      description="Press Enter to send prompts instead of Shift + Enter" 
+                      checked={settings.enterToSend} 
+                      onChange={() => handleToggle('enterToSend')} 
+                    />
+                  </div>
+                </motion.div>
+              )}
 
-                <div className="pt-2">
-                  <button
-                    type="button"
-                    onClick={handleClearCache}
-                    className="group flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-950/40 bg-rose-950/10 text-rose-400 hover:bg-rose-950/20 text-xs font-medium transition-colors cursor-pointer"
-                  >
-                    <Trash2 size={13} className="text-rose-400" />
-                    <span>Clear Local Feed Caches</span>
-                  </button>
-                </div>
-              </div>
-            )}
+              {/* TAB 3: PRIVACY & SYSTEM DATA */}
+              {activeTab === 'privacy' && (
+                <motion.div 
+                  key="privacy"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="space-y-4 bg-[#13161c] p-5 rounded-xl border border-white/[0.06]"
+                >
+                  <div className="p-4 rounded-lg bg-[#181c24] border border-white/[0.06] space-y-2">
+                    <h4 className="text-[10px] font-mono uppercase tracking-wider font-semibold text-zinc-300 flex items-center gap-2">
+                      <Eye size={13} className="text-cyan-400" />
+                      Workspace Encryption
+                    </h4>
+                    <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                      Chat payloads, local micro-logistics tags, and sync routes are secured peer-to-peer. Clearing local app structures improves platform computation speeds.
+                    </p>
+                  </div>
 
-            {/* ================= ACTIONS TRAY ================= */}
-            <div className="pt-6 flex items-center justify-between gap-4 border-t border-zinc-900/40">
-              <div className="h-4 flex items-center">
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleClearCache}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg border border-rose-500/20 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 hover:border-rose-500/30 text-xs font-medium transition-all"
+                    >
+                      <Trash2 size={13} />
+                      <span>Clear Local Feed Caches</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+
+            </AnimatePresence>
+
+            {/* ACTION TRAY */}
+            <div className="pt-4 flex items-center justify-between gap-4 border-t border-white/[0.06]">
+              <div className="h-5 flex items-center">
                 {showNotification && (
-                  <p className="text-xs text-emerald-400 font-medium flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <CheckCircle2 size={12} /> Local properties synced.
-                  </p>
+                  <span className="text-xs text-cyan-400 font-mono font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
+                    <CheckCircle2 size={13} /> Properties synced successfully
+                  </span>
                 )}
               </div>
               
               <button
                 type="submit"
                 disabled={isSaving}
-                className="px-5 py-2 bg-zinc-100 hover:bg-white disabled:bg-zinc-900 disabled:text-zinc-600 rounded-full text-black text-xs font-semibold tracking-tight transition-all active:scale-[0.98] cursor-pointer"
+                className="flex items-center gap-2 px-5 py-2 bg-cyan-500 hover:bg-cyan-400 text-[#0d0f12] text-xs font-semibold rounded-lg shadow-lg shadow-cyan-950/50 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-50"
               >
-                {isSaving ? 'Updating Workspace...' : 'Apply Workspace Changes'}
+                {isSaving ? (
+                  <>
+                    <Loader2 size={13} className="animate-spin" />
+                    <span>Updating Workspace...</span>
+                  </>
+                ) : (
+                  <span>Apply Workspace Changes</span>
+                )}
               </button>
             </div>
 
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Custom Perplexity Style Toggle Switch Component
+function PerplexityToggle({ title, description, checked, onChange }) {
+  return (
+    <div className="flex items-center justify-between p-3 rounded-lg bg-[#181c24] border border-white/[0.04] hover:border-white/[0.08] transition-colors">
+      <div className="pr-4">
+        <h4 className="text-xs font-medium text-zinc-100">{title}</h4>
+        <p className="text-[11px] text-zinc-400 mt-0.5 font-sans">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onChange}
+        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0 ${
+          checked ? 'bg-cyan-500' : 'bg-zinc-800'
+        }`}
+      >
+        <div 
+          className={`w-4 h-4 rounded-full bg-[#0d0f12] shadow-md transition-transform duration-200 ${
+            checked ? 'translate-x-4' : 'translate-x-0'
+          }`} 
+        />
+      </button>
     </div>
   );
 }

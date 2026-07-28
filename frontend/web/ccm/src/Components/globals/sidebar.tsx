@@ -8,16 +8,25 @@ import {
   SlidersHorizontal,
   History,
   User,
-  MoreHorizontal,
   PanelLeftClose,
   PanelLeftOpen,
   Trash2,
-  X,
+  Compass,
 } from 'lucide-react';
 
 import { useCart } from '../../Providers/CartContext';
 import { useAuth } from '../../Providers/profileContext';
 import { useSidebar } from '../../Providers/ui/sidebar';
+
+export interface SidebarProps {
+  sessions?: Array<{ id: string; title: string }>;
+  activeSessionId?: string | null;
+  setActiveSessionId: (id: string | null) => void;
+  handleDeleteSession?: (id: string) => void;
+  setIsProfileOpen: (open: boolean) => void;
+  settingOpen?: boolean;
+  setSettingOpen?: (open: boolean) => void;
+}
 
 export function Sidebar({
   sessions = [],
@@ -27,7 +36,7 @@ export function Sidebar({
   setIsProfileOpen,
   settingOpen,
   setSettingOpen,
-}) {
+}: SidebarProps) {
   const { cart, openCart, setOpenCart } = useCart();
   const { user, isAuthenticated, setProceedWithoutAuth } = useAuth();
 
@@ -38,7 +47,7 @@ export function Sidebar({
   const isExpanded = onMobile.open || !onDesktop.minimized;
 
   // Safe navigation helper for responsive mobile viewports
-  const handleNavigation = (action) => {
+  const handleNavigation = (action: () => void) => {
     action();
     if (window.innerWidth < 768 && onMobile.open) {
       onMobile.toggleOpen();
@@ -57,7 +66,7 @@ export function Sidebar({
     }
   };
 
-  const handleProtectedAction = (action) => {
+  const handleProtectedAction = (action: () => void) => {
     if (isAuthenticated) {
       action();
     } else {
@@ -67,7 +76,7 @@ export function Sidebar({
 
   // Keyboard Shortcut: CMD+K / CTRL+K to trigger New Chat
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         handleNewChat();
@@ -83,54 +92,97 @@ export function Sidebar({
       {onMobile.open && (
         <div
           onClick={() => onMobile.toggleOpen()}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity md:hidden"
           aria-hidden="true"
         />
       )}
 
       {/* Main Container */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#262626] bg-[#141414] p-3 select-none transition-all
-         duration-300 ease-in-out md:static ${isExpanded ? 'w-60' : 'w-16'} ${onMobile.open? 'translate-x-0': '-translate-x-full md:translate-x-0'}`}>
-         
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#2e3030] bg-[#191a1a] p-3 select-none transition-all duration-300 ease-in-out md:static ${
+          isExpanded ? 'w-60' : 'w-17'
+        } ${
+          onMobile.open
+            ? 'translate-x-0'
+            : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         <div className="flex flex-col space-y-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+          
           {/* Top Logo & Toggle Header */}
-          <div className={`flex items-center ${ isExpanded ? 'justify-between px-1 py-1' : 'justify-center py-1'}`} >
-            <div onClick={handleNewChat} className="flex cursor-pointer items-center gap-2.5 rounded-lg p-1 transition-opacity hover:opacity-80" title="Home" >
-
-             {isExpanded &&(
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400  ">
+          <div
+            className={`flex items-center ${
+              isExpanded ? 'justify-between px-1.5 py-1' : 'justify-center py-1'
+            }`}
+          >
+            <div
+              onClick={handleNewChat}
+              className="flex cursor-pointer items-center gap-2 rounded-lg transition-opacity hover:opacity-80"
+              title="Soko AI"
+            >
+              <div className={`flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 ${isExpanded ? '' : 'hidden'} `}>
                 <Sparkles className="h-4 w-4" />
               </div>
-             )}
 
-              {isExpanded && (<span className="text-sm font-bold tracking-wide text-white"> Soko AI</span>)}
+              {isExpanded && (
+                <span className="font-serif text-base font-medium tracking-tight text-white">
+                  Soko AI
+                </span>
+              )}
             </div>
-            <button type="button" onClick={handleToggleSidebar} className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#222222] hover:text-white" title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}>
-              {isExpanded ? (<PanelLeftClose className="h-4 w-4" />) : (<PanelLeftOpen className="h-4 w-4" />)}
+
+            <button
+              type="button"
+              onClick={handleToggleSidebar}
+              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#202222] hover:text-white"
+              title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
+            >
+              {isExpanded ? (
+                <PanelLeftClose className="h-4 w-4" />
+              ) : (
+                <PanelLeftOpen className="h-4 w-4" />
+              )}
             </button>
           </div>
 
-
-          {/* New Thread CTA Button */}
-          <button type="button" onClick={handleNewChat}
-            className={`flex items-center gap-2 rounded-xl border border-[#2a2a2a] bg-[#1c1c1c] text-sm font-medium text-gray-200 transition-all hover:bg-[#262626] hover:text-white active:scale-95 ${isExpanded ? 'w-full justify-between px-3 py-2.5' : 'justify-center p-2.5' }`} title="New Chat (Ctrl+K)" >
-            <div className="flex items-center gap-2.5">
-              <Plus className="h-4 w-4 text-teal-400" />
+          {/* New Thread Perplexity-Style CTA Button */}
+          <button
+            type="button"
+            onClick={handleNewChat}
+            className={`group flex items-center rounded-full border border-[#2e3030] bg-[#202222] font-medium text-xs text-gray-200 transition-all hover:border-teal-500/30 hover:bg-[#252727] active:scale-[0.98] ${
+              isExpanded
+                ? 'w-full justify-between px-3.5 py-2'
+                : 'h-9 w-9 justify-center mx-auto'
+            }`}
+            title="New Thread (Ctrl+K)"
+          >
+            <div className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-teal-400 transition-transform group-hover:rotate-90" />
               {isExpanded && <span>New Thread</span>}
             </div>
             {isExpanded && (
-              <kbd className="hidden rounded bg-[#111111] px-1.5 py-0.5 text-[10px] font-semibold text-gray-500 sm:inline-block">
+              <kbd className="hidden rounded-md border border-[#3e4040] bg-[#141515] px-1.5 py-0.5 text-[10px] font-mono text-gray-400 sm:inline-block">
                 ⌘K
               </kbd>
             )}
           </button>
 
-          {/* Navigation Items */}
-          <nav className="space-y-1 text-sm text-gray-400">
+          {/* Core Navigation Links */}
+          <nav className="space-y-1 text-xs text-gray-400">
             <button
               type="button"
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Discover"
+            >
+              <Compass className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Discover</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
               title="Computer"
@@ -141,7 +193,7 @@ export function Sidebar({
 
             <button
               type="button"
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
               title="Spaces"
@@ -152,7 +204,7 @@ export function Sidebar({
 
             <button
               type="button"
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
               title="Artifacts"
@@ -164,34 +216,37 @@ export function Sidebar({
             <button
               type="button"
               onClick={() => setSettingOpen?.(!settingOpen)}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-[#222222] hover:text-white ${
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
-              title="Customize"
+              title="Settings"
             >
               <SlidersHorizontal className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Customize</span>}
+              {isExpanded && <span>Settings</span>}
             </button>
           </nav>
 
-          <div className="my-2 border-t border-[#262626]" />
+          <div className="my-1 border-t border-[#2e3030]" />
 
-          {/* Query Session History */}
+          {/* Session History Stream */}
           <div className="flex-1 space-y-1">
             {isExpanded ? (
-              <div className="mb-2 flex items-center justify-between px-3 text-xs font-semibold tracking-wider text-gray-500 uppercase">
+              <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
                 <span className="flex items-center gap-1.5">
-                  <History className="h-3.5 w-3.5" />
-                  History
+                  <History className="h-3 w-3" />
+                  Library
                 </span>
                 {sessions.length > 0 && (
-                  <span className="text-[10px] text-gray-600">
+                  <span className="rounded-full bg-[#202222] px-1.5 py-0.2 text-[10px] text-gray-400">
                     {sessions.length}
                   </span>
                 )}
               </div>
             ) : (
-              <div className="flex justify-center py-2 text-gray-500" title="History">
+              <div
+                className="flex justify-center py-2 text-gray-500"
+                title="Library History"
+              >
                 <History className="h-4 w-4" />
               </div>
             )}
@@ -203,14 +258,16 @@ export function Sidebar({
                   <button
                     key={session.id}
                     type="button"
-                    onClick={() => handleNavigation(() => setActiveSessionId(session.id))}
+                    onClick={() =>
+                      handleNavigation(() => setActiveSessionId(session.id))
+                    }
                     title={session.title}
-                    className={`group relative flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs transition-all ${
+                    className={`group relative flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs transition-all ${
                       !isExpanded && 'justify-center px-0'
                     } ${
                       isActive
-                        ? 'bg-[#222222] font-medium text-white border-l-2 border-teal-400'
-                        : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-gray-200'
+                        ? 'bg-[#202222] font-medium text-white border-l-2 border-teal-400 pl-2.5'
+                        : 'text-gray-400 hover:bg-[#1f2020] hover:text-gray-200'
                     }`}
                   >
                     {isExpanded ? (
@@ -222,8 +279,8 @@ export function Sidebar({
                               e.stopPropagation();
                               handleDeleteSession(session.id);
                             }}
-                            className="rounded p-1 text-gray-500 opacity-0 transition-opacity hover:bg-[#333333] hover:text-red-400 group-hover:opacity-100"
-                            title="Delete Session"
+                            className="rounded-lg p-1 text-gray-500 opacity-0 transition-opacity hover:bg-[#2e3030] hover:text-red-400 group-hover:opacity-100"
+                            title="Delete Thread"
                           >
                             <Trash2 className="h-3 w-3" />
                           </div>
@@ -243,17 +300,17 @@ export function Sidebar({
           </div>
         </div>
 
-        {/* User Auth Footer Button */}
-        <div className="pt-2 border-t border-[#262626]">
+        {/* User Account / Profile Footer */}
+        <div className="pt-2 border-t border-[#2e3030]">
           <button
             type="button"
             onClick={() => handleProtectedAction(() => setIsProfileOpen(true))}
-            className={`flex w-full items-center gap-2.5 rounded-xl p-2 text-xs font-medium text-gray-300 transition-colors hover:bg-[#222222] hover:text-white ${
+            className={`flex w-full items-center gap-2.5 rounded-2xl p-2 text-xs font-medium text-gray-300 transition-colors hover:bg-[#202222] hover:text-white ${
               !isExpanded && 'justify-center'
             }`}
             title={isAuthenticated ? user?.name || 'Profile' : 'Sign In'}
           >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-900/50 border border-teal-500/30 text-teal-300 font-semibold">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 font-medium">
               {isAuthenticated && user?.name ? (
                 user.name.charAt(0).toUpperCase()
               ) : (

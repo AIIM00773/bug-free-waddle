@@ -1,37 +1,70 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  X, Plus, Minus, ShoppingCart, MapPin, Store, Clock, 
-  ShieldCheck, Send, Sparkles, MessageSquareText, Star 
+import {
+  X,
+  Plus,
+  Minus,
+  ShoppingCart,
+  MapPin,
+  Store,
+  ArrowUp,
+  Sparkles,
+  Star,
+  Share2,
+  Check,
+  Compass
 } from 'lucide-react';
 
-export function ProductDetails({ 
-  product, 
-  isOpen, 
-  onClose, 
-  onAddToBasket 
-}) {
+export interface ProductDetailsProps {
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    image?: string;
+    category?: string;
+    rating?: number | string;
+    shop?: string;
+    distance?: string;
+    description?: string;
+    [key: string]: any;
+  } | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onAddToBasket: (product: any) => void;
+}
+
+export function ProductDetails({
+  product,
+  isOpen,
+  onClose,
+  onAddToBasket,
+}: ProductDetailsProps) {
   const [quantity, setQuantity] = useState(1);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  
-  // Local Q&A history initialized with a contextual welcome message
-  const [qaHistory, setQaHistory] = useState([]);
-  const qaEndRef = useRef(null);
+  const [copied, setCopied] = useState(false);
 
-  // Initialize and reset local states when drawer opens/changes products
+  // Local Q&A history
+  const [qaHistory, setQaHistory] = useState<
+    Array<{ id: string; sender: 'user' | 'ai'; text: string }>
+  >([]);
+  const qaEndRef = useRef<HTMLDivElement>(null);
+
+  // Reset local state when drawer opens or product changes
   useEffect(() => {
     if (isOpen && product) {
       setQuantity(1);
       setInputValue('');
       setIsTyping(false);
+      setCopied(false);
       setQaHistory([
         {
           id: 'welcome-qa',
           sender: 'ai',
-          text: `Ask me anything about these fresh ${product.name} from ${product.shop || 'our vendor'}! I can verify availability, size, or harvest details.`
-        }
+          text: `Ask anything about ${product.name} from ${
+            product.shop || 'this vendor'
+          }. I can verify freshness, portion size, or delivery times.`,
+        },
       ]);
-      // Prevent background scrolling when sider is active
       document.body.style.overflow = 'hidden';
     }
     return () => {
@@ -39,14 +72,14 @@ export function ProductDetails({
     };
   }, [isOpen, product]);
 
-  // Smooth-scroll the mini Q&A feed to the bottom when history changes
+  // Smooth-scroll mini Q&A feed
   useEffect(() => {
     qaEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [qaHistory, isTyping]);
 
-  // Handle Escape key to close details slider
+  // Handle Escape key
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
     if (isOpen) {
@@ -57,8 +90,8 @@ export function ProductDetails({
 
   if (!isOpen || !product) return null;
 
-  const handleIncrement = () => setQuantity(prev => prev + 1);
-  const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
+  const handleIncrement = () => setQuantity((prev) => prev + 1);
+  const handleDecrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   const handleAddToBasketWithQty = () => {
     for (let i = 0; i < quantity; i++) {
@@ -67,287 +100,340 @@ export function ProductDetails({
     onClose();
   };
 
-  const handleImageError = (e) => {
-    e.target.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80";
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    e.currentTarget.src =
+      'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
   };
 
-  // Context-aware AI Mock Response Generator
-  const generateMockResponse = (userInput) => {
+  const handleCopyShare = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(
+        `${product.name} - KES ${product.price.toLocaleString()} from ${
+          product.shop || 'Soko'
+        }`
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Mock AI Response Generator
+  const generateMockResponse = (userInput: string) => {
     const query = userInput.toLowerCase();
     const prodName = product.name;
-    const shopName = product.shop || "kiosk ya mtaa";
+    const shopName = product.shop || 'the merchant';
 
-    if (query.includes('fresh') || query.includes('leo') || query.includes('mbichi')) {
-      return `Zimefika asubuhi ya leo direct kutoka soko kuu! ${shopName} keeps their ${prodName} covered in cool shade to stay crisp. Certified fresh! 🥬`;
+    if (
+      query.includes('fresh') ||
+      query.includes('leo') ||
+      query.includes('mbichi')
+    ) {
+      return `Restocked early this morning. ${shopName} keeps their ${prodName} shaded to maintain peak quality. Verified fresh.`;
     }
-    if (query.includes('size') || query.includes('kiwango') || query.includes('kubwa') || query.includes('weight')) {
-      return `Standard size ya hii portion ni ya kutosha mboga ya familia ya watu watatu hadi wanne. Kama unataka bulk orders, unaweza kuongeza quantity hapa chini.`;
+    if (
+      query.includes('size') ||
+      query.includes('kiwango') ||
+      query.includes('portion') ||
+      query.includes('weight')
+    ) {
+      return `Standard portion size suitable for 3–4 meals. Adjust quantity below for larger orders.`;
     }
-    if (query.includes('bei') || query.includes('discount') || query.includes('price')) {
-      return `Hii price ya KES ${product.price} ndio ya chini kabisa mtaani kwa sasa kwa ajili ya deal tulizopata na ${shopName}. Hakuna hidden charges!`;
+    if (
+      query.includes('price') ||
+      query.includes('bei') ||
+      query.includes('cost')
+    ) {
+      return `Priced at KES ${product.price.toLocaleString()} directly set by ${shopName} with no hidden fees.`;
     }
-    if (query.includes('deliver') || query.includes('fika') || query.includes('time')) {
-      return `Tutaipea runner wetu mwenye baiskeli/pikipiki, atakuwa kwako hapo ${product.distance || 'within 15 minutes'}. Atakuletea ikiwa fresh sana!`;
+    if (
+      query.includes('deliver') ||
+      query.includes('fast') ||
+      query.includes('time')
+    ) {
+      return `Estimated dispatch time is ${
+        product.distance || '15 minutes'
+      } via direct courier.`;
     }
-    return `Soko AI Assistant: Confirming that ${prodName} from ${shopName} matches our strict quality standard. Let me know if you want me to add it directly to your cart!`;
+    return `Verified: ${prodName} from ${shopName} meets default quality checks. Ready to add to your order.`;
   };
 
-  const handleSendQuestion = (questionText) => {
+  const handleSendQuestion = (questionText: string) => {
     if (!questionText.trim()) return;
 
     const userMsg = {
       id: `user-${Date.now()}`,
-      sender: 'user',
-      text: questionText
+      sender: 'user' as const,
+      text: questionText,
     };
-    setQaHistory(prev => [...prev, userMsg]);
+    setQaHistory((prev) => [...prev, userMsg]);
     setInputValue('');
     setIsTyping(true);
 
     setTimeout(() => {
       const aiReply = {
         id: `ai-${Date.now()}`,
-        sender: 'ai',
-        text: generateMockResponse(questionText)
+        sender: 'ai' as const,
+        text: generateMockResponse(questionText),
       };
       setIsTyping(false);
-      setQaHistory(prev => [...prev, aiReply]);
-    }, 900);
+      setQaHistory((prev) => [...prev, aiReply]);
+    }, 700);
   };
 
   const suggestedFollowUps = [
-    { label: "Is it fresh today?", query: "Is this product fresh today?" },
-    { label: "What portion size is this?", query: "What size or portion is this package?" },
-    { label: "How fast is delivery?", query: "How fast will this get to my location?" }
+    { label: 'Is it fresh today?', query: 'Is this product fresh today?' },
+    {
+      label: 'What portion size is this?',
+      query: 'What size or portion is this package?',
+    },
+    {
+      label: 'How fast is delivery?',
+      query: 'How fast will this get to my location?',
+    },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-stretch md:justify-end overflow-hidden font-sans">
-      
+    <div className="fixed inset-0 z-50 flex items-end font-sans md:items-stretch md:justify-end overflow-hidden">
       {/* Backdrop */}
-      <div 
-        onClick={onClose} 
-        className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity duration-300 animate-in fade-in"
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200"
       />
 
-      {/* Slide-over Sider Container */}
-      <div className="relative w-full md:w-[540px] max-h-[92vh] md:max-h-screen bg-slate-950 border-t md:border-t-0 md:border-l border-slate-800/80 text-slate-100 flex flex-col overflow-hidden z-10 transition-all duration-300 ease-out animate-in slide-in-from-bottom-10 md:slide-in-from-right rounded-t-2xl md:rounded-t-none shadow-2xl">
+      {/* Perplexity-style Drawer Container */}
+      <div className="relative z-10 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-[#2e3030] bg-[#191a1a] text-gray-100 shadow-2xl transition-all duration-300 md:max-h-screen md:w-[480px] md:rounded-t-none md:border-l md:border-t-0">
         
         {/* Mobile Drag Indicator */}
-        <div className="w-12 h-1 bg-slate-800 rounded-full mx-auto mt-3 mb-1 md:hidden shrink-0" />
+        <div className="mx-auto my-2.5 h-1 w-10 shrink-0 rounded-full bg-[#2e3030] md:hidden" />
 
-        {/* Floating Header Actions */}
-        <div className="absolute top-4 left-4 right-4 z-20 flex justify-between items-center pointer-events-none">
-          <div className="flex gap-2 pointer-events-auto">
-            <span className="text-[10px] bg-slate-900/90 backdrop-blur-md text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow-lg">
-              {product.category || "Fresh Produce"}
+        {/* Top Header */}
+        <div className="flex items-center justify-between border-b border-[#2e3030] px-5 py-3.5">
+          <div className="flex items-center gap-2">
+            <span className="rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-400">
+              {product.category || 'Product Details'}
             </span>
           </div>
-          
-          <button 
-            onClick={onClose}
-            className="pointer-events-auto p-2 bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-white rounded-full border border-slate-700/80 shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-md"
-            title="Close panel"
-          >
-            <X size={16} strokeWidth={2.5} />
-          </button>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handleCopyShare}
+              className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-[#252727] hover:text-white"
+              title="Copy share link"
+            >
+              {copied ? (
+                <Check size={15} className="text-teal-400" />
+              ) : (
+                <Share2 size={15} />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex items-center gap-1 rounded-full border border-[#2e3030] bg-[#202222] p-1.5 text-gray-400 transition-colors hover:border-[#3e4040] hover:text-white"
+              title="Close panel (Esc)"
+            >
+              <X size={15} />
+            </button>
+          </div>
         </div>
 
-        {/* Scrollable Frame Content */}
-        <div className="overflow-y-auto flex-1 pb-28 subtle-scrollbar">
+        {/* Body Content */}
+        <div className="flex-1 overflow-y-auto px-5 pb-32 pt-4">
           
-          {/* Hero Banner Image */}
-          <div className="relative w-full h-64 md:h-72 bg-slate-900 shrink-0">
-            <img 
-              src={product.image || "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80"} 
-              alt={product.name} 
-              onError={handleImageError}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-            
-            <div className="absolute bottom-3 right-4 bg-slate-950/80 backdrop-blur-md border border-slate-800 text-amber-400 px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-md">
-              <Star size={12} className="fill-amber-400" />
-              <span>{product.rating || "4.8"}</span>
-            </div>
-          </div>
-
-          {/* Core Content Body */}
-          <div className="px-6 pt-2 space-y-6">
-            
-            {/* Title & Price Section */}
-            <div className="space-y-1">
-              <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">{product.name}</h3>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-emerald-400">KES {Number(product.price).toLocaleString()}</span>
-                <span className="text-xs text-slate-400 font-medium">/ unit</span>
+          {/* Main Showcase Grid */}
+          <div className="space-y-4">
+            <div className="relative overflow-hidden rounded-2xl border border-[#2e3030] bg-[#141515]">
+              <img
+                src={
+                  product.image ||
+                  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'
+                }
+                alt={product.name}
+                onError={handleImageError}
+                className="h-56 w-full object-cover"
+              />
+              <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full border border-gray-800 bg-black/75 px-2.5 py-1 text-xs font-semibold text-amber-400 backdrop-blur-md">
+                <Star size={11} className="fill-amber-400" />
+                <span>{product.rating || '4.8'}</span>
               </div>
             </div>
 
-            {/* Vendor & Location Metrics */}
-            <div className="grid grid-cols-2 gap-3 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800 text-xs">
-              <div className="flex items-center gap-2.5 text-slate-300">
-                <div className="p-2 bg-slate-800 rounded-lg border border-slate-700/60 text-emerald-400 shrink-0">
-                  <Store size={14} />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">Merchant</span>
-                  <span className="font-semibold text-slate-200 truncate block">{product.shop || "Verified Merchant"}</span>
+            {/* Title & Price Header */}
+            <div>
+              <h2 className="font-serif text-2xl font-normal text-white tracking-tight">
+                {product.name}
+              </h2>
+              <div className="mt-1 flex items-baseline gap-1.5">
+                <span className="text-xs font-bold text-teal-400">KES</span>
+                <span className="text-2xl font-bold tracking-tight text-white">
+                  {Number(product.price).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Merchant & Distance info pill bar */}
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#2e3030] bg-[#202222] p-3 text-xs">
+              <div className="flex items-center gap-2 text-gray-300">
+                <Store size={14} className="shrink-0 text-gray-400" />
+                <div className="truncate">
+                  <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-medium">Merchant</span>
+                  <span className="truncate font-medium text-gray-200">{product.shop || 'Verified Vendor'}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2.5 text-slate-300">
-                <div className="p-2 bg-slate-800 rounded-lg border border-slate-700/60 text-emerald-400 shrink-0">
-                  <MapPin size={14} />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-semibold">Distance</span>
-                  <span className="font-semibold text-slate-200 truncate block">{product.distance || "Nearby Local Shop"}</span>
+              <div className="flex items-center gap-2 text-gray-300">
+                <MapPin size={14} className="shrink-0 text-gray-400" />
+                <div className="truncate">
+                  <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-medium">Est. Delivery</span>
+                  <span className="truncate font-medium text-gray-200">{product.distance || '15 mins away'}</span>
                 </div>
               </div>
             </div>
 
-            {/* Product Overview */}
-            <div className="space-y-2">
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Product Overview</h4>
-              <p className="text-xs text-slate-300 leading-relaxed bg-slate-900/40 p-4 rounded-xl border border-slate-800/60">
-                {product.description || "Freshly sourced high-quality item directly retrieved from our partner catalog in your local neighborhood. Inspected for premium quality."}
+            {/* Overview Section */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+                Overview
+              </span>
+              <p className="text-xs leading-relaxed text-gray-300">
+                {product.description ||
+                  'Freshly sourced high-quality item directly retrieved from partner catalog. Checked for standard grade quality.'}
               </p>
             </div>
 
-            {/* Delivery Status Tag */}
-            <div className="flex items-center gap-2.5 bg-slate-900/80 border border-slate-800 p-3 rounded-xl text-xs text-slate-300">
-              <Clock size={14} className="text-emerald-400 shrink-0" />
-              <span>Direct dispatch: estimated delivery <strong className="text-white font-semibold">within 15 mins</strong>.</span>
-            </div>
-
-            {/* Quality Guarantee Shield */}
-            <div className="flex items-center gap-3 bg-emerald-950/30 border border-emerald-500/20 p-3.5 rounded-xl text-xs text-emerald-300">
-              <ShieldCheck size={18} className="text-emerald-400 shrink-0" />
-              <span className="font-medium">Backed by Soko Freshness & Quality Assurance.</span>
-            </div>
-
-            {/* AI Assistant Chat Section */}
-            <div className="border-t border-slate-800/80 pt-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-                    <MessageSquareText size={14} className="text-emerald-400" />
-                  </div>
-                  <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Item AI Assistant
-                  </h4>
+            {/* Perplexity AI Assistant Inline Section */}
+            <div className="border-t border-[#2e3030] pt-4 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={13} className="text-teal-400" />
+                  <span className="font-medium text-gray-300">Item Focus Q&A</span>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Chat
-                </span>
               </div>
 
-              {/* Chat Feed */}
-              <div className="bg-slate-900/90 border border-slate-800 p-3.5 rounded-xl space-y-3 max-h-52 overflow-y-auto shadow-inner">
+              {/* Chat Log Feed */}
+              <div className="space-y-2 rounded-2xl border border-[#2e3030] bg-[#141515] p-3 text-xs">
                 {qaHistory.map((qa) => (
-                  <div 
-                    key={qa.id} 
-                    className={`flex gap-2 max-w-[88%] ${qa.sender === 'user' ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
+                  <div
+                    key={qa.id}
+                    className={`flex flex-col ${
+                      qa.sender === 'user' ? 'items-end' : 'items-start'
+                    }`}
                   >
-                    {qa.sender === 'ai' && (
-                      <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                        <Sparkles size={12} />
-                      </div>
-                    )}
-                    <div 
-                      className={`rounded-xl px-3 py-2 text-xs leading-relaxed shadow-sm ${
-                        qa.sender === 'user' 
-                          ? 'bg-emerald-600 text-white font-medium rounded-tr-none' 
-                          : 'bg-slate-800 border border-slate-700/70 text-slate-200 rounded-tl-none'
+                    <div
+                      className={`max-w-[90%] rounded-xl px-3 py-2 leading-relaxed ${
+                        qa.sender === 'user'
+                          ? 'bg-[#252727] text-white'
+                          : 'bg-transparent text-gray-300 border-l-2 border-teal-400 pl-3.5 py-1'
                       }`}
                     >
                       {qa.text}
                     </div>
                   </div>
                 ))}
-                
-                {/* Typing Indicator */}
+
                 {isTyping && (
-                  <div className="flex gap-2 items-center text-[11px] text-slate-400 font-medium animate-pulse">
-                    <Sparkles size={12} className="text-emerald-400 shrink-0" />
-                    <span>Checking product details...</span>
+                  <div className="flex items-center gap-1.5 py-1 text-gray-500 text-[11px]">
+                    <Sparkles size={11} className="animate-spin text-teal-400" />
+                    <span>Searching details...</span>
                   </div>
                 )}
                 <div ref={qaEndRef} />
               </div>
 
               {/* Follow-up Chips */}
-              <div className="flex flex-wrap gap-1.5">
-                {suggestedFollowUps.map((chip, idx) => (
-                  <button
-                    key={idx}
-                    disabled={isTyping}
-                    onClick={() => handleSendQuestion(chip.query)}
-                    className="text-[11px] font-medium text-slate-300 bg-slate-900 border border-slate-800 hover:border-emerald-500/40 hover:text-white transition-all px-2.5 py-1 rounded-lg cursor-pointer active:scale-95 disabled:opacity-50"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1 text-[11px] text-gray-500">
+                  <Compass size={11} />
+                  <span>Suggested queries</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  {suggestedFollowUps.map((chip, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      disabled={isTyping}
+                      onClick={() => handleSendQuestion(chip.query)}
+                      className="group flex items-center justify-between rounded-xl border border-[#2e3030] bg-[#202222] px-3 py-1.5 text-left text-xs font-medium text-gray-300 transition-all hover:border-teal-500/30 hover:text-teal-400 disabled:opacity-50"
+                    >
+                      <span>{chip.label}</span>
+                      <Plus size={12} className="text-gray-500 transition-transform group-hover:rotate-90 group-hover:text-teal-400" />
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Chat Input */}
-              <form 
+              {/* Perplexity Styled Input Field */}
+              <form
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSendQuestion(inputValue);
                 }}
-                className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl p-1 focus-within:border-emerald-500/50 transition-all"
+                className="relative mt-2 flex items-center"
               >
-                <input 
+                <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   disabled={isTyping}
-                  placeholder="Ask about portion, quality, origin..."
-                  className="flex-1 bg-transparent px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none disabled:opacity-50"
+                  placeholder="Ask a follow-up..."
+                  className="w-full rounded-2xl border border-[#2e3030] bg-[#202222] py-2.5 pl-3.5 pr-10 text-xs text-white placeholder-gray-500 focus:border-[#3e4040] focus:outline-none disabled:opacity-50"
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={!inputValue.trim() || isTyping}
-                  className="p-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 disabled:bg-slate-800 disabled:text-slate-600 font-bold rounded-lg transition-all active:scale-95 cursor-pointer"
+                  className={`absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-full transition-all ${
+                    inputValue.trim()
+                      ? 'bg-teal-400 text-black hover:bg-teal-300'
+                      : 'bg-[#282a2a] text-gray-600'
+                  }`}
                 >
-                  <Send size={12} />
+                  <ArrowUp size={14} strokeWidth={2.5} />
                 </button>
               </form>
             </div>
-
           </div>
         </div>
 
-        {/* Sticky Action Footer */}
-        <div className="absolute bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-4 flex items-center justify-between gap-3 z-20 backdrop-blur-md">
-          
-          {/* Quantity Controls */}
-          <div className="flex items-center justify-between bg-slate-900 border border-slate-800 p-1 rounded-xl shrink-0">
-            <button 
-              onClick={handleDecrement}
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white active:scale-90 transition-all cursor-pointer"
+        {/* Floating Bottom Action Bar */}
+        <div className="absolute bottom-0 inset-x-0 border-t border-[#2e3030] bg-[#191a1a]/95 p-4 backdrop-blur-xl">
+          <div className="flex items-center justify-between gap-3">
+            {/* Quantity Controls */}
+            <div className="flex items-center rounded-xl border border-[#2e3030] bg-[#202222] p-1 shrink-0">
+              <button
+                type="button"
+                onClick={handleDecrement}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-[#282a2a] hover:text-white transition-colors"
+              >
+                <Minus size={13} strokeWidth={2.5} />
+              </button>
+              <span className="w-8 text-center text-xs font-bold text-white">
+                {quantity}
+              </span>
+              <button
+                type="button"
+                onClick={handleIncrement}
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-[#282a2a] hover:text-white transition-colors"
+              >
+                <Plus size={13} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            {/* Add to Basket Action */}
+            <button
+              type="button"
+              onClick={handleAddToBasketWithQty}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 py-2.5 text-xs font-bold text-black transition-all hover:bg-teal-300 active:scale-[0.98]"
             >
-              <Minus size={12} strokeWidth={2.5} />
-            </button>
-            <span className="text-xs font-bold text-white px-2.5 w-7 text-center">{quantity}</span>
-            <button 
-              onClick={handleIncrement}
-              className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white active:scale-90 transition-all cursor-pointer"
-            >
-              <Plus size={12} strokeWidth={2.5} />
+              <ShoppingCart size={14} strokeWidth={2.5} />
+              <span>
+                Add to Basket • KES {(product.price * quantity).toLocaleString()}
+              </span>
             </button>
           </div>
-
-          {/* Add to Basket Action Trigger */}
-          <button 
-            onClick={handleAddToBasketWithQty}
-            className="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-[0.99] transition-all text-slate-950 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60 cursor-pointer tracking-wide"
-          >
-            <ShoppingCart size={14} strokeWidth={2.5} />
-            <span>Add to Basket • KES {(product.price * quantity).toLocaleString()}</span>
-          </button>
         </div>
 
       </div>
