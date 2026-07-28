@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Trash2,
   Compass,
+  ShoppingCart,
 } from 'lucide-react';
 
 import { useCart } from '../../Providers/CartContext';
@@ -174,34 +175,37 @@ export function Sidebar({
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
-              title="Discover"
+              title="Catalogs "
             >
               <Compass className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Discover</span>}
+              {isExpanded && <span>Discover Catalogs </span>}
             </button>
+
+        
 
             <button
               type="button"
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
-              title="Computer"
-            >
-              <Monitor className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Computer</span>}
-            </button>
-
-            <button
-              type="button"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="Spaces"
+              title="Shops - Spaces "
             >
               <Grid className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Spaces</span>}
+              {isExpanded && <span> Shops </span>}
             </button>
 
+
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Shopping Cart">
+              <ShoppingCart className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Cart  </span>}
+            </button>
+
+            
             <button
               type="button"
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
@@ -210,7 +214,7 @@ export function Sidebar({
               title="Artifacts"
             >
               <Box className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Artifacts</span>}
+              {isExpanded && <span>Orders </span>}
             </button>
 
             <button

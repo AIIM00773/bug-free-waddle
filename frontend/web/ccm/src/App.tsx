@@ -5,6 +5,8 @@ import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
 
 // Global Layout Components
+import { ProductCatalog } from './Components/globals/ProductCatalog';
+import { Merchants } from './Components/globals/MerchantsDirectory';
 import { Sidebar } from './Components/globals/Sidebar';
 import { Header } from './Components/globals/header';
 import { FilterSidebar } from './Components/globals/filtersBar';
@@ -59,8 +61,7 @@ export default function App() {
   } = useSearch();
 
   // E-Commerce / Cart Context
-  const { showCheckoutModal, setShowCheckoutModal, handleAddToBasket } =
-    useCart();
+  const { showCheckoutModal, setShowCheckoutModal, handleAddToBasket } = useCart();
 
   // Local Modal Overlay states
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -88,78 +89,99 @@ export default function App() {
     setShowDetailsModal(false);
   };
 
+  // Bridge catalog inquiries directly into active chat tab
+  const handleCatalogPromptInquiry = (promptText) => {
+    setActiveTab('chat');
+    handleSendMessage(promptText);
+  };
+
   return (
-  <>
-         <AuthOverlay />
+    <>
+      <AuthOverlay />
 
-    <div className="flex h-screen overflow-hidden bg-[#191919] font-sans text-[#e3e3e3] antialiased">
+      <div className="flex h-screen overflow-hidden bg-[#0d0f12] font-sans text-zinc-200 antialiased">
+        {notification && <HomeNotificationToast notification={notification} />}
 
-      {notification && <HomeNotificationToast notification={notification} />}
+          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+          <Sidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            setActiveSessionId={setActiveSessionId}
+            handleDeleteSession={handleDeleteSession}
+            setIsProfileOpen={setIsProfileOpen}
+            settingOpen={settingOpen}
+            setSettingOpen={setSettingOpen}
+          />
+        )}
 
-      <Sidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        setActiveSessionId={setActiveSessionId}
-        handleDeleteSession={handleDeleteSession}
-        setIsProfileOpen={setIsProfileOpen}
-        settingOpen={settingOpen}
-        setSettingOpen={setSettingOpen}
-      />
+        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-[#0d0f12]">
+          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+            <Header
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              filtersOpen={filtersOpen}
+              setFiltersOpen={setFiltersOpen}
+            />
+          )}
 
+          {activeTab === 'merchants' && <Merchants />}
 
-      <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-[#191919]">
-        <Header
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          filtersOpen={filtersOpen}
-          setFiltersOpen={setFiltersOpen}
-        />
-
-        <div className="custom-scrollbar flex-1 overflow-y-auto px-8 py-8">
-          <div className="mx-auto flex max-w-4xl gap-8">
-            <div className="flex-1 min-w-0">
-              {activeSession ? (
-                <ChatFeed
-                  messages={activeSession.messages}
-                  onAddToBasket={handleAddToBasket}
-                  onSendSuggested={handleSendMessage}
-                  onViewDetails={handleViewDetails}
-                />
-              ) : (
-                <EmptyState
-                  activeEstate={activeEstate}
-                  onSendSuggested={handleSendMessage}
-                  onSendMessage={handleSendMessage}
-                />
-              )}
+          {activeTab === 'catalog' && (
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              <ProductCatalog
+                onSelectProduct={handleViewDetails}
+                onPromptInquiry={handleCatalogPromptInquiry}
+              />
             </div>
-          </div>
-        </div>
-      </main>
+          )}
 
-      {/* Drawers & Overlays */}
-      <FilterSidebar
-        isOpen={filtersOpen}
-        onClose={() => setFiltersOpen(false)}
-        onApply={() => null}
-      />
-      <BasketDrawer />
-      <ProductDetails
-        product={selectedProduct}
-        isOpen={showDetailsModal}
-        onClose={handleCloseDetails}
-        onAddToBasket={handleAddToBasket}
-      />
-      {showCheckoutModal && (
-        <MpesaModal onSuccessPayment={appendSystemMessage} />
-      )}
-      {isProfileOpen && (
-        <UserProfile onBackToChat={() => setIsProfileOpen(false)} />
-      )}
-      {settingOpen && (
-        <UserSettings onBackToChat={() => setSettingOpen(false)} />
-      )}
-    </div>
-    </> 
+          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+            <div className="custom-scrollbar flex-1 overflow-y-auto px-4 md:px-8 py-8">
+              <div className="mx-auto flex max-w-4xl gap-8">
+                <div className="flex-1 min-w-0">
+                  {activeSession ? (
+                    <ChatFeed
+                      messages={activeSession.messages}
+                      onAddToBasket={handleAddToBasket}
+                      onSendSuggested={handleSendMessage}
+                      onViewDetails={handleViewDetails}
+                    />
+                  ) : (
+                    <EmptyState
+                      activeEstate={activeEstate}
+                      onSendSuggested={handleSendMessage}
+                      onSendMessage={handleSendMessage}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+
+        {/* Drawers & Overlays */}
+        <FilterSidebar
+          isOpen={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          onApply={() => null}
+        />
+        <BasketDrawer />
+        <ProductDetails
+          product={selectedProduct}
+          isOpen={showDetailsModal}
+          onClose={handleCloseDetails}
+          onAddToBasket={handleAddToBasket}
+        />
+        {showCheckoutModal && (
+          <MpesaModal onSuccessPayment={appendSystemMessage} />
+        )}
+        {isProfileOpen && (
+          <UserProfile onBackToChat={() => setIsProfileOpen(false)} />
+        )}
+        {settingOpen && (
+          <UserSettings onBackToChat={() => setSettingOpen(false)} />
+        )}
+      </div>
+    </>
   );
 }
