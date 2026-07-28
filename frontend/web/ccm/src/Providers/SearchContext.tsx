@@ -120,7 +120,7 @@ export function SearchProvider({ children }: { children: ReactNode }) {
   // Neighborhood & Filtering State
   const [activeEstate, setActiveEstate] = useState(NEIGHBORHOODS[0]);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('Answer');
+  const [activeTab, setActiveTab] = useState('AI mode');
   const [inputText, setInputText] = useState('');
   const [activeSearchType, setActiveSearchType] = useState<SearchType>('Direct Search');
 

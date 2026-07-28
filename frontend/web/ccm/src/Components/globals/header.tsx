@@ -8,7 +8,7 @@ import {
 import { useSidebar } from '../../Providers/ui/sidebar';
 
 export function Header({
-  activeTab = 'Search',
+  activeTab = 'AI mode',
   setActiveTab = () => {},
   setFiltersOpen,
   filtersOpen = false,
