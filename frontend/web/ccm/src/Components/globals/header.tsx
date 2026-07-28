@@ -17,7 +17,7 @@ export function Header({
   const sidebarContext = useSidebar?.();
   const onMobile = sidebarContext?.onMobile;
 
-  const tabs = ['Search', "catalog", 'Shops' , 'merchants'];
+  const tabs = ['AI mode', "catalog", 'shops'];
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#262626] bg-[#191919]/95 px-4 backdrop-blur-md sm:px-6 lg:px-8">

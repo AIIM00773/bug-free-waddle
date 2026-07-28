@@ -102,7 +102,7 @@ export default function App() {
       <div className="flex h-screen overflow-hidden bg-[#0d0f12] font-sans text-zinc-200 antialiased">
         {notification && <HomeNotificationToast notification={notification} />}
 
-          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+          {activeTab !== 'catalog' && activeTab !== 'shops' && (
           <Sidebar
             sessions={sessions}
             activeSessionId={activeSessionId}
@@ -115,7 +115,7 @@ export default function App() {
         )}
 
         <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-[#0d0f12]">
-          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+          {activeTab !== 'catalog' && activeTab !== 'shops' && (
             <Header
               activeTab={activeTab}
               setActiveTab={setActiveTab}
@@ -124,7 +124,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'merchants' && <Merchants />}
+          {activeTab === 'shops' && <Merchants />}
 
           {activeTab === 'catalog' && (
             <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -135,7 +135,7 @@ export default function App() {
             </div>
           )}
 
-          {activeTab !== 'catalog' && activeTab !== 'merchants' && (
+          {activeTab !== 'catalog' && activeTab !== 'shops' && (
             <div className="custom-scrollbar flex-1 overflow-y-auto px-4 md:px-8 py-8">
               <div className="mx-auto flex max-w-4xl gap-8">
                 <div className="flex-1 min-w-0">
