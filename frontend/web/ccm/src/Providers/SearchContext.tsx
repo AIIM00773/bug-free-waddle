@@ -22,6 +22,9 @@ export const SEARCH_TYPES = [
   'Local Search',
 ] as const;
 
+
+type tabsType = ['AI mode', "catalog", 'shops'];
+
 export type SearchType = (typeof SEARCH_TYPES)[number];
 
 export interface CardItem {
@@ -94,7 +97,7 @@ interface SearchContextType {
   // Input & Tabs
   inputText: string;
   setInputText: React.Dispatch<React.SetStateAction<string>>;
-  activeTab: string;
+  activeTab: tabsType;
   setActiveTab: React.Dispatch<React.SetStateAction<string>>;
 
   // Location & Filters
@@ -113,6 +116,8 @@ interface SearchContextType {
   notification: Notification | null;
   showToast: (message: string, type?: Notification['type']) => void;
 }
+
+
 
 const SearchContext = createContext<SearchContextType | null>(null);
 
