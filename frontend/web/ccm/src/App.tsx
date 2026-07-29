@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 // Context Providers
 import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
+import { useShoppingMode } from './Providers/ui/ShoppingModeManager.tsx';
 
 // Global Layout Components
 import { ProductCatalog } from './Components/globals/ProductCatalog';
@@ -14,6 +15,7 @@ import { UserProfile } from './Components/globals/profile';
 import { UserSettings } from './Components/globals/setting';
 import { AuthOverlay } from './Components/globals/Auth';
 import { HomeNotificationToast } from './Components/globals/homeNotificationToast';
+import { LoadingScreen } from './Components/globals/LoadingScreen';
 
 // Chat Interface Components
 import { EmptyState } from './Components/chat/EmptyState';
@@ -43,6 +45,9 @@ function useModalBackHandler(isOpen, onClose) {
 }
 
 export default function App() {
+  // Shopping mode UI Control Provider
+  const { ShoppingMode, setShoppingMode, ModeLoading } = useShoppingMode();
+
   // Global Search & Session Context
   const {
     sessions,
@@ -55,8 +60,6 @@ export default function App() {
     activeEstate,
     filtersOpen,
     setFiltersOpen,
-    activeTab,
-    setActiveTab,
     notification,
   } = useSearch();
 
@@ -91,9 +94,21 @@ export default function App() {
 
   // Bridge catalog inquiries directly into active chat tab
   const handleCatalogPromptInquiry = (promptText) => {
-    setActiveTab('chat');
+    setShoppingMode('chat');
     handleSendMessage(promptText);
   };
+
+  // Render Modern Perplexity-Style Loader
+  if (ModeLoading) {
+    return (
+      <LoadingScreen
+        message="Loading  Mode..."
+        subtext="... almost there ..."
+      />
+    );
+  }
+
+  const isNavigationHidden = ShoppingMode === 'catalog' || ShoppingMode === 'shops';
 
   return (
     <>
@@ -102,7 +117,7 @@ export default function App() {
       <div className="flex h-screen overflow-hidden bg-[#0d0f12] font-sans text-zinc-200 antialiased">
         {notification && <HomeNotificationToast notification={notification} />}
 
-          {activeTab !== 'catalog' && activeTab !== 'shops' && (
+        {!isNavigationHidden && (
           <Sidebar
             sessions={sessions}
             activeSessionId={activeSessionId}
@@ -115,18 +130,18 @@ export default function App() {
         )}
 
         <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-[#0d0f12]">
-          {activeTab !== 'catalog' && activeTab !== 'shops' && (
+          {!isNavigationHidden && (
             <Header
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
+              activeTab={ShoppingMode}
+              setActiveTab={setShoppingMode}
               filtersOpen={filtersOpen}
               setFiltersOpen={setFiltersOpen}
             />
           )}
 
-          {activeTab === 'shops' && <Merchants />}
+          {ShoppingMode === 'shops' && <Merchants />}
 
-          {activeTab === 'catalog' && (
+          {ShoppingMode === 'catalog' && (
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <ProductCatalog
                 onSelectProduct={handleViewDetails}
@@ -135,7 +150,7 @@ export default function App() {
             </div>
           )}
 
-          {activeTab !== 'catalog' && activeTab !== 'shops' && (
+          {!isNavigationHidden && (
             <div className="custom-scrollbar flex-1 overflow-y-auto px-4 md:px-8 py-8">
               <div className="mx-auto flex max-w-4xl gap-8">
                 <div className="flex-1 min-w-0">
@@ -185,3 +200,5 @@ export default function App() {
     </>
   );
 }
+
+
