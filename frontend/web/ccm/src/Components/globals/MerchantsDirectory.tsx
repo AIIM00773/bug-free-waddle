@@ -12,9 +12,9 @@ import {
   Compass,
   Tag,
 } from 'lucide-react';
-import {
-  useShoppingMode } from '../../Providers/ui/ShoppingModeManager';
+import {useShoppingMode } from '../../Providers/ui/ShoppingModeManager';
 import { motion, AnimatePresence } from 'framer-motion';
+import {FloatingMerchantShop} from "./FloatingMerchnatShop"
 
 // ============================================================================
 // DUMMY STATIC DATA (Replace with actual data/props as needed)
@@ -126,6 +126,88 @@ const SHOPS: Shop[] = [
   },
 ];
 
+
+
+
+
+
+
+
+
+
+export interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+  inStock: boolean;
+}
+
+
+export interface ExtendedShop extends Shop {
+  products: Product[];
+  deliveryTime: string;
+}
+
+// Example extended shop data
+const ACTIVE_MERCHANT: ExtendedShop = {
+  id: 'shp-1',
+  name: 'Nairobi Nexus Tech',
+  category: 'Electronics',
+  country: 'Kenya',
+  county: 'Nairobi',
+  subcounty: 'Westlands',
+  description:
+    'Authorized dealer for Apple, Samsung, and computing peripherals with same-day delivery across the CBD and Westlands.',
+  image:
+    'https://images.unsplash.com/photo-1550009158-9ebf69173e03?auto=format&fit=crop&w=600&q=80',
+  rating: 4.8,
+  deliveryTime: '30–45 mins',
+  products: [
+    {
+      id: 'p-1',
+      name: 'MacBook Air M3 (16GB/512GB)',
+      price: 185000,
+      category: 'Laptops',
+      inStock: true,
+      image:
+        'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+      id: 'p-2',
+      name: 'AirPods Pro (2nd Gen, USB-C)',
+      price: 32500,
+      category: 'Audio',
+      inStock: true,
+      image:
+        'https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+      id: 'p-3',
+      name: 'Anker 737 Power Bank (24,000mAh)',
+      price: 14500,
+      category: 'Accessories',
+      inStock: true,
+      image:
+        'https://images.unsplash.com/photo-1609592424201-7d52d0d5b4a9?auto=format&fit=crop&w=400&q=80',
+    },
+    {
+      id: 'p-4',
+      name: 'Dell UltraSharp 27" 4K USB-C Hub Monitor',
+      price: 78000,
+      category: 'Monitors',
+      inStock: false,
+      image:
+        'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=400&q=80',
+    },
+  ],
+};
+
+
+
+
+
 const SHOP_CATEGORIES = [
   { name: 'All Categories', icon: Compass, active: true },
   { name: 'Electronics', icon: Tag, active: false },
@@ -141,7 +223,7 @@ interface HeaderProps {
   currentMode: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ onToggleSidebar, currentMode }) => (
+const Header: React.FC<HeaderProps> = ({ onToggleSidebar, currentMode,bagCount }) => (
   <header className="sticky top-0 z-30 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06]">
     <div className="flex h-14 items-center justify-between px-4 lg:px-8">
       <div className="flex items-center gap-3">
@@ -163,11 +245,14 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, currentMode }) => (
       </div>
 
       <div className="flex items-center gap-4">
-        <button className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs font-mono text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all">
-          <ShoppingBag size={14} />
-          <span>Bag [0]</span>
-        </button>
+<button className="flex items-center gap-2 px-2.5 py-1 rounded-full border border-white/[0.06] bg-white/[0.02] text-xs font-mono text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all">
+  <ShoppingBag size={14} />
+  <span>Bag [{bagCount }]</span>
+</button>
       </div>
+
+
+
     </div>
   </header>
 );
@@ -333,12 +418,24 @@ export function Merchants() {
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [searchBarOpen, setSearchBarOpen] = useState(false);
 
+  const [selectedShop, setSelectedShop] = useState<ExtendedShop | null>(null);
+  const [bagCount, setBagCount] = useState(0);
+  const handleAddToCart = (product: Product) => {
+    setBagCount((prev) => prev + 1);
+  };
+
+
+  
   return (
     <div className="min-h-screen w-full bg-[#09090b] text-neutral-300 font-sans antialiased selection:bg-neutral-800 selection:text-neutral-100 flex flex-col">
+
+      {!selectedShop &&(
       <Header
         onToggleSidebar={() => setSidebarOpen(true)}
-        currentMode={ShoppingMode}
+        currentMode={ShoppingMode} 
+        bagCount ={bagCount}
       />
+      )}
 
       <div className="flex flex-1 overflow-hidden relative">
         {/* Mobile Backdrop */}
@@ -443,9 +540,14 @@ export function Merchants() {
                     : 'flex flex-col gap-2 max-h-[70vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden'
                 }
               >
-                {SHOPS.map((shop) => (
-                  <ShopCard key={shop.id} shop={shop} viewMode={viewMode} />
-                ))}
+            {SHOPS.map((shop) => (
+  <div 
+    key={shop.id} 
+    onClick={() => setSelectedShop(ACTIVE_MERCHANT)} // Pass clicked shop data
+  >
+    <ShopCard shop={shop} viewMode={viewMode} />
+  </div>
+))}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-white/[0.06] rounded-2xl bg-white/[0.01]">
@@ -461,7 +563,18 @@ export function Merchants() {
             )}
           </div>
         </main>
+
+
+
       </div>
+
+                <FloatingMerchantShop
+        shop={selectedShop}
+        isOpen={!!selectedShop}
+        onClose={() => setSelectedShop(null)}
+        onAddToCart={handleAddToCart}
+      />
     </div>
+
   );
 }
