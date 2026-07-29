@@ -12,7 +12,8 @@ import {
   Compass,
   Tag,
 } from 'lucide-react';
-import { useShoppingMode} from '../../Providers/ui/ShoppingModeManager';
+import {
+  useShoppingMode } from '../../Providers/ui/ShoppingModeManager';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================================
@@ -30,7 +31,6 @@ interface Shop {
   image: string;
   rating: number;
 }
-
 
 const SHOPS: Shop[] = [
   {
@@ -126,9 +126,6 @@ const SHOPS: Shop[] = [
   },
 ];
 
-
-
-
 const SHOP_CATEGORIES = [
   { name: 'All Categories', icon: Compass, active: true },
   { name: 'Electronics', icon: Tag, active: false },
@@ -175,21 +172,12 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, currentMode }) => (
   </header>
 );
 
-
-
-
-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   setShoppingMode: (mode: MarketModesType) => void;
   activeMode: string;
 }
-
-
-
-
-
 
 const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
@@ -265,22 +253,12 @@ const Sidebar: React.FC<SidebarProps> = ({
   </aside>
 );
 
-
-
-
-
-
-interface ProductCardProps {
+interface ShopCardProps {
   shop: Shop;
   viewMode: 'grid' | 'list';
 }
 
-
-
-
-
-
-const ProductCard: React.FC<ProductCardProps> = ({ shop, viewMode }) => {
+const ShopCard: React.FC<ShopCardProps> = ({ shop, viewMode }) => {
   if (viewMode === 'list') {
     return (
       <div className="group flex gap-5 p-4 rounded-xl border border-transparent hover:border-white/[0.08] hover:bg-white/[0.02] transition-all cursor-pointer">
@@ -316,11 +294,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ shop, viewMode }) => {
     );
   }
 
-
-
-
-
-
   // Grid View
   return (
     <div className="group flex flex-col p-3 rounded-xl border border-transparent hover:border-white/[0.08] hover:bg-white/[0.02] transition-all cursor-pointer">
@@ -350,11 +323,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ shop, viewMode }) => {
   );
 };
 
-
-
-
-
-
 // ============================================================================
 // MAIN PAGE LAYOUT
 // ============================================================================
@@ -362,7 +330,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ shop, viewMode }) => {
 export function Merchants() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { ShoppingMode, setShoppingMode } = useShoppingMode();
-  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [searchBarOpen, setSearchBarOpen] = useState(false);
 
   return (
     <div className="min-h-screen w-full bg-[#09090b] text-neutral-300 font-sans antialiased selection:bg-neutral-800 selection:text-neutral-100 flex flex-col">
@@ -395,7 +364,11 @@ export function Merchants() {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 py-8 lg:px-8">
             {/* Command / Search Input */}
-            <div className="relative group mb-8">
+            <div
+              className={`relative group mb-8 transition-all ${
+                searchBarOpen ? 'block' : 'hidden'
+              }`}
+            >
               <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-500 group-focus-within:text-neutral-300 transition-colors">
                 <Search size={16} />
               </div>
@@ -416,9 +389,25 @@ export function Merchants() {
 
             {/* View & Header Controls */}
             <div className="flex items-center justify-between mb-6 border-b border-white/[0.06] pb-4">
-              <h2 className="text-base font-medium text-neutral-100 tracking-tight">
-                Discover Merchants
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-base font-medium text-neutral-100 tracking-tight">
+                  Discover Merchants
+                </h2>
+
+                <button
+                  onClick={() => setSearchBarOpen(!searchBarOpen)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
+                    searchBarOpen
+                      ? 'bg-white/[0.1] text-neutral-100 border-white/[0.15]'
+                      : 'bg-white/[0.02] text-neutral-400 border-white/[0.06] hover:text-neutral-200 hover:bg-white/[0.04]'
+                  }`}
+                  aria-label="Toggle Search"
+                >
+                  <Search size={12} />
+                  <span>Search</span>
+                </button>
+              </div>
+
               <div className="flex gap-1 border border-white/[0.08] rounded-lg p-0.5 bg-white/[0.02]">
                 <button
                   onClick={() => setViewMode('list')}
@@ -450,12 +439,12 @@ export function Merchants() {
               <div
                 className={
                   viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-auto'
-                    : 'flex flex-col gap-2 max-h-[70vh] overflow-auto '
+                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden'
+                    : 'flex flex-col gap-2 max-h-[70vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden'
                 }
               >
                 {SHOPS.map((shop) => (
-                  <ProductCard key={shop.id} shop={shop} viewMode={viewMode} />
+                  <ShopCard key={shop.id} shop={shop} viewMode={viewMode} />
                 ))}
               </div>
             ) : (
@@ -465,7 +454,8 @@ export function Merchants() {
                   No merchants found
                 </p>
                 <p className="text-xs text-neutral-500 mt-1 max-w-xs">
-                  There are currently no shops listed under this category or area.
+                  There are currently no shops listed under this category or
+                  area.
                 </p>
               </div>
             )}

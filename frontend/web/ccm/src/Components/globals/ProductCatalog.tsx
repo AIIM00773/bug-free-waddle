@@ -15,7 +15,7 @@ import {
   PackageOpen,
 } from 'lucide-react';
 import {
-  useShoppingMode
+  useShoppingMode,
 } from '../../Providers/ui/ShoppingModeManager';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,6 +34,7 @@ interface Product {
   image: string;
   description: string;
 }
+
 const STATIC_PRODUCTS: Product[] = [
   {
     id: 'p-1',
@@ -192,9 +193,6 @@ const STATIC_PRODUCTS: Product[] = [
       'Calman Verified 4K UHD IPS display featuring 100% sRGB, Delta E < 2 color accuracy, and USB-C connectivity.',
   },
 ];
-
-
-
 
 const CATEGORIES = [
   { name: 'All Products', icon: LayoutGrid, active: true },
@@ -373,7 +371,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode }) => {
 
   // Grid View
   return (
-    <div className="group flex flex-col p-3 rounded-xl border border-white/[0.02]  hover:border-white/[0.08] hover:bg-white/[0.02] transition-all cursor-pointer">
+    <div className="group flex flex-col p-3 rounded-xl border border-white/[0.02] hover:border-white/[0.08] hover:bg-white/[0.02] transition-all cursor-pointer">
       <div className="aspect-[4/3] w-full overflow-hidden rounded-lg bg-neutral-900 border border-white/[0.06] mb-3">
         <img
           src={product.image}
@@ -408,9 +406,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode }) => {
   );
 };
 
-
-
-
 // ============================================================================
 // MAIN PAGE LAYOUT
 // ============================================================================
@@ -419,6 +414,7 @@ export function ProductCatalog() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { ShoppingMode, setShoppingMode } = useShoppingMode();
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [searchBarOpen, setSearchBarOpen] = useState(false);
 
   return (
     <div className="min-h-screen w-full bg-[#09090b] text-neutral-300 font-sans antialiased selection:bg-neutral-800 selection:text-neutral-100 flex flex-col">
@@ -451,7 +447,11 @@ export function ProductCatalog() {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 py-8 lg:px-8">
             {/* Command / Search Input */}
-            <div className="relative group mb-8">
+            <div
+              className={`relative group mb-8 transition-all ${
+                searchBarOpen ? 'block' : 'hidden'
+              }`}
+            >
               <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-500 group-focus-within:text-neutral-300 transition-colors">
                 <Search size={16} />
               </div>
@@ -472,9 +472,39 @@ export function ProductCatalog() {
 
             {/* View & Header Controls */}
             <div className="flex items-center justify-between mb-6 border-b border-white/[0.06] pb-4">
-              <h2 className="text-base font-medium text-neutral-100 tracking-tight">
-                Discover Products
-              </h2>
+              <div className="flex items-center gap-4">
+                <h2 className="text-base font-medium text-neutral-100 tracking-tight">
+                  Discover Products
+                </h2>
+
+                <button
+                  onClick={() => setSearchBarOpen(!searchBarOpen)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors border ${
+                    searchBarOpen
+                      ? 'bg-white/[0.1] text-neutral-100 border-white/[0.15]'
+                      : 'bg-white/[0.02] text-neutral-400 border-white/[0.06] hover:text-neutral-200 hover:bg-white/[0.04]'
+                  }`}
+                  aria-label="Toggle Search"
+                >
+                {!searchBarOpen ? (
+                <>
+                                  <Search size={12}  />
+                  <span>Search</span>
+                </>
+                ) 
+                :
+                (
+                               <>
+                                  <X size={12}  />
+                  <span>close Search</span>
+                </>
+                )}
+
+                </button>
+              </div>
+
+
+
               <div className="flex gap-1 border border-white/[0.08] rounded-lg p-0.5 bg-white/[0.02]">
                 <button
                   onClick={() => setViewMode('list')}
@@ -504,10 +534,10 @@ export function ProductCatalog() {
             {/* Feed / Empty State */}
             {STATIC_PRODUCTS.length > 0 ? (
               <div
-                 className={
+                className={
                   viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-auto'
-                    : 'flex flex-col gap-2 max-h-[70vh] overflow-auto '
+                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[70vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden'
+                    : 'flex flex-col gap-2 max-h-[70vh] overflow-y-auto pr-1 [&::-webkit-scrollbar]:hidden'
                 }
               >
                 {STATIC_PRODUCTS.map((product) => (
@@ -525,7 +555,8 @@ export function ProductCatalog() {
                   No products found
                 </p>
                 <p className="text-xs text-neutral-500 mt-1 max-w-xs">
-                  There are currently no products listed under this category or filter.
+                  There are currently no products listed under this category or
+                  filter.
                 </p>
               </div>
             )}
