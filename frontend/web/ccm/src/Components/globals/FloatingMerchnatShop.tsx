@@ -1,23 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import {
-  X,
   Star,
-  MessageSquare,
-  ShoppingBag,
-  Send,
-  MapPin,
-  Clock,
   ShieldCheck,
   Plus,
   Check,
   Sparkles,
   Search,
-  Filter,
+  Send,
+  MapPin,
+  Clock,
   ArrowLeft,
-  Share2,
-  Heart,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Interfaces ---
 export interface Product {
@@ -120,18 +113,29 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
 
   return (
     <div className="min-h-screen w-full bg-[#09090b] text-neutral-100 flex flex-col">
- 
+      {/* Hero Header Section */}
       <section className="relative w-full border-b border-white/[0.08] bg-neutral-900">
         <div className="absolute inset-0 overflow-hidden">
           <img
             src={shop.image}
             alt={shop.name}
-            className="h-full w-full object-cover opacity-25"
+            className="h-full w-full object-cover opacity-20"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-[#09090b]/70 to-transparent" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="relative mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
+          {/* Top Bar / Navigation */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/[0.1] bg-black/40 px-3.5 py-2 text-xs font-medium text-neutral-300 backdrop-blur-md transition-all hover:border-white/[0.2] hover:bg-black/60 hover:text-white cursor-pointer"
+            >
+              <ArrowLeft size={14} />
+              <span>Back</span>
+            </button>
+          </div>
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-mono font-medium text-emerald-400">
@@ -154,7 +158,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
             </div>
 
             <div className="flex items-center gap-2 self-start sm:self-end">
-              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-black/60 px-3.5 py-2 text-sm font-mono text-neutral-200">
+              <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.12] bg-black/60 px-3.5 py-2 text-sm font-mono text-neutral-200 backdrop-blur-md">
                 <Star size={15} className="fill-emerald-500 text-emerald-500" />
                 <span className="font-semibold">{shop.rating}</span>
                 <span className="text-neutral-500">/ 5.0</span>
@@ -164,7 +168,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
         </div>
       </section>
 
-      {/* Mobile Tab Switcher (Visible only on mobile/tablet) */}
+      {/* Mobile Tab Switcher */}
       <div className="flex border-b border-white/[0.08] bg-[#09090b] lg:hidden">
         <button
           onClick={() => setActiveTab('listings')}
@@ -193,13 +197,13 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
       <main className="mx-auto max-w-7xl w-full flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT COLUMN: Storefront & Product Listings (Spans 8 columns on large screens) */}
+          {/* LEFT COLUMN: Storefront & Inventory */}
           <div
             className={`lg:col-span-8 space-y-6 ${
               activeTab !== 'listings' ? 'hidden lg:block' : ''
             }`}
           >
-            {/* Filters & Search Controls */}
+            {/* Filters & Search */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               {/* Category Pills */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0 [&::-webkit-scrollbar]:hidden">
@@ -207,7 +211,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                   <button
                     key={category}
                     onClick={() => setSelectedCategory(category)}
-                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all whitespace-nowrap ${
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-all whitespace-nowrap cursor-pointer ${
                       selectedCategory === category
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                         : 'border border-white/[0.08] bg-white/[0.03] text-neutral-400 hover:border-white/[0.16] hover:text-white'
@@ -218,7 +222,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                 ))}
               </div>
 
-              {/* Search Box */}
+              {/* Search Field */}
               <div className="relative min-w-[220px]">
                 <Search
                   size={14}
@@ -229,7 +233,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                   placeholder="Search store inventory..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2 pl-9 pr-4 text-xs text-neutral-200 placeholder:text-neutral-500 focus:border-white/[0.2] focus:outline-hidden"
+                  className="w-full rounded-xl border border-white/[0.08] bg-white/[0.03] py-2 pl-9 pr-4 text-xs text-neutral-200 placeholder:text-neutral-500 focus:border-white/[0.2] focus:outline-none"
                 />
               </div>
             </div>
@@ -245,7 +249,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                     setSearchQuery('');
                     setSelectedCategory('All');
                   }}
-                  className="mt-3 text-xs text-emerald-400 underline hover:text-emerald-300"
+                  className="mt-3 text-xs text-emerald-400 underline hover:text-emerald-300 cursor-pointer"
                 >
                   Clear all filters
                 </button>
@@ -276,7 +280,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                           )}
                         </div>
 
-                        {/* Details */}
+                        {/* Item Details */}
                         <div className="mt-4 space-y-1">
                           <span className="text-[10px] font-mono uppercase tracking-wider text-neutral-500">
                             {product.category}
@@ -294,7 +298,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                       <button
                         disabled={!product.inStock}
                         onClick={() => handleBuy(product)}
-                        className={`mt-4 w-full flex items-center justify-center h-10 rounded-xl text-xs font-medium transition-all ${
+                        className={`mt-4 w-full flex items-center justify-center h-10 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                           !product.inStock
                             ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-white/[0.04]'
                             : isAdded
@@ -321,13 +325,13 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
             )}
           </div>
 
-          {/* RIGHT COLUMN: Merchant AI Assistant (Sticky on desktop, toggleable on mobile) */}
+          {/* RIGHT COLUMN: Merchant AI Assistant */}
           <div
             className={`lg:col-span-4 ${
               activeTab !== 'chat' ? 'hidden lg:block' : ''
             }`}
           >
-            <div className="sticky top-24 rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden flex flex-col h-[580px]">
+            <div className="sticky top-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden flex flex-col h-[580px]">
               {/* Chat Header */}
               <div className="flex items-center justify-between border-b border-white/[0.08] bg-white/[0.02] px-4 py-3.5">
                 <div className="flex items-center gap-2">
@@ -345,7 +349,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                 </div>
               </div>
 
-              {/* Messages Scroll Area */}
+              {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-4 space-y-3 [&::-webkit-scrollbar]:hidden">
                 {chatMessages.map((msg, i) => (
                   <div
@@ -367,7 +371,7 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                 ))}
               </div>
 
-              {/* Chat Input Field */}
+              {/* Chat Input */}
               <div className="p-3 border-t border-white/[0.08] bg-black/40 flex items-center gap-2">
                 <input
                   type="text"
@@ -375,11 +379,11 @@ export const FloatingMerchantShop: React.FC<MerchantShopPageProps> = ({
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="Ask about stock, specs, or shipping..."
-                  className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-xs text-neutral-200 placeholder:text-neutral-500 focus:border-white/[0.2] focus:outline-hidden"
+                  className="flex-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2.5 text-xs text-neutral-200 placeholder:text-neutral-500 focus:border-white/[0.2] focus:outline-none"
                 />
                 <button
                   onClick={handleSend}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-200 transition-colors hover:bg-white/[0.15] shrink-0 border border-white/[0.08]"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.08] text-neutral-200 transition-colors hover:bg-white/[0.15] shrink-0 border border-white/[0.08] cursor-pointer"
                   aria-label="Send message"
                 >
                   <Send size={14} />
