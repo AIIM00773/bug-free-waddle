@@ -2,25 +2,25 @@ import React, { useEffect } from 'react';
 import {
   Sparkles,
   Plus,
-  Monitor,
-  Grid,
   Box,
-  SlidersHorizontal,
   History,
   User,
   PanelLeftClose,
   PanelLeftOpen,
   Trash2,
-  Compass,
   ShoppingCart,
   Settings,
-  Wallet
+  Wallet,
+  Store,
 } from 'lucide-react';
 
 import { useCart } from '../../Providers/CartContext';
 import { useAuth } from '../../Providers/profileContext';
 import { useSidebar } from '../../Providers/ui/sidebar';
 
+// ==========================================
+// Types & Interfaces
+// ==========================================
 export interface SidebarProps {
   sessions?: Array<{ id: string; title: string }>;
   activeSessionId?: string | null;
@@ -29,17 +29,17 @@ export interface SidebarProps {
   setIsProfileOpen: (open: boolean) => void;
   settingOpen?: boolean;
   setSettingOpen?: (open: boolean) => void;
-  setIsOrdersOpen?:(open:boolean) => void; 
-  isOrdersOpen?:boolean;
-  isCartOpen?:boolean;
-  setIsCartOpen?:(open:boolean) => void;
-  isCheckoutOpen?:boolean;
-  setIsCheckoutOpen?:(open:boolean) => void; 
-};
+  setIsOrdersOpen?: (open: boolean) => void;
+  isOrdersOpen?: boolean;
+  isCartOpen?: boolean;
+  setIsCartOpen?: (open: boolean) => void;
+  isCheckoutOpen?: boolean;
+  setIsCheckoutOpen?: (open: boolean) => void;
+}
 
-
-
-
+// ==========================================
+// Main Sidebar Component
+// ==========================================
 export function Sidebar({
   sessions = [],
   activeSessionId,
@@ -54,8 +54,6 @@ export function Sidebar({
   setIsCartOpen,
   isCheckoutOpen,
   setIsCheckoutOpen,
-  
-  
 }: SidebarProps) {
   const { cart, openCart, setOpenCart } = useCart();
   const { user, isAuthenticated, setProceedWithoutAuth } = useAuth();
@@ -112,15 +110,15 @@ export function Sidebar({
       {onMobile.open && (
         <div
           onClick={() => onMobile.toggleOpen()}
-          className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity md:hidden"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Container */}
+      {/* Main Sidebar Shell: Clean white background with slate-200 borders */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#2e3030] bg-[#191a1a] p-3 select-none transition-all duration-300 ease-in-out md:static ${
-          isExpanded ? 'w-50' : 'w-15'
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#3C3147]  bg-white p-3 select-none transition-all duration-300 ease-in-out md:static ${
+          isExpanded ? 'w-60' : 'w-16'
         } ${
           onMobile.open
             ? 'translate-x-0'
@@ -128,7 +126,6 @@ export function Sidebar({
         }`}
       >
         <div className="flex flex-col space-y-4 overflow-y-auto overflow-x-hidden no-scrollbar">
-          
           {/* Top Logo & Toggle Header */}
           <div
             className={`flex items-center ${
@@ -137,15 +134,19 @@ export function Sidebar({
           >
             <div
               onClick={handleNewChat}
-              className="flex cursor-pointer items-center gap-2 rounded-lg transition-opacity hover:opacity-80"
+              className="flex cursor-pointer items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
               title="Soko AI"
             >
-              <div className={`flex h-7 w-7 items-center justify-center rounded-lg bg-teal-500/10 border border-teal-500/20 text-teal-400 ${isExpanded ? '' : 'hidden'} `}>
-                <Sparkles className="h-4 w-4" />
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-xl bg-[#3C3147]/10 border border-[#3C3147]/20 text-[#3C3147] ${
+                  isExpanded ? '' : 'hidden'
+                }`}
+              >
+                <Store className="h-4 w-4" />
               </div>
 
               {isExpanded && (
-                <span className="font-serif text-base font-medium tracking-tight text-white">
+                <span className="font-serif text-lg font-normal tracking-tight text-slate-900">
                   Soko AI
                 </span>
               )}
@@ -154,7 +155,7 @@ export function Sidebar({
             <button
               type="button"
               onClick={handleToggleSidebar}
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#202222] hover:text-white"
+              className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-800"
               title={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'}
             >
               {isExpanded ? (
@@ -165,116 +166,105 @@ export function Sidebar({
             </button>
           </div>
 
-          {/* New Thread Perplexity-Style CTA Button */}
+          {/* New Thread / Local Search CTA Button */}
           <button
             type="button"
             onClick={handleNewChat}
-            className={`group flex items-center rounded-full border border-[#2e3030] bg-[#202222] font-medium text-xs text-gray-200 transition-all hover:border-teal-500/30 hover:bg-[#252727] active:scale-[0.98] ${
+            className={`group flex items-center rounded-full border border-slate-200/80 bg-slate-50 font-medium text-xs text-slate-700 transition-all hover:border-[#3C3147]/30 hover:bg-white hover:text-[#3C3147] hover:shadow-2xs active:scale-[0.98] ${
               isExpanded
-                ? 'w-full justify-between px-3.5 py-2'
+                ? 'w-full justify-between px-3.5 py-2.5'
                 : 'h-9 w-9 justify-center mx-auto'
             }`}
-            title="New Thread (Ctrl+K)"
+            title="New Local Search (Ctrl+K)"
           >
             <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 text-teal-400 transition-transform group-hover:rotate-90" />
-              {isExpanded && <span>New Thread</span>}
+              <Plus className="h-4 w-4 text-[#3C3147] transition-transform group-hover:rotate-90" />
+              {isExpanded && <span className="font-semibold">New Local Search</span>}
             </div>
             {isExpanded && (
-              <kbd className="hidden rounded-md border border-[#3e4040] bg-[#141515] px-1.5 py-0.5 text-[10px] font-mono text-gray-400 sm:inline-block">
+              <kbd className="hidden rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-mono text-slate-400 sm:inline-block">
                 ⌘K
               </kbd>
             )}
           </button>
 
           {/* Core Navigation Links */}
-          <nav className="space-y-1 text-xs text-gray-400">
-          
+          <nav className="space-y-1 text-xs font-medium text-slate-600">
             <button
               type="button"
-              onClick={()=>setIsCartOpen(!isCartOpen)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="Shopping Cart">
-              <ShoppingCart className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Cart  </span>}
-            </button>
-
-            
-            <button
-              type="button"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="my Orders "
-
-              onClick={()=>setIsOrdersOpen(!isOrdersOpen)}
+              onClick={() => setIsCartOpen?.(!isCartOpen)}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
+                isCartOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+              } ${!isExpanded && 'justify-center px-0'}`}
+              title="Shopping Cart"
             >
-              <Box className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Orders </span>}
+              <ShoppingCart className="h-4 w-4 shrink-0 text-slate-400" />
+              {isExpanded && <span>Cart</span>}
             </button>
-
-
 
             <button
               type="button"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="Checkouts... "
-
-              onClick={()=>setIsCheckoutOpen(!isCheckoutOpen)}
+              onClick={() => setIsOrdersOpen?.(!isOrdersOpen)}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
+                isOrdersOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+              } ${!isExpanded && 'justify-center px-0'}`}
+              title="My Orders"
             >
-              <Wallet className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Checkouts </span>}
+              <Box className="h-4 w-4 shrink-0 text-slate-400" />
+              {isExpanded && <span>Orders</span>}
             </button>
 
+            <button
+              type="button"
+              onClick={() => setIsCheckoutOpen?.(!isCheckoutOpen)}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
+                isCheckoutOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+              } ${!isExpanded && 'justify-center px-0'}`}
+              title="Checkouts"
+            >
+              <Wallet className="h-4 w-4 shrink-0 text-slate-400" />
+              {isExpanded && <span>Checkouts</span>}
+            </button>
 
-            
             <button
               type="button"
               onClick={() => setSettingOpen?.(!settingOpen)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
+                settingOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+              } ${!isExpanded && 'justify-center px-0'}`}
               title="Settings"
             >
-              <Settings className="h-4 w-4 shrink-0 text-gray-400" />
+              <Settings className="h-4 w-4 shrink-0 text-slate-400" />
               {isExpanded && <span>Settings</span>}
             </button>
           </nav>
 
-
-
-
-          <div className="my-1 border-t border-[#2e3030]" />
-          
+          <div className="my-1 border-t border-slate-100" />
 
           {/* Session History Stream */}
           <div className="flex-1 space-y-1">
             {isExpanded ? (
-              <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-semibold tracking-wider text-gray-500 uppercase">
+              <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                 <span className="flex items-center gap-1.5">
-                  <History className="h-3 w-3" />
-                  Library
+                  <History className="h-3 w-3 text-[#3C3147]" />
+                  Recent Searches
                 </span>
                 {sessions.length > 0 && (
-                  <span className="rounded-full bg-[#202222] px-1.5 py-0.2 text-[10px] text-gray-400">
+                  <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 font-mono">
                     {sessions.length}
                   </span>
                 )}
               </div>
             ) : (
               <div
-                className="flex justify-center py-2 text-gray-500"
-                title="Library History"
+                className="flex justify-center py-2 text-slate-400"
+                title="Recent Searches"
               >
                 <History className="h-4 w-4" />
               </div>
             )}
 
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {sessions.map((session) => {
                 const isActive = activeSessionId === session.id;
                 return (
@@ -289,8 +279,8 @@ export function Sidebar({
                       !isExpanded && 'justify-center px-0'
                     } ${
                       isActive
-                        ? 'bg-[#202222] font-medium text-white border-l-2 border-teal-400 pl-2.5'
-                        : 'text-gray-400 hover:bg-[#1f2020] hover:text-gray-200'
+                        ? 'bg-[#3C3147] font-semibold text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     {isExpanded ? (
@@ -302,7 +292,11 @@ export function Sidebar({
                               e.stopPropagation();
                               handleDeleteSession(session.id);
                             }}
-                            className="rounded-lg p-1 text-gray-500 opacity-0 transition-opacity hover:bg-[#2e3030] hover:text-red-400 group-hover:opacity-100"
+                            className={`rounded-lg p-1 transition-opacity ${
+                              isActive
+                                ? 'text-white/70 hover:bg-[#2C2434] hover:text-white'
+                                : 'text-slate-400 opacity-0 hover:bg-slate-200 hover:text-red-500 group-hover:opacity-100'
+                            }`}
                             title="Delete Thread"
                           >
                             <Trash2 className="h-3 w-3" />
@@ -312,7 +306,7 @@ export function Sidebar({
                     ) : (
                       <div
                         className={`h-1.5 w-1.5 rounded-full ${
-                          isActive ? 'bg-teal-400' : 'bg-gray-600'
+                          isActive ? 'bg-[#3C3147]' : 'bg-slate-300'
                         }`}
                       />
                     )}
@@ -323,32 +317,30 @@ export function Sidebar({
           </div>
         </div>
 
-        
-
         {/* User Account / Profile Footer */}
-        <div className="pt-2 border-t border-[#2e3030]">
+        <div className="pt-2 border-t border-slate-100">
           <button
             type="button"
             onClick={() => handleProtectedAction(() => setIsProfileOpen(true))}
-            className={`flex w-full items-center gap-2.5 rounded-2xl p-2 text-xs font-medium text-gray-300 transition-colors hover:bg-[#202222] hover:text-white ${
+            className={`flex w-full items-center gap-2.5 rounded-2xl p-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 ${
               !isExpanded && 'justify-center'
             }`}
             title={isAuthenticated ? user?.name || 'Profile' : 'Sign In'}
           >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 font-medium">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3C3147]/10 border border-[#3C3147]/20 text-[#3C3147] font-bold">
               {isAuthenticated && user?.name ? (
                 user.name.charAt(0).toUpperCase()
               ) : (
-                <User className="h-3.5 w-3.5" />
+                <User className="h-4 w-4" />
               )}
             </div>
             {isExpanded && (
               <div className="flex flex-col text-left truncate">
-                <span className="truncate font-medium text-gray-200">
+                <span className="truncate font-semibold text-slate-900">
                   {isAuthenticated ? user?.name || 'Account' : 'Sign In'}
                 </span>
                 {isAuthenticated && user?.email && (
-                  <span className="truncate text-[10px] text-gray-500">
+                  <span className="truncate text-[10px] text-slate-400">
                     {user.email}
                   </span>
                 )}

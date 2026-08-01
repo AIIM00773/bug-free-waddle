@@ -73,9 +73,9 @@ export function UserSettings({ onBackToChat }) {
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 animate-in fade-in duration-200">
       <div className="w-full h-full md:max-w-full md:h-[100vh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative rounded-none shadow-2xl overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR (Dark Navy Theme with Toggle Width) */}
+        {/* LEFT NAV SIDEBAR */}
         <div 
-          className={`bg-[#0B131D] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
             isNavMinimized ? 'md:w-15' : 'md:w-64'
           } w-full`}
         >
@@ -127,7 +127,7 @@ export function UserSettings({ onBackToChat }) {
                           isNavMinimized ? 'justify-center p-2  w-fit rounded-full' : 'justify-between px-3 py-2.5  rounded-xl w-full'
                         } text-xs font-medium transition-all duration-150 relative ${
                           isActive 
-                            ? 'bg-slate-800/90 text-white shadow-sm border border-slate-700/50' 
+                            ? 'bg-none  text-white bg-slate-800/40  shadow-sm  uppercase ' 
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                         }`}
                       >
@@ -163,9 +163,9 @@ export function UserSettings({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Settings</h1>
+              <h1 className="text-lg font-semibold text-slate-50">Settings</h1>
             </div>
 
             {/* Top Right Actions */}

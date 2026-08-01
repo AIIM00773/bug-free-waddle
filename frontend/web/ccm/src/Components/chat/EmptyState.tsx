@@ -7,6 +7,9 @@ import {
   Mic,
   AudioLines,
   Check,
+  Store,
+  ShoppingBag,
+  ArrowRight,
 } from 'lucide-react';
 
 import { useSearch, SEARCH_TYPES } from '../../Providers/SearchContext';
@@ -17,7 +20,7 @@ import { useSearch, SEARCH_TYPES } from '../../Providers/SearchContext';
 
 export interface CardItem {
   id: string;
-  icon:any;
+  icon: any;
   title: string;
   badge?: string;
   description: string;
@@ -29,8 +32,8 @@ export interface CardItem {
 export interface SearchTypesDropdownProps {
   searchTypes?: readonly string[];
   activeSearchType?: string;
-  setActiveSearchType?: (type: SearchType) => void;
-  onSelectType?: (type: SearchType) => void;
+  setActiveSearchType?: (type: any) => void;
+  onSelectType?: (type: any) => void;
 }
 
 export interface EmptyStateProps {
@@ -39,31 +42,15 @@ export interface EmptyStateProps {
 }
 
 // ==========================================
-// Default Data
+// Default Data (Updated for Local Commerce)
 // ==========================================
 
 const DEFAULT_CARDS: CardItem[] = [
-  {
-    id: 'search',
-    icon: Search,
-    title: 'Search and find Products',
-    description: 'Get fast and accurate answers from the most trusted sources.',
-    query: 'Search products and local deals',
-    gradient: 'from-[#0d4f54] to-[#0c383c]',
-    accentColor: 'text-teal-400',
-  },
-  {
-    id: 'computer',
-    icon: Monitor,
-    title: 'Get budgeting and Shopping assistance',
-    badge: 'NEW',
-    description:
-      'Get intelligent and guided experience while Shopping or looking for a Product',
-    query: 'Help me find the best deals near me',
-    gradient: 'from-[#0d343a] to-[#0a2328]',
-    accentColor: 'text-teal-400',
-  },
+ 
 ];
+
+
+
 
 // ==========================================
 // Search Types Dropdown Component
@@ -81,15 +68,19 @@ export function SearchTypesDropdown({
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () =>
+      document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = (type: SearchType) => {
+  const handleSelect = (type: any) => {
     setActiveSearchType?.(type);
     onSelectType?.(type);
     setIsOpen(false);
@@ -101,21 +92,25 @@ export function SearchTypesDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-1.5 rounded-lg border border-[#333333] bg-[#242424] px-2.5 py-1.5 text-xs font-medium text-gray-200 transition-all hover:border-[#444444] hover:bg-[#2c2c2c] active:scale-95"
+        className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-95"
       >
-        <Search className="h-3.5 w-3.5 text-teal-400" />
-        <span>{activeSearchType !== 'Direct Search' ? activeSearchType : 'Search Types'}</span>
+        <Search className="h-3.5 w-3.5 text-[#3C3147]" />
+        <span>
+          {activeSearchType !== 'Direct Search'
+            ? activeSearchType
+            : 'Search Types'}
+        </span>
         <ChevronDown
-          className={`h-3 w-3 text-gray-400 transition-transform duration-200 ${
-            isOpen ? 'rotate-180 text-white' : ''
+          className={`h-3 w-3 text-slate-400 transition-transform duration-200 ${
+            isOpen ? 'rotate-180 text-slate-700' : ''
           }`}
         />
       </button>
 
       {/* Floating Menu */}
       {isOpen && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 min-w-[160px] overflow-hidden rounded-xl border border-[#333333] bg-[#1a1a1a]/95 p-1.5 shadow-2xl backdrop-blur-md transition-all duration-150 ease-out">
-          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+        <div className="absolute bottom-full left-0 z-50 mb-2 min-w-[170px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl transition-all duration-150 ease-out">
+          <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
             Filter Results
           </div>
 
@@ -126,15 +121,17 @@ export function SearchTypesDropdown({
                 <button
                   key={st}
                   type="button"
-                  onClick={() => handleSelect(st as SearchType)}
-                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  onClick={() => handleSelect(st)}
+                  className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-xs font-medium transition-colors ${
                     isSelected
-                      ? 'bg-teal-500/10 text-teal-400'
-                      : 'text-gray-300 hover:bg-[#282828] hover:text-white'
+                      ? 'bg-[#3C3147]/10 font-semibold text-[#3C3147]'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   <span>{st}</span>
-                  {isSelected && <Check className="h-3.5 w-3.5 text-teal-400" />}
+                  {isSelected && (
+                    <Check className="h-3.5 w-3.5 text-[#3C3147]" />
+                  )}
                 </button>
               );
             })}
@@ -145,13 +142,14 @@ export function SearchTypesDropdown({
   );
 }
 
-
-
 // ==========================================
 // Empty State Component
 // ==========================================
 
-export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) {
+export function EmptyState({
+  onSendSuggested,
+  onSendMessage,
+}: EmptyStateProps) {
   const {
     inputText,
     setInputText,
@@ -194,42 +192,38 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-3xl flex-col justify-center px-4 py-12 text-slate-100">
-      {/* Header */}
-      <div className="mb-6 space-y-2 text-left">
-        <span className="text-sm font-medium text-gray-400">
-          SokoAI • {activeEstate?.name || 'Local Search'}
-        </span>
-        <h1 className="text-2xl font-medium tracking-tight text-white sm:text-3xl">
-          What would you like to find?
+    <div className="mx-auto flex h-full max-w-3xl flex-col justify-center px-4 py-12 text-slate-900">
+      {/* Header Area */}
+      <div className="mb-6 space-y-1 text-left">
+        <h1 className="font-serif text-3xl font-normal tracking-tight text-slate-900 sm:text-4xl">
+          What are you looking for today?
         </h1>
+        <p className="text-sm text-slate-500">
+          Discover authentic products from merchants and shops right in your neighborhood.
+        </p>
       </div>
 
-
-
-
-
-      {/* Text Area Input */}
-      <div className="group relative mb-8 rounded-2xl border border-[#2a2a2a] bg-[#1a1a1a] p-4 shadow-xl transition-all focus-within:border-[#383838]">
+      {/* Primary Input Card */}
+      <div className="group relative mb-8 rounded-3xl  bg-emerald-600/20  border border-[1px] border-[#3C3147]/40  p-4 shadow-sm transition-all focus-within:border-[#3C3147]/40 focus-within:shadow-md">
         <textarea
           rows={3}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="...type anything"
-          className="w-full resize-none bg-transparent text-base text-white placeholder-gray-400 focus:outline-none"
+          placeholder="Ask for products, compare prices, or find local shops..."
+          className="w-full resize-none bg-transparent text-base text-slate-900 placeholder-slate-400 focus:outline-hidden"
         />
 
         {/* Action Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
           {/* Left Controls */}
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
-              title="Attach File"
+              className="rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              title="Attach Image or List"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-4 w-4" />
             </button>
 
             <SearchTypesDropdown
@@ -243,32 +237,38 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
+              className="flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
             >
-              <span>Base Model</span>
+              <span>Local Catalog</span>
               <ChevronDown className="h-3 w-3" />
             </button>
 
             <button
               type="button"
-              className="hidden rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-[#262626] hover:text-white"
-              title="Voice Input"
+              className="hidden rounded-xl p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 sm:inline-block"
+              title="Voice Search"
             >
               <Mic className="h-4 w-4" />
             </button>
 
+            {/* Submit Action Pill */}
             <button
               type="button"
               onClick={handleSubmit}
-              className="hidden h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-black transition-transform hover:bg-white active:scale-95"
+              disabled={!inputText.trim()}
+              className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                inputText.trim()
+                  ? 'bg-[#3C3147] text-white shadow-sm hover:bg-[#2c2434] active:scale-95'
+                  : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+              }`}
+              title="Send Search"
             >
-              <AudioLines className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      
 
       {/* Suggestion Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -279,26 +279,33 @@ export function EmptyState({ onSendSuggested, onSendMessage }: EmptyStateProps) 
               key={card.id}
               type="button"
               onClick={() => dispatchSendSuggested(card.query)}
-              className={`group relative flex flex-col items-start gap-2.5 rounded-2xl border border-[#1e3b3e] bg-gradient-to-br ${card.gradient} p-4 text-left transition-all duration-200 hover:border-[#2a5559] hover:shadow-lg active:scale-[0.98]`}
+              className={`group relative flex flex-col items-start gap-2.5 rounded-2xl border border-slate-200/80 bg-gradient-to-br ${card.gradient} p-5 text-left transition-all duration-200 hover:border-[#3C3147]/30 hover:shadow-md active:scale-[0.99]`}
             >
-              <div className="flex items-center gap-2">
-                <Icon className={`h-4 w-4 ${card.accentColor}`} />
-                <span className="text-sm font-semibold text-white">
-                  {card.title}
-                </span>
+              <div className="flex w-full items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-2xs border border-slate-100">
+                    <Icon className={`h-4 w-4 ${card.accentColor}`} />
+                  </div>
+                  <span className="text-sm font-semibold text-slate-800 group-hover:text-[#3C3147] transition-colors">
+                    {card.title}
+                  </span>
+                </div>
+
                 {card.badge && (
-                  <span className="rounded bg-teal-500/20 px-1.5 py-0.5 text-[9px] font-bold text-teal-300">
+                  <span className="rounded-full bg-[#3C3147]/10 px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#3C3147]">
                     {card.badge}
                   </span>
                 )}
               </div>
-              <p className="text-xs leading-relaxed text-gray-300">
+
+              <p className="text-xs leading-relaxed text-slate-600">
                 {card.description}
               </p>
             </button>
           );
         })}
       </div>
+      
     </div>
   );
 }

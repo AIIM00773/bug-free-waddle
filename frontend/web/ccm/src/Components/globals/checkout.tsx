@@ -65,7 +65,7 @@ export function UserCheckout({ onBackToChat }) {
         
         {/* LEFT NAV SIDEBAR */}
         <div 
-          className={`bg-[#0B131D] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
             isNavMinimized ? 'md:w-15' : 'md:w-64'
           } w-full`}
         >
@@ -151,9 +151,9 @@ export function UserCheckout({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Checkout</h1>
+              <h1 className="text-lg font-semibold text-slate-50">Checkout</h1>
             </div>
 
             <div className="flex items-center gap-4">

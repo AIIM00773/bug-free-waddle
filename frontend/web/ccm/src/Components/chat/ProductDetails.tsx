@@ -11,7 +11,13 @@ import {
   Star,
   Share2,
   Check,
-  Compass
+  ShieldCheck,
+  Truck,
+  Heart,
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Award
 } from 'lucide-react';
 
 export interface ProductDetailsProps {
@@ -42,6 +48,8 @@ export function ProductDetails({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isAiSectionOpen, setIsAiSectionOpen] = useState(false);
 
   // Local Q&A history
   const [qaHistory, setQaHistory] = useState<
@@ -49,13 +57,14 @@ export function ProductDetails({
   >([]);
   const qaEndRef = useRef<HTMLDivElement>(null);
 
-  // Reset local state when drawer opens or product changes
+  // Reset local state when page opens or product changes
   useEffect(() => {
     if (isOpen && product) {
       setQuantity(1);
       setInputValue('');
       setIsTyping(false);
       setCopied(false);
+      setActiveImageIndex(0);
       setQaHistory([
         {
           id: 'welcome-qa',
@@ -154,9 +163,9 @@ export function ProductDetails({
     ) {
       return `Estimated dispatch time is ${
         product.distance || '15 minutes'
-      } via direct courier.`;
+      } via direct runner courier.`;
     }
-    return `Verified: ${prodName} from ${shopName} meets default quality checks. Ready to add to your order.`;
+    return `Verified: ${prodName} from ${shopName} meets standard merchant quality checks. Ready to add to your order.`;
   };
 
   const handleSendQuestion = (questionText: string) => {
@@ -183,256 +192,352 @@ export function ProductDetails({
   };
 
   const suggestedFollowUps = [
-    { label: 'Is it fresh today?', query: 'Is this product fresh today?' },
-    {
-      label: 'What portion size is this?',
-      query: 'What size or portion is this package?',
-    },
-    {
-      label: 'How fast is delivery?',
-      query: 'How fast will this get to my location?',
-    },
+    { label: 'Fresh today?', query: 'Is this product fresh today?' },
+    { label: 'Portion size?', query: 'What size or portion is this package?' },
+    { label: 'Delivery speed?', query: 'How fast will this get to my location?' },
+  ];
+
+  // Thumbnail fallback list to match the multi-image gallery feel of the design
+  const galleryThumbnails = [
+    product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80',
+    'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80'
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end font-sans md:items-stretch md:justify-end overflow-hidden">
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-200"
-      />
+    <div className="fixed inset-0 z-50 flex flex-col w-full min-h-screen bg-white text-slate-800 font-sans overflow-y-auto">
+      {/* Top Header Bar - Edge to Edge */}
+      <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 bg-white/80 backdrop-blur-md sticky top-0 z-20 w-full">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            {product.shop || 'Verified Neighborhood Vendor'}
+          </span>
+        </div>
 
-      {/* Perplexity-style Drawer Container */}
-      <div className="relative z-10 flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl border-t border-[#2e3030] bg-[#191a1a] text-gray-100 shadow-2xl transition-all duration-300 md:max-h-screen md:w-[480px] md:rounded-t-none md:border-l md:border-t-0">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyShare}
+            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            title="Share item link"
+          >
+            {copied ? (
+              <Check size={18} className="text-emerald-600" />
+            ) : (
+              <Share2 size={18} />
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+            title="Close window (Esc)"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+
+      {/* Content Body - Full Screen Flex Growth */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 p-6 md:p-10 w-full">
         
-        {/* Mobile Drag Indicator */}
-        <div className="mx-auto my-2.5 h-1 w-10 shrink-0 rounded-full bg-[#2e3030] md:hidden" />
-
-        {/* Top Header */}
-        <div className="flex items-center justify-between border-b border-[#2e3030] px-5 py-3.5">
-          <div className="flex items-center gap-2">
-            <span className="rounded-full border border-teal-500/20 bg-teal-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-400">
-              {product.category || 'Product Details'}
-            </span>
+        {/* LEFT COLUMN: Gallery & Thumbnails (5 cols) */}
+        <div className="lg:col-span-6 flex flex-col-reverse sm:flex-row gap-4 items-start">
+          {/* Thumbnails Column */}
+          <div className="flex sm:flex-col gap-3 w-full sm:w-20 shrink-0 overflow-x-auto sm:overflow-visible">
+            {galleryThumbnails.map((imgUrl, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setActiveImageIndex(idx)}
+                className={`relative aspect-square w-16 sm:w-20 rounded-xl overflow-hidden border-2 transition-all ${
+                  activeImageIndex === idx
+                    ? 'border-[#3C3147] shadow-sm'
+                    : 'border-transparent opacity-60 hover:opacity-100'
+                }`}
+              >
+                <img
+                  src={imgUrl}
+                  alt={`${product.name} thumb ${idx}`}
+                  onError={handleImageError}
+                  className="w-full h-full object-cover"
+                />
+              </button>
+            ))}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleCopyShare}
-              className="rounded-full p-1.5 text-gray-400 transition-colors hover:bg-[#252727] hover:text-white"
-              title="Copy share link"
-            >
-              {copied ? (
-                <Check size={15} className="text-teal-400" />
-              ) : (
-                <Share2 size={15} />
-              )}
-            </button>
+          {/* Main Showcase Image */}
+          <div className="relative w-full aspect-square rounded-2xl bg-[#F8FAFC] border border-slate-100 overflow-hidden flex items-center justify-center">
+            <span className="absolute top-4 left-4 z-10 rounded-full border border-slate-200 bg-white/90 backdrop-blur-md px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-700 shadow-sm">
+              {product.category || 'Best Seller'}
+            </span>
 
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex items-center gap-1 rounded-full border border-[#2e3030] bg-[#202222] p-1.5 text-gray-400 transition-colors hover:border-[#3e4040] hover:text-white"
-              title="Close panel (Esc)"
-            >
-              <X size={15} />
-            </button>
+            <img
+              src={galleryThumbnails[activeImageIndex]}
+              alt={product.name}
+              onError={handleImageError}
+              className="w-full h-full object-cover object-center"
+            />
           </div>
         </div>
 
-        {/* Body Content */}
-        <div className="flex-1 overflow-y-auto px-5 pb-32 pt-4">
+        {/* RIGHT COLUMN: Product Details & Controls (7 cols) */}
+        <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
           
-          {/* Main Showcase Grid */}
           <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-[#2e3030] bg-[#141515]">
-              <img
-                src={
-                  product.image ||
-                  'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'
-                }
-                alt={product.name}
-                onError={handleImageError}
-                className="h-56 w-full object-cover"
-              />
-              <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full border border-gray-800 bg-black/75 px-2.5 py-1 text-xs font-semibold text-amber-400 backdrop-blur-md">
-                <Star size={11} className="fill-amber-400" />
-                <span>{product.rating || '4.8'}</span>
+            {/* Category / Shop Subtitle */}
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+              {product.shop || 'LOCAL MARKET SUPPLIER'}
+            </p>
+
+            {/* Title */}
+            <h1 className="font-serif text-3xl md:text-4xl font-normal text-slate-900 tracking-tight leading-tight">
+              {product.name}
+            </h1>
+
+            {/* Rating & Distance */}
+            <div className="flex items-center gap-4 text-xs text-slate-500">
+              <div className="flex items-center gap-1">
+                <div className="flex text-amber-400">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={14} className="fill-amber-400" />
+                  ))}
+                </div>
+                <span className="font-medium text-slate-700 ml-1">
+                  {product.rating || '4.9'}
+                </span>
+                <span>(24 reviews)</span>
+              </div>
+
+              <span className="text-slate-300">•</span>
+
+              <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                <MapPin size={14} className="text-slate-400" />
+                <span>{product.distance || '15 mins delivery'}</span>
               </div>
             </div>
 
-            {/* Title & Price Header */}
-            <div>
-              <h2 className="font-serif text-2xl font-normal text-white tracking-tight">
-                {product.name}
-              </h2>
-              <div className="mt-1 flex items-baseline gap-1.5">
-                <span className="text-xs font-bold text-teal-400">KES</span>
-                <span className="text-2xl font-bold tracking-tight text-white">
-                  {Number(product.price).toLocaleString()}
+            {/* Price & Tag */}
+            <div className="flex items-baseline gap-3 pt-2">
+              <span className="text-2xl md:text-3xl font-semibold text-slate-900">
+                KES {Number(product.price).toLocaleString()}
+              </span>
+              <span className="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-0.5 text-xs font-medium">
+                Verified Price
+              </span>
+            </div>
+
+            {/* Description */}
+            <p className="text-sm leading-relaxed text-slate-600 pt-2">
+              {product.description ||
+                'Freshly sourced, high-quality stock supplied directly by neighborhood merchants. Carefully checked for quality, portion standard, and immediate dispatch readiness.'}
+            </p>
+
+            {/* Merchant Info Card */}
+            <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-white border border-slate-200/60 text-slate-700">
+                  <Store size={16} />
+                </div>
+                <div>
+                  <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                    Supplied By
+                  </span>
+                  <span className="font-semibold text-slate-800">
+                    {product.shop || 'Neighborhood Store'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-right">
+                <span className="block text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                  Dispatch Time
+                </span>
+                <span className="font-semibold text-slate-800">
+                  {product.distance || '15–20 Mins'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Section: Quantity & CTA */}
+          <div className="space-y-4 pt-4">
+            <div className="flex items-center gap-3">
+              {/* Quantity Control Pill */}
+              <div className="flex items-center justify-between border border-slate-300 rounded-full px-3 py-2 bg-white w-28 shrink-0 shadow-sm">
+                <button
+                  type="button"
+                  onClick={handleDecrement}
+                  className="text-slate-500 hover:text-slate-900 transition-colors p-1"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="text-sm font-semibold text-slate-900">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleIncrement}
+                  className="text-slate-500 hover:text-slate-900 transition-colors p-1"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+
+
+              {/* Main Add to Cart CTA */}
+              <button
+                type="button"
+                onClick={handleAddToBasketWithQty}
+                className="flex-1 max-w-fit  flex items-center justify-center gap-2 rounded-full bg-[#3C3147] hover:bg-[#2C2434] text-white px-6 py-3 text-sm font-medium transition-all shadow-sm active:scale-[0.99]"
+              >
+                <ShoppingCart size={16} />
+                
+                <span className="hidden md:block">
+                  Add ksh ( {(product.price * quantity).toLocaleString()} )
+                </span>
+
+
+                <span className="inline-block md:hidden">
+                  ksh ( {(product.price * quantity).toLocaleString()} )
+                </span>
+
+                
+              </button>
+            </div>
+
+            <p className="text-[11px] text-center text-slate-400">
+              Direct merchant settlement • Local neighborhood runner fulfillment
+            </p>
+
+            {/* 4-Column Trust Indicators Banner */}
+            <div className="grid grid-cols-4 gap-2 py-4 border-y border-slate-100 text-center">
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <ShieldCheck size={20} className="text-slate-700" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium text-slate-600 leading-tight">
+                  Quality Checked
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <Store size={20} className="text-slate-700" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium text-slate-600 leading-tight">
+                  Local Merchant
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <Truck size={20} className="text-slate-700" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium text-slate-600 leading-tight">
+                  Fast Courier
+                </span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5 px-2">
+                <Award size={20} className="text-slate-700" strokeWidth={1.5} />
+                <span className="text-[11px] font-medium text-slate-600 leading-tight">
+                  Direct Pricing
                 </span>
               </div>
             </div>
 
-            {/* Merchant & Distance info pill bar */}
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-[#2e3030] bg-[#202222] p-3 text-xs">
-              <div className="flex items-center gap-2 text-gray-300">
-                <Store size={14} className="shrink-0 text-gray-400" />
-                <div className="truncate">
-                  <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-medium">Merchant</span>
-                  <span className="truncate font-medium text-gray-200">{product.shop || 'Verified Vendor'}</span>
+            {/* Expandable Section: Soko AI Q&A Assistant */}
+            <div className="border-b border-slate-100 pb-3 bg-gray-950 p-4 rounded-2xl ">
+              <button
+                type="button"
+                onClick={() => setIsAiSectionOpen(!isAiSectionOpen)}
+                className="w-full flex items-center justify-between py-2 text-left group"
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-[#3C3147]" />
+                  <span className="text-sm font-semibold text-slate-50 group-hover:text-[#3C3147] transition-colors">
+                    AI Product Verification & Q&A
+                  </span>
                 </div>
-              </div>
+                {isAiSectionOpen ? (
+                  <ChevronUp size={16} className="text-slate-400" />
+                ) : (
+                  <ChevronDown size={16} className="text-slate-400" />
+                )}
+              </button>
 
-              <div className="flex items-center gap-2 text-gray-300">
-                <MapPin size={14} className="shrink-0 text-gray-400" />
-                <div className="truncate">
-                  <span className="block text-[10px] text-gray-500 uppercase tracking-wider font-medium">Est. Delivery</span>
-                  <span className="truncate font-medium text-gray-200">{product.distance || '15 mins away'}</span>
-                </div>
-              </div>
-            </div>
+              {isAiSectionOpen && (
+                <div className="pt-3 space-y-3  ">
+                  {/* Chat Feed */}
+                  <div className="space-y-2 rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5 max-h-48 overflow-y-auto text-xs">
+                    {qaHistory.map((qa) => (
+                      <div
+                        key={qa.id}
+                        className={`flex flex-col ${
+                          qa.sender === 'user' ? 'items-end' : 'items-start'
+                        }`}
+                      >
+                        <div
+                          className={`max-w-[90%] rounded-xl px-3 py-2 leading-relaxed ${
+                            qa.sender === 'user'
+                              ? 'bg-[#3C3147] text-white'
+                              : 'bg-white text-slate-700 border border-slate-200/80 shadow-sm'
+                          }`}
+                        >
+                          {qa.text}
+                        </div>
+                      </div>
+                    ))}
 
-            {/* Overview Section */}
-            <div className="space-y-1.5 pt-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">
-                Overview
-              </span>
-              <p className="text-xs leading-relaxed text-gray-300">
-                {product.description ||
-                  'Freshly sourced high-quality item directly retrieved from partner catalog. Checked for standard grade quality.'}
-              </p>
-            </div>
+                    {isTyping && (
+                      <div className="flex items-center gap-1.5 py-1 text-slate-400 text-[11px]">
+                        <Sparkles size={12} className="animate-spin text-[#3C3147]" />
+                        <span>Verifying with vendor data...</span>
+                      </div>
+                    )}
+                    <div ref={qaEndRef} />
+                  </div>
 
-            {/* Perplexity AI Assistant Inline Section */}
-            <div className="border-t border-[#2e3030] pt-4 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles size={13} className="text-teal-400" />
-                  <span className="font-medium text-gray-300">Item Focus Q&A</span>
-                </div>
-              </div>
+                  {/* Suggested Queries */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestedFollowUps.map((chip, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={isTyping}
+                        onClick={() => handleSendQuestion(chip.query)}
+                        className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-slate-600 hover:border-[#3C3147] hover:text-[#3C3147] transition-all disabled:opacity-50"
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
 
-              {/* Chat Log Feed */}
-              <div className="space-y-2 rounded-2xl border border-[#2e3030] bg-[#141515] p-3 text-xs">
-                {qaHistory.map((qa) => (
-                  <div
-                    key={qa.id}
-                    className={`flex flex-col ${
-                      qa.sender === 'user' ? 'items-end' : 'items-start'
-                    }`}
+                  {/* Input Field */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendQuestion(inputValue);
+                    }}
+                    className="relative flex items-center"
                   >
-                    <div
-                      className={`max-w-[90%] rounded-xl px-3 py-2 leading-relaxed ${
-                        qa.sender === 'user'
-                          ? 'bg-[#252727] text-white'
-                          : 'bg-transparent text-gray-300 border-l-2 border-teal-400 pl-3.5 py-1'
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      disabled={isTyping}
+                      placeholder="Ask about freshness, weight, or delivery..."
+                      className="w-full rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-xs text-slate-800 placeholder-slate-400 focus:border-[#3C3147] focus:outline-none disabled:opacity-50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!inputValue.trim() || isTyping}
+                      className={`absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-full transition-all ${
+                        inputValue.trim()
+                          ? 'bg-[#3C3147] text-white hover:bg-[#2C2434]'
+                          : 'bg-slate-100 text-slate-400'
                       }`}
                     >
-                      {qa.text}
-                    </div>
-                  </div>
-                ))}
-
-                {isTyping && (
-                  <div className="flex items-center gap-1.5 py-1 text-gray-500 text-[11px]">
-                    <Sparkles size={11} className="animate-spin text-teal-400" />
-                    <span>Searching details...</span>
-                  </div>
-                )}
-                <div ref={qaEndRef} />
-              </div>
-
-              {/* Follow-up Chips */}
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-1 text-[11px] text-gray-500">
-                  <Compass size={11} />
-                  <span>Suggested queries</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  {suggestedFollowUps.map((chip, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      disabled={isTyping}
-                      onClick={() => handleSendQuestion(chip.query)}
-                      className="group flex items-center justify-between rounded-xl border border-[#2e3030] bg-[#202222] px-3 py-1.5 text-left text-xs font-medium text-gray-300 transition-all hover:border-teal-500/30 hover:text-teal-400 disabled:opacity-50"
-                    >
-                      <span>{chip.label}</span>
-                      <Plus size={12} className="text-gray-500 transition-transform group-hover:rotate-90 group-hover:text-teal-400" />
+                      <ArrowUp size={14} strokeWidth={2.5} />
                     </button>
-                  ))}
+                  </form>
                 </div>
-              </div>
-
-              {/* Perplexity Styled Input Field */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendQuestion(inputValue);
-                }}
-                className="relative mt-2 flex items-center"
-              >
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  disabled={isTyping}
-                  placeholder="Ask a follow-up..."
-                  className="w-full rounded-2xl border border-[#2e3030] bg-[#202222] py-2.5 pl-3.5 pr-10 text-xs text-white placeholder-gray-500 focus:border-[#3e4040] focus:outline-none disabled:opacity-50"
-                />
-                <button
-                  type="submit"
-                  disabled={!inputValue.trim() || isTyping}
-                  className={`absolute right-1.5 flex h-7 w-7 items-center justify-center rounded-full transition-all ${
-                    inputValue.trim()
-                      ? 'bg-teal-400 text-black hover:bg-teal-300'
-                      : 'bg-[#282a2a] text-gray-600'
-                  }`}
-                >
-                  <ArrowUp size={14} strokeWidth={2.5} />
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        {/* Floating Bottom Action Bar */}
-        <div className="absolute bottom-0 inset-x-0 border-t border-[#2e3030] bg-[#191a1a]/95 p-4 backdrop-blur-xl">
-          <div className="flex items-center justify-between gap-3">
-            {/* Quantity Controls */}
-            <div className="flex items-center rounded-xl border border-[#2e3030] bg-[#202222] p-1 shrink-0">
-              <button
-                type="button"
-                onClick={handleDecrement}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-[#282a2a] hover:text-white transition-colors"
-              >
-                <Minus size={13} strokeWidth={2.5} />
-              </button>
-              <span className="w-8 text-center text-xs font-bold text-white">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={handleIncrement}
-                className="rounded-lg p-1.5 text-gray-400 hover:bg-[#282a2a] hover:text-white transition-colors"
-              >
-                <Plus size={13} strokeWidth={2.5} />
-              </button>
+              )}
             </div>
 
-            {/* Add to Basket Action */}
-            <button
-              type="button"
-              onClick={handleAddToBasketWithQty}
-              className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-teal-400 px-4 py-2.5 text-xs font-bold text-black transition-all hover:bg-teal-300 active:scale-[0.98]"
-            >
-              <ShoppingCart size={14} strokeWidth={2.5} />
-              <span>
-                Add to Basket • KES {(product.price * quantity).toLocaleString()}
-              </span>
-            </button>
           </div>
         </div>
 

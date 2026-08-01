@@ -91,8 +91,8 @@ export function UserCart({ onBackToChat }) {
         
         {/* LEFT NAV SIDEBAR */}
         <div 
-          className={`bg-[#0B131D] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-            isNavMinimized ? 'md:w-15' : 'md:w-64'
+          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+            isNavMinimized ? 'md:w-15' : 'md:w-54'
           } w-full`}
         >
           <div>
@@ -141,7 +141,7 @@ export function UserCart({ onBackToChat }) {
                           isNavMinimized ? 'justify-center py-3' : 'justify-between px-3 py-2.5'
                         } rounded-xl text-xs font-medium transition-all duration-150 relative ${
                           isActive 
-                            ? 'bg-slate-800/90 text-white shadow-sm border border-slate-700/50' 
+                            ? 'bg-none  text-white bg-slate-800/40  shadow-sm  uppercase ' 
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                         }`}
                       >
@@ -182,9 +182,9 @@ export function UserCart({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Shopping Cart</h1>
+              <h1 className="text-lg font-semibold text-slate-50">Shopping Cart</h1>
             </div>
 
             <div className="flex items-center gap-4">

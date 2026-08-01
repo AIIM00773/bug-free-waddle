@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // Context Providers
 import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
-import { useShoppingMode } from './Providers/ui/ShoppingModeManager.tsx';
+import { useShoppingMode } from './Providers/ui/ShoppingModeManager';
 
 // Global Layout Components
 import { Sidebar } from './Components/globals/Sidebar';
@@ -13,24 +13,23 @@ import { UserProfile } from './Components/globals/profile';
 import { UserSettings } from './Components/globals/setting';
 import { UserCart } from './Components/globals/cart'; 
 import { UserOrders } from './Components/globals/Orders';
-import { UserCheckout} from "./Components/globals/checkout";
-
-
+import { UserCheckout } from './Components/globals/checkout';
 import { AuthOverlay } from './Components/globals/Auth';
 import { HomeNotificationToast } from './Components/globals/homeNotificationToast';
 import { LoadingScreen } from './Components/globals/LoadingScreen';
 
-// Chat Interface Components
+// Chat & Hyper-Local E-Commerce Components
 import { EmptyState } from './Components/chat/EmptyState';
 import { ChatFeed } from './Components/chat/ChatFeed';
 import { ProductDetails } from './Components/chat/ProductDetails';
 
 // Checkout Components
-import { BasketDrawer } from './Components/checkout/BasketDrawer';
 import { MpesaModal } from './Components/checkout/MpesaModal';
 
-// Modal Back Button Interceptor
-function useModalBackHandler(isOpen, onClose) {
+// ==========================================
+// Hook: Modal Back Button Interceptor
+// ==========================================
+function useModalBackHandler(isOpen: boolean, onClose: () => void) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -47,11 +46,14 @@ function useModalBackHandler(isOpen, onClose) {
   }, [isOpen, onClose]);
 }
 
+// ==========================================
+// Main Application Shell
+// ==========================================
 export default function App() {
   // Shopping mode UI Control Provider
   const { ShoppingMode, setShoppingMode, ModeLoading } = useShoppingMode();
 
-  // Global Search & Session Context
+  // Global Search & Session Context (100% Merchant-Provided Engine)
   const {
     sessions,
     activeSessionId,
@@ -69,7 +71,7 @@ export default function App() {
   // E-Commerce / Cart Context
   const { showCheckoutModal, setShowCheckoutModal, handleAddToBasket } = useCart();
 
-  // Local Modal Overlay states with Session Persistence via localStorage
+  // Local Modal Overlay states with Session Persistence via sessionStorage
   const [isProfileOpen, setIsProfileOpen] = useState(() => {
     return sessionStorage.getItem('soko_isProfileOpen') === 'true';
   });
@@ -85,39 +87,34 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(() => {
     return sessionStorage.getItem('soko_isCartOpen') === 'true';
   });
-  
 
-  const [isCheckoutOpen,setIsCheckoutOpen] = useState(()=>{
-   return sessionStorage.getItem('soko_isCheckoutOpen') ==='true';
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(() => {
+    return sessionStorage.getItem('soko_isCheckoutOpen') === 'true';
   });
-  
 
-
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Sync modal states to localStorage on change
+  // Sync modal states to sessionStorage on change
   useEffect(() => {
-    sessionStorage.setItem('soko_isProfileOpen', isProfileOpen);
+    sessionStorage.setItem('soko_isProfileOpen', String(isProfileOpen));
   }, [isProfileOpen]);
 
   useEffect(() => {
-    sessionStorage.setItem('soko_settingOpen', settingOpen);
+    sessionStorage.setItem('soko_settingOpen', String(settingOpen));
   }, [settingOpen]);
 
   useEffect(() => {
-    sessionStorage.setItem('soko_isOrdersOpen', isOrdersOpen);
+    sessionStorage.setItem('soko_isOrdersOpen', String(isOrdersOpen));
   }, [isOrdersOpen]);
 
   useEffect(() => {
-    sessionStorage.setItem('soko_isCartOpen', isCartOpen);
+    sessionStorage.setItem('soko_isCartOpen', String(isCartOpen));
   }, [isCartOpen]);
 
-
-  useEffect(()=>{
-  sessionStorage.setItem("soko_isCheckoutOpen",isCheckoutOpen);
-  },[isCheckoutOpen]);
-  
+  useEffect(() => {
+    sessionStorage.setItem('soko_isCheckoutOpen', String(isCheckoutOpen));
+  }, [isCheckoutOpen]);
 
   // Modals Back-Button Handlers
   useModalBackHandler(filtersOpen, () => setFiltersOpen(false));
@@ -130,8 +127,9 @@ export default function App() {
   useModalBackHandler(settingOpen, () => setSettingOpen(false));
   useModalBackHandler(isOrdersOpen, () => setIsOrdersOpen(false));
   useModalBackHandler(isCartOpen, () => setIsCartOpen(false));
+  useModalBackHandler(isCheckoutOpen, () => setIsCheckoutOpen(false));
 
-  const handleViewDetails = (product) => {
+  const handleViewDetails = (product: any) => {
     setSelectedProduct(product);
     setShowDetailsModal(true);
   };
@@ -141,12 +139,12 @@ export default function App() {
     setShowDetailsModal(false);
   };
 
-  // Render Modern Perplexity-Style Loader
+  // Render Soko AI Clean Loader
   if (ModeLoading) {
     return (
       <LoadingScreen
-        message="Loading Mode..."
-        subtext="... almost there ..."
+        message="Connecting to Neighborhood Merchants..."
+        subtext="Preparing your local Soko experience..."
       />
     );
   }
@@ -157,7 +155,8 @@ export default function App() {
     <>
       <AuthOverlay />
 
-      <div className="flex h-screen overflow-hidden bg-[#0d0f12] font-sans text-zinc-200 antialiased">
+      {/* Outer Shell: Switched from dark #0d0f12 to Soko AI clean editorial slate-50 */}
+      <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-800 antialiased selection:bg-[#3C3147] selection:text-white">
         {notification && <HomeNotificationToast notification={notification} />}
 
         {!isNavigationHidden && (
@@ -178,7 +177,8 @@ export default function App() {
           />
         )}
 
-        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-[#0d0f12]">
+        {/* Main Content Area */}
+        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-white/80">
           {!isNavigationHidden && (
             <Header
               activeTab={ShoppingMode}
@@ -189,7 +189,7 @@ export default function App() {
           )}
 
           {!isNavigationHidden && (
-            <div className="custom-scrollbar flex-1 overflow-y-auto px-4 md:px-8 py-8">
+            <div className="custom-scrollbar flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
               <div className="mx-auto flex max-w-4xl gap-8">
                 <div className="flex-1 min-w-0">
                   {activeSession ? (
@@ -247,8 +247,7 @@ export default function App() {
         )}
 
         {isCheckoutOpen && (
-        <UserCheckout onBackToChat={()=>setIsCheckoutOpen(false)} />
-        
+          <UserCheckout onBackToChat={() => setIsCheckoutOpen(false)} />
         )}
       </div>
     </>
