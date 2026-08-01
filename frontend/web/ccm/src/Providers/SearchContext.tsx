@@ -23,7 +23,7 @@ export const SEARCH_TYPES = [
 ] as const;
 
 
-type tabsType = ['AI mode', "catalog", 'shops'];
+type tabsType = ['AI mode'];
 
 export type SearchType = (typeof SEARCH_TYPES)[number];
 

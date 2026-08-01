@@ -35,6 +35,7 @@ export function AuthOverlay() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [validating,setValidating] = useState(false)
 
   // Clear context errors when switching sub-forms
   const handleRouteChange = (newRoute: AuthRoute) => {
@@ -59,8 +60,8 @@ export function AuthOverlay() {
     }
   };
 
-  if (isLoading || isAuthenticated || proceedWithoutAuth) return null;
-
+  if ( isAuthenticated || proceedWithoutAuth) return null;
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#141414]/90 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Top Right Quick Close Button */}
@@ -185,11 +186,14 @@ export function AuthOverlay() {
               </div>
             )}
 
+
+
+
             {/* Main Submit Action Button */}
             <button
               type="submit"
               disabled={isLoading}
-              className="mt-2 flex w-full items-center justify-center rounded-full border border-[#2d2d2d] bg-[#1f1f1f] py-2.5 text-sm font-semibold text-gray-200 transition-all hover:bg-[#282828] hover:text-white active:scale-[0.99] disabled:opacity-50"
+              className={`mt-2 flex w-full items-center justify-center rounded-full border border-[#2d2d2d] bg-[#1f1f1f] py-2.5 text-sm font-semibold  ${isLoading? 'text-emerald-600 text-xs hover:none':'text-gray-200 hover:bg-[#282828] hover:text-white ' } transition-all  active:scale-[0.99] disabled:opacity-50`}
             >
               {isLoading
                 ? 'Processing...'

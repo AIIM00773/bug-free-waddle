@@ -13,6 +13,8 @@ import {
   Trash2,
   Compass,
   ShoppingCart,
+  Settings,
+  Wallet
 } from 'lucide-react';
 
 import { useCart } from '../../Providers/CartContext';
@@ -27,7 +29,16 @@ export interface SidebarProps {
   setIsProfileOpen: (open: boolean) => void;
   settingOpen?: boolean;
   setSettingOpen?: (open: boolean) => void;
-}
+  setIsOrdersOpen?:(open:boolean) => void; 
+  isOrdersOpen?:boolean;
+  isCartOpen?:boolean;
+  setIsCartOpen?:(open:boolean) => void;
+  isCheckoutOpen?:boolean;
+  setIsCheckoutOpen?:(open:boolean) => void; 
+};
+
+
+
 
 export function Sidebar({
   sessions = [],
@@ -37,6 +48,14 @@ export function Sidebar({
   setIsProfileOpen,
   settingOpen,
   setSettingOpen,
+  setIsOrdersOpen,
+  isOrdersOpen,
+  isCartOpen,
+  setIsCartOpen,
+  isCheckoutOpen,
+  setIsCheckoutOpen,
+  
+  
 }: SidebarProps) {
   const { cart, openCart, setOpenCart } = useCart();
   const { user, isAuthenticated, setProceedWithoutAuth } = useAuth();
@@ -101,7 +120,7 @@ export function Sidebar({
       {/* Main Container */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-[#2e3030] bg-[#191a1a] p-3 select-none transition-all duration-300 ease-in-out md:static ${
-          isExpanded ? 'w-60' : 'w-17'
+          isExpanded ? 'w-50' : 'w-15'
         } ${
           onMobile.open
             ? 'translate-x-0'
@@ -170,33 +189,10 @@ export function Sidebar({
 
           {/* Core Navigation Links */}
           <nav className="space-y-1 text-xs text-gray-400">
+          
             <button
               type="button"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="Catalogs "
-            >
-              <Compass className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span>Discover Catalogs </span>}
-            </button>
-
-        
-
-            <button
-              type="button"
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
-                !isExpanded && 'justify-center px-0'
-              }`}
-              title="Shops - Spaces "
-            >
-              <Grid className="h-4 w-4 shrink-0 text-gray-400" />
-              {isExpanded && <span> Shops </span>}
-            </button>
-
-
-            <button
-              type="button"
+              onClick={()=>setIsCartOpen(!isCartOpen)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
@@ -211,12 +207,31 @@ export function Sidebar({
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
                 !isExpanded && 'justify-center px-0'
               }`}
-              title="Artifacts"
+              title="my Orders "
+
+              onClick={()=>setIsOrdersOpen(!isOrdersOpen)}
             >
               <Box className="h-4 w-4 shrink-0 text-gray-400" />
               {isExpanded && <span>Orders </span>}
             </button>
 
+
+
+            <button
+              type="button"
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-[#202222] hover:text-white ${
+                !isExpanded && 'justify-center px-0'
+              }`}
+              title="Checkouts... "
+
+              onClick={()=>setIsCheckoutOpen(!isCheckoutOpen)}
+            >
+              <Wallet className="h-4 w-4 shrink-0 text-gray-400" />
+              {isExpanded && <span>Checkouts </span>}
+            </button>
+
+
+            
             <button
               type="button"
               onClick={() => setSettingOpen?.(!settingOpen)}
@@ -225,12 +240,16 @@ export function Sidebar({
               }`}
               title="Settings"
             >
-              <SlidersHorizontal className="h-4 w-4 shrink-0 text-gray-400" />
+              <Settings className="h-4 w-4 shrink-0 text-gray-400" />
               {isExpanded && <span>Settings</span>}
             </button>
           </nav>
 
+
+
+
           <div className="my-1 border-t border-[#2e3030]" />
+          
 
           {/* Session History Stream */}
           <div className="flex-1 space-y-1">
@@ -303,6 +322,8 @@ export function Sidebar({
             </div>
           </div>
         </div>
+
+        
 
         {/* User Account / Profile Footer */}
         <div className="pt-2 border-t border-[#2e3030]">
