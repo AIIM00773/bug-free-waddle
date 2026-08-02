@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Context Providers
+import {useAuth} from "./Providers/profileContext";
 import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
 import { useShoppingMode } from './Providers/ui/ShoppingModeManager';
@@ -52,6 +53,11 @@ function useModalBackHandler(isOpen: boolean, onClose: () => void) {
 export default function App() {
   // Shopping mode UI Control Provider
   const { ShoppingMode, setShoppingMode, ModeLoading } = useShoppingMode();
+  const {
+    isAuthenticated,
+    proceedWithoutAuth,
+  } = useAuth();
+
 
   // Global Search & Session Context (100% Merchant-Provided Engine)
   const {
@@ -159,7 +165,7 @@ export default function App() {
       <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-800 antialiased selection:bg-[#3C3147] selection:text-white">
         {notification && <HomeNotificationToast notification={notification} />}
 
-        {!isNavigationHidden && (
+        {!isNavigationHidden &&  (proceedWithoutAuth || isAuthenticated) &&  (
           <Sidebar
             sessions={sessions}
             activeSessionId={activeSessionId}

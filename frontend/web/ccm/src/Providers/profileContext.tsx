@@ -40,6 +40,8 @@ export interface UserType {
 
 export type AuthRoute = "login" | "signup" | "forgot";
 
+
+
 interface AuthContextType {
   user: UserType | null;
   isAuthenticated: boolean;
@@ -58,7 +60,9 @@ interface AuthContextType {
   setProceedWithoutAuth: (value?: boolean) => void;
   editIdentity: (identity: Record<string, any>) => Promise<void>;
   editLogistics: (logistics: Record<string, any>) => Promise<void>;
-}
+};
+
+
 
 /* ========= Constants & Config ========= */
 

@@ -26,7 +26,7 @@ export function UserSettings({ onBackToChat }) {
   const [activeTab, setActiveTab] = useState('notifications');
   const [isSaving, setIsSaving] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
+  const [isNavMinimized, setIsNavMinimized] = useState(true);
 
   const [settings, setSettings] = useState({
     pushNotifications: true,
@@ -64,7 +64,7 @@ export function UserSettings({ onBackToChat }) {
   };
 
   const tabs = [
-    { id: 'notifications', label: 'Alerts & Pings', icon: Bell },
+    { id: 'notifications', label: 'Alerts & notifications', icon: Bell },
     { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
     { id: 'privacy', label: 'Data & Privacy', icon: Shield }
   ];
@@ -109,10 +109,11 @@ export function UserSettings({ onBackToChat }) {
             <div className="p-3 space-y-6 hidden md:inline-block w-full">
               <div>
                 {!isNavMinimized && (
-                  <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Preferences
+                  <p className="px-3 text-[11px] font-light  text-slate-400 lowercase tracking-wider mb-2">
+                    Account Settings and  Preferences
                   </p>
                 )}
+                
                 <div className="space-y-4">
                   {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
@@ -127,7 +128,7 @@ export function UserSettings({ onBackToChat }) {
                           isNavMinimized ? 'justify-center p-2  w-fit rounded-full' : 'justify-between px-3 py-2.5  rounded-xl w-full'
                         } text-xs font-medium transition-all duration-150 relative ${
                           isActive 
-                            ? 'bg-none  text-white bg-slate-800/40  shadow-sm  uppercase ' 
+                            ? 'bg-none  text-white bg-none   shadow-sm  lowercase ' 
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                         }`}
                       >
@@ -165,7 +166,9 @@ export function UserSettings({ onBackToChat }) {
           {/* Top Header Bar */}
           <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div>
+            {isNavMinimized && (
               <h1 className="text-lg font-semibold text-slate-50">Settings</h1>
+            )}
             </div>
 
             {/* Top Right Actions */}
