@@ -1,5 +1,3 @@
-
-
 import React, { useState } from 'react';
 import { 
   CreditCard, 
@@ -13,14 +11,15 @@ import {
   Lock, 
   ShieldCheck, 
   Truck, 
-  Loader2,
-  Check
+  Loader2, 
+  Check,
+  ArrowRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function UserCheckout({ onBackToChat }) {
   const [activeTab, setActiveTab] = useState('payment');
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
+  const [isNavMinimized, setIsNavMinimized] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
 
@@ -43,10 +42,19 @@ export function UserCheckout({ onBackToChat }) {
     setCheckoutData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCompleteOrder = (e) => {
+  // Prevent accidental submit on Enter key unless on the 'review' step
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    setIsProcessing(true);
+    if (activeTab === 'payment') {
+      setActiveTab('delivery');
+      return;
+    }
+    if (activeTab === 'delivery') {
+      setActiveTab('review');
+      return;
+    }
 
+    setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
       setOrderComplete(true);
@@ -65,8 +73,8 @@ export function UserCheckout({ onBackToChat }) {
         
         {/* LEFT NAV SIDEBAR */}
         <div 
-          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-            isNavMinimized ? 'md:w-15' : 'md:w-64'
+          className={`bg-[#191a1a] text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+            isNavMinimized ? 'md:w-16' : 'md:w-64' // Changed w-15 to standard w-16
           } w-full`}
         >
           <div>
@@ -94,7 +102,7 @@ export function UserCheckout({ onBackToChat }) {
             </div>
 
             {/* Navigation Menu */}
-            <div className="p-3 space-y-6 hidden md:inline-block w-full">
+            <div className="p-3 space-y-6 hidden md:block w-full">
               <div>
                 {!isNavMinimized && (
                   <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
@@ -132,7 +140,7 @@ export function UserCheckout({ onBackToChat }) {
           </div>
 
           {/* Sidebar Footer / Back Action */}
-          <div className="p-3 border-t border-slate-800/80">
+          <div className="p-3 border-t border-slate-800/80 hidden md:inline ">
             <button
               type="button"
               onClick={onBackToChat}
@@ -145,13 +153,14 @@ export function UserCheckout({ onBackToChat }) {
               {!isNavMinimized && <span className="whitespace-nowrap">Back to Chat</span>}
             </button>
           </div>
+          
         </div>
 
         {/* RIGHT MAIN CONTENT AREA */}
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="h-16 px-8 bg-[#191a1a] border-b border-slate-200/80 flex items-center justify-between shrink-0">
             <div>
               <h1 className="text-lg font-semibold text-slate-50">Checkout</h1>
             </div>
@@ -220,7 +229,7 @@ export function UserCheckout({ onBackToChat }) {
                   
                   {/* LEFT: Checkout Form Steps */}
                   <div className="lg:col-span-8 space-y-6">
-                    <form onSubmit={handleCompleteOrder}>
+                    <form onSubmit={handleFormSubmit}>
                       <AnimatePresence mode="wait">
                         
                         {/* STEP 1: PAYMENT & M-PESA */}
@@ -283,12 +292,25 @@ export function UserCheckout({ onBackToChat }) {
                               <div className="flex items-center px-3 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl focus-within:border-slate-400 transition-all">
                                 <Smartphone size={16} className="text-slate-400 mr-2.5 shrink-0" />
                                 <input 
-                                  type="text" 
+                                  type="tel"
+                                  inputMode="tel"
                                   value={checkoutData.phoneNumber}
                                   onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
                                   className="w-full bg-transparent text-xs font-mono font-medium text-slate-900 outline-none"
                                 />
                               </div>
+                            </div>
+
+                            {/* Added Navigation Footer */}
+                            <div className="pt-4 border-t border-slate-100 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab('delivery')}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-xl transition-all"
+                              >
+                                <span>Continue to Delivery</span>
+                                <ArrowRight size={14} />
+                              </button>
                             </div>
                           </motion.div>
                         )}
@@ -338,6 +360,25 @@ export function UserCheckout({ onBackToChat }) {
                                 />
                               </div>
                             </div>
+
+                            {/* Added Navigation Footer */}
+                            <div className="pt-4 border-t border-slate-100 flex justify-between items-center">
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab('payment')}
+                                className="text-xs text-slate-500 hover:text-slate-800 font-medium px-2 py-1"
+                              >
+                                Back to Payment
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab('review')}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-xl transition-all"
+                              >
+                                <span>Continue to Review</span>
+                                <ArrowRight size={14} />
+                              </button>
+                            </div>
                           </motion.div>
                         )}
 
@@ -373,23 +414,32 @@ export function UserCheckout({ onBackToChat }) {
                               </div>
                             </div>
 
-                            <button
-                              type="submit"
-                              disabled={isProcessing}
-                              className="w-full flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-medium rounded-xl shadow-sm transition-all active:scale-95"
-                            >
-                              {isProcessing ? (
-                                <>
-                                  <Loader2 size={16} className="animate-spin" />
-                                  <span>Authorizing STK Push...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Check size={16} />
-                                  <span>Confirm & Pay KES {cartSummary.total.toLocaleString()}</span>
-                                </>
-                              )}
-                            </button>
+                            <div className="flex items-center gap-3 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => setActiveTab('delivery')}
+                                className="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-xl transition-all"
+                              >
+                                Back
+                              </button>
+                              <button
+                                type="submit"
+                                disabled={isProcessing}
+                                className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-medium rounded-xl shadow-sm transition-all active:scale-95"
+                              >
+                                {isProcessing ? (
+                                  <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    <span>Authorizing STK Push...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Check size={16} />
+                                    <span>Confirm & Pay KES {cartSummary.total.toLocaleString()}</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </motion.div>
                         )}
 

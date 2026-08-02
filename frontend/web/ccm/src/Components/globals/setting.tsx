@@ -7,28 +7,44 @@ import {
   Globe, 
   CheckCircle2, 
   Eye, 
-  Sparkles, 
   X, 
   ChevronDown, 
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  ArrowLeft,
-  Check,
-  Sliders,
-  Smartphone,
-  Terminal,
-  Settings
+  Loader2, 
+  ChevronLeft, 
+  ChevronRight, 
+  ArrowLeft, 
+  Check, 
+  Terminal, 
+  Settings 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function UserSettings({ onBackToChat }) {
-  const [activeTab, setActiveTab] = useState('notifications');
-  const [isSaving, setIsSaving] = useState(false);
-  const [showNotification, setShowNotification] = useState(false);
-  const [isNavMinimized, setIsNavMinimized] = useState(true);
+interface UserSettingsProps {
+  onBackToChat: () => void;
+}
 
-  const [settings, setSettings] = useState({
+interface SettingsState {
+  pushNotifications: boolean;
+  whatsappAlerts: boolean;
+  smsTracking: boolean;
+  autoScrollChat: boolean;
+  enterToSend: boolean;
+  highContrastChat: boolean;
+  language: string;
+}
+
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
+export function UserSettings({ onBackToChat }: UserSettingsProps) {
+  const [activeTab, setActiveTab] = useState<string>('notifications');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [showNotification, setShowNotification] = useState<boolean>(false);
+  const [isNavMinimized, setIsNavMinimized] = useState<boolean>(true);
+
+  const [settings, setSettings] = useState<SettingsState>({
     pushNotifications: true,
     whatsappAlerts: true,
     smsTracking: false,
@@ -38,15 +54,15 @@ export function UserSettings({ onBackToChat }) {
     language: 'en',
   });
 
-  const handleToggle = (key) => {
+  const handleToggle = (key: keyof SettingsState) => {
     setSettings(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleSelectChange = (key, value) => {
+  const handleSelectChange = (key: keyof SettingsState, value: string) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveSettings = (e) => {
+  const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     
@@ -64,7 +80,7 @@ export function UserSettings({ onBackToChat }) {
   };
 
   const tabs = [
-    { id: 'notifications', label: 'Alerts & notifications', icon: Bell },
+    { id: 'notifications', label: 'Alerts & Notifications', icon: Bell },
     { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
     { id: 'privacy', label: 'Data & Privacy', icon: Shield }
   ];
@@ -73,48 +89,46 @@ export function UserSettings({ onBackToChat }) {
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 animate-in fade-in duration-200">
       <div className="w-full h-full md:max-w-full md:h-[100vh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative rounded-none shadow-2xl overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR */}
+        {/* LEFT NAV SIDEBAR (Hidden on Mobile, Visible on Tablet/Desktop) */}
         <div 
-          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-            isNavMinimized ? 'md:w-15' : 'md:w-64'
-          } w-full`}
+          className={`hidden md:flex bg-[#191a1a] text-slate-300 flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+            isNavMinimized ? 'md:w-16' : 'md:w-64'
+          }`}
         >
           <div>
-            {/* Brand / Title Header with Toggle Button */}
+            {/* Header with Toggle */}
             <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800/80">
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full  shrink-0">
+                <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg shrink-0">
                   <Settings size={18} className="text-indigo-400" />
                 </div>
                 {!isNavMinimized && (
                   <span className="font-semibold text-white tracking-wide text-sm whitespace-nowrap">
-                    SETTINGS 
+                    Settings
                   </span>
                 )}
               </div>
               
-              {/* Sidebar Collapse Toggle Button */}
               <button
                 type="button"
                 onClick={() => setIsNavMinimized(!isNavMinimized)}
-                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors  "
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
               >
-                {isNavMinimized ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
-              
             </div>
 
             {/* Navigation Menu */}
-            <div className="p-3 space-y-6 hidden md:inline-block w-full">
+            <div className="p-3 space-y-6 w-full">
               <div>
                 {!isNavMinimized && (
-                  <p className="px-3 text-[11px] font-light  text-slate-400 lowercase tracking-wider mb-2">
-                    Account Settings and  Preferences
+                  <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                    Preferences
                   </p>
                 )}
                 
-                <div className="space-y-4">
+                <div className="space-y-1">
                   {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     const Icon = tab.icon;
@@ -124,11 +138,11 @@ export function UserSettings({ onBackToChat }) {
                         type="button"
                         onClick={() => setActiveTab(tab.id)}
                         title={isNavMinimized ? tab.label : undefined}
-                        className={` flex items-center ${
-                          isNavMinimized ? 'justify-center p-2  w-fit rounded-full' : 'justify-between px-3 py-2.5  rounded-xl w-full'
-                        } text-xs font-medium transition-all duration-150 relative ${
+                        className={`w-full flex items-center ${
+                          isNavMinimized ? 'justify-center py-3' : 'justify-between px-3 py-2.5'
+                        } rounded-xl text-xs font-medium transition-all duration-150 relative ${
                           isActive 
-                            ? 'bg-none  text-white bg-none   shadow-sm  lowercase ' 
+                            ? 'bg-slate-800/90 text-white shadow-sm border border-slate-700/50' 
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                         }`}
                       >
@@ -164,17 +178,23 @@ export function UserSettings({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
-            <div>
-            {isNavMinimized && (
+          <div className="h-16 px-4 sm:px-8 bg-[#191a1a] border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onBackToChat}
+                className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/60 border border-slate-700/60"
+                title="Back"
+              >
+                <ArrowLeft size={16} />
+              </button>
               <h1 className="text-lg font-semibold text-slate-50">Settings</h1>
-            )}
             </div>
 
             {/* Top Right Actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {showNotification && (
-                <span className="text-xs text-emerald-600 font-mono font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
+                <span className="text-xs text-emerald-400 font-mono font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
                   <CheckCircle2 size={14} /> Saved successfully
                 </span>
               )}
@@ -183,7 +203,7 @@ export function UserSettings({ onBackToChat }) {
                 type="button"
                 onClick={handleSaveSettings}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
               >
                 {isSaving ? (
                   <>
@@ -197,19 +217,12 @@ export function UserSettings({ onBackToChat }) {
                   </>
                 )}
               </button>
-
-              <button 
-                type="button" 
-                onClick={onBackToChat}
-                className="md:hidden p-2 text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200"
-              >
-                <X size={16} />
-              </button>
+              
             </div>
           </div>
 
-          {/* Horizontal Navigation Tabs */}
-          <div className="bg-white px-8 border-b border-slate-200/80 flex items-center gap-8 overflow-x-auto shrink-0">
+          {/* Horizontal Navigation Tabs (Mobile Only) */}
+          <div className="bg-white px-4 sm:px-8 border-b border-slate-200/80 flex items-center gap-6 overflow-x-auto shrink-0 md:hidden no-scrollbar">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -230,11 +243,11 @@ export function UserSettings({ onBackToChat }) {
           </div>
 
           {/* 2-Column Dashboard Body */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8">
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
               
               {/* LEFT COLUMN: System Overview Card */}
-              <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6">
+              <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6">
                 
                 {/* Status Header */}
                 <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
@@ -302,7 +315,7 @@ export function UserSettings({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -344,7 +357,7 @@ export function UserSettings({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -391,7 +404,7 @@ export function UserSettings({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -442,7 +455,14 @@ export function UserSettings({ onBackToChat }) {
    SUB-COMPONENTS
    ========================================================= */
 
-function SettingsToggle({ title, description, checked, onChange }) {
+interface SettingsToggleProps {
+  title: string;
+  description: string;
+  checked: boolean;
+  onChange: () => void;
+}
+
+function SettingsToggle({ title, description, checked, onChange }: SettingsToggleProps) {
   return (
     <div 
       onClick={onChange}
@@ -474,7 +494,15 @@ function SettingsToggle({ title, description, checked, onChange }) {
   );
 }
 
-function CleanSelect({ label, value, onChange, options, icon }) {
+interface CleanSelectProps {
+  label: string;
+  value: string;
+  onChange?: (val: string) => void;
+  options: SelectOption[];
+  icon?: React.ReactNode;
+}
+
+function CleanSelect({ label, value, onChange, options, icon }: CleanSelectProps) {
   return (
     <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50/60 border border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white transition-all relative w-full">
       <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">

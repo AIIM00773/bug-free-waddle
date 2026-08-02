@@ -24,7 +24,7 @@ export function UserProfile({ onBackToChat }) {
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   // NEW: Sidebar minimization state
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
+  const [isNavMinimized, setIsNavMinimized] = useState(true);
 
   const [profile, setProfile] = useState({
     first_name: '', last_name: '', middle_name: '', email: '',

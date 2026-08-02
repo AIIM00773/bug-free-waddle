@@ -88,6 +88,7 @@ export function UserCart({ onBackToChat }) {
   };
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const totalUnits = cartItems.reduce((acc, item) => acc + item.qty, 0);
   const deliveryFee = subtotal > 0 ? 100 : 0;
   const total = subtotal + deliveryFee;
 
@@ -109,17 +110,17 @@ export function UserCart({ onBackToChat }) {
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
       <div className="w-full h-full md:max-w-full md:h-screen bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative shadow-2xl overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR */}
+        {/* LEFT NAV SIDEBAR (Aligned with Checkout Shell) */}
         <div
-          className={`flex flex-col justify-between border-r border-slate-800 bg-slate-900 p-3 md:px-0 select-none transition-all duration-300 ease-in-out w-full md:static ${
-            isNavMinimized ? 'md:w-20' : 'md:w-64'
+          className={`flex flex-col justify-between border-r border-slate-800 bg-[#191a1a] text-slate-300 select-none transition-all duration-300 ease-in-out w-full md:static ${
+            isNavMinimized ? 'md:w-16' : 'md:w-64'
           }`}
         >
           <div>
             {/* Header with Toggle */}
-            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800">
+            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800/80">
               <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 rounded-xl shrink-0">
+                <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg shrink-0">
                   <ShoppingCart size={18} className="text-indigo-400" />
                 </div>
                 {!isNavMinimized && (
@@ -137,6 +138,12 @@ export function UserCart({ onBackToChat }) {
               >
                 {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
               </button>
+
+                  <span className="font-semibold text-white tracking-wide text-sm whitespace-nowrap md:hidden ">
+                    Soko AI
+                  </span>
+                
+                
             </div>
 
             {/* Navigation Menu */}
@@ -161,7 +168,7 @@ export function UserCart({ onBackToChat }) {
                           isNavMinimized ? 'justify-center py-3' : 'justify-between px-3 py-2.5'
                         } rounded-xl text-xs font-medium transition-all duration-150 ${
                           isActive
-                            ? 'text-white bg-slate-800 shadow-sm font-semibold'
+                            ? 'text-white bg-slate-800 shadow-sm font-semibold border border-slate-700/50'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                         }`}
                       >
@@ -181,17 +188,19 @@ export function UserCart({ onBackToChat }) {
                     );
                   })}
                 </div>
-              </div>
+              </div>          
             </div>
+
           </div>
 
+
           {/* Sidebar Footer / Back Action */}
-          <div className="p-3 border-t border-slate-800">
+          <div className="p-3 border-t border-slate-800/80 hidden md:inline  ">
             <button
               type="button"
               onClick={onBackToChat}
               title={isNavMinimized ? "Back to Chat" : undefined}
-              className={`w-full flex items-center ${
+              className={`w-fit md:w-full  flex items-center ${
                 isNavMinimized ? 'justify-center py-2.5' : 'justify-center gap-2 px-4 py-2.5'
               } rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-medium transition-all`}
             >
@@ -205,7 +214,7 @@ export function UserCart({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-6 md:px-8 bg-white flex items-center justify-between shrink-0 border-b border-slate-200">
+          <div className="h-16 px-6 md:px-8 bg-white flex items-center justify-between shrink-0 border-b border-slate-200/80">
             <div>
               <h1 className="text-base font-semibold text-slate-900">
                 {activeTab === 'active' ? 'Active Cart' : 'Saved for Later'}
@@ -222,9 +231,10 @@ export function UserCart({ onBackToChat }) {
               <button
                 type="button"
                 onClick={onBackToChat}
-                className="md:hidden p-2 text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200"
+                className="md:hidden p-2 text-slate-50 flex flex-row items-center  text-xs bg-red-500   align-center justify-center gap-1 hover:text-slate-800 rounded-lg border border-slate-200"
               >
                 <X size={16} />
+                <span> close </span> 
               </button>
             </div>
           </div>
@@ -263,7 +273,7 @@ export function UserCart({ onBackToChat }) {
                 <motion.div
                   initial={{ scale: 0.95, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-slate-200 p-8 space-y-4 shadow-sm"
+                  className="flex flex-col items-center justify-center py-24 text-center bg-white rounded-2xl border border-slate-200/80 p-8 space-y-4 shadow-sm"
                 >
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600">
                     <CheckCircle2 size={32} />
@@ -332,9 +342,14 @@ export function UserCart({ onBackToChat }) {
                                     <button
                                       type="button"
                                       onClick={() => updateQty(item.id, -1)}
-                                      className="p-1 rounded-lg text-slate-500 hover:bg-white hover:text-slate-800 transition-colors"
+                                      title={item.qty === 1 ? "Remove item" : "Decrease quantity"}
+                                      className={`p-1 rounded-lg transition-colors ${
+                                        item.qty === 1 
+                                          ? 'text-rose-500 hover:bg-rose-50' 
+                                          : 'text-slate-500 hover:bg-white hover:text-slate-800'
+                                      }`}
                                     >
-                                      <Minus size={14} />
+                                      {item.qty === 1 ? <Trash2 size={14} /> : <Minus size={14} />}
                                     </button>
                                     <span className="font-mono text-xs font-semibold px-2 text-slate-800">
                                       {item.qty}
@@ -342,6 +357,7 @@ export function UserCart({ onBackToChat }) {
                                     <button
                                       type="button"
                                       onClick={() => updateQty(item.id, 1)}
+                                      title="Increase quantity"
                                       className="p-1 rounded-lg text-slate-500 hover:bg-white hover:text-slate-800 transition-colors"
                                     >
                                       <Plus size={14} />
@@ -454,6 +470,13 @@ export function UserCart({ onBackToChat }) {
                           <p className="text-xs font-medium text-slate-500">
                             No items saved for later
                           </p>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('active')}
+                            className="mt-1 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                          >
+                            Switch to Active Cart
+                          </button>
                         </div>
                       )}
                     </AnimatePresence>
@@ -470,7 +493,7 @@ export function UserCart({ onBackToChat }) {
                           Order Summary
                         </h3>
                         <p className="text-[11px] text-slate-500">
-                          Micro-logistics & Dispatch
+                          {cartItems.length} {cartItems.length === 1 ? 'vendor item' : 'vendor items'} ({totalUnits} units)
                         </p>
                       </div>
                     </div>

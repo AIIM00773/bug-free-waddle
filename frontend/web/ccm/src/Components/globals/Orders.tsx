@@ -1,35 +1,48 @@
-
-
-
 import React, { useState } from 'react';
 import { 
   Package, 
-  Clock, 
   CheckCircle2, 
   XCircle, 
   Truck, 
   Search, 
-  Filter, 
   ChevronRight, 
   ArrowLeft, 
   X, 
   ChevronLeft, 
-  Loader2,
-  Calendar,
-  Hash,
-  MapPin,
-  DollarSign
+  Calendar, 
+  MapPin 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export function UserOrders({ onBackToChat }) {
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
+interface OrderItem {
+  name: string;
+  qty: number;
+  price: number;
+}
+
+interface Order {
+  id: string;
+  date: string;
+  status: 'In Transit' | 'Delivered' | 'Cancelled';
+  total: number;
+  vendor: string;
+  deliveryAddress: string;
+  items: OrderItem[];
+  runner: string;
+}
+
+interface UserOrdersProps {
+  onBackToChat: () => void;
+}
+
+export function UserOrders({ onBackToChat }: UserOrdersProps) {
+  const [activeTab, setActiveTab] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isNavMinimized, setIsNavMinimized] = useState<boolean>(true);
 
   // Mock Orders Data aligned with Soko AI's micro-vendor commerce flow
-  const [orders] = useState([
+  const [orders] = useState<Order[]>([
     {
       id: 'SOKO-8492',
       date: '2026-07-28 14:32',
@@ -40,7 +53,7 @@ export function UserOrders({ onBackToChat }) {
       items: [
         { name: 'Fresh Sukuma Wiki (1 Bundle)', qty: 3, price: 50 },
         { name: 'Red Tomatoes (1kg)', qty: 2, price: 180 },
-        { name: 'Grade A Eggs (Crate)', qty: 1, p: 480 },
+        { name: 'Grade A Eggs (Crate)', qty: 1, price: 480 },
         { name: 'Fresh Avocado', qty: 4, price: 50 }
       ],
       runner: 'Juma K. (Runner #4)'
@@ -99,11 +112,11 @@ export function UserOrders({ onBackToChat }) {
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 animate-in fade-in duration-200">
       <div className="w-full h-full md:max-w-full md:h-[100vh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative rounded-none shadow-2xl overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR */}
+        {/* LEFT NAV SIDEBAR (Hidden on Mobile, Visible on Tablet/Desktop) */}
         <div 
-          className={`bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-            isNavMinimized ? 'md:w-15' : 'md:w-64'
-          } w-full`}
+          className={`hidden md:flex bg-[#191a1a] text-slate-300 flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
+            isNavMinimized ? 'md:w-16' : 'md:w-64'
+          }`}
         >
           <div>
             {/* Header with Toggle */}
@@ -122,7 +135,7 @@ export function UserOrders({ onBackToChat }) {
               <button
                 type="button"
                 onClick={() => setIsNavMinimized(!isNavMinimized)}
-                className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
               >
                 {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
@@ -130,7 +143,7 @@ export function UserOrders({ onBackToChat }) {
             </div>
 
             {/* Navigation Menu */}
-            <div className="p-3 space-y-6 hidden md:inline-block w-full">
+            <div className="p-3 space-y-6 w-full">
               <div>
                 {!isNavMinimized && (
                   <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
@@ -192,36 +205,36 @@ export function UserOrders({ onBackToChat }) {
         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8 bg-[#191a1a]  border-b border-slate-200/80 flex items-center justify-between shrink-0">
-            <div>
-              <h1 className="text-lg font-semibold text-slate-50 ">Orders</h1>
+          <div className="h-16 px-4 sm:px-8 bg-[#191a1a] border-b border-slate-800 flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onBackToChat}
+                className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/60 border border-slate-700/60"
+                title="Back"
+              >
+                <ArrowLeft size={16} />
+              </button>
+              <h1 className="text-lg font-semibold text-slate-50 hidden md:inline ">Orders</h1>
             </div>
 
-            {/* Search Box */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg w-48 md:w-64 focus-within:border-slate-400 transition-all">
+            {/* Search Box & Mobile Close */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg w-40 sm:w-48 md:w-64 focus-within:border-slate-400 transition-all">
                 <Search size={14} className="text-slate-400 shrink-0" />
                 <input 
                   type="text" 
-                  placeholder="Search orders or vendors..." 
+                  placeholder="Search orders..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent text-xs text-slate-800 outline-none placeholder-slate-400"
                 />
               </div>
-
-              <button 
-                type="button" 
-                onClick={onBackToChat}
-                className="md:hidden p-2 text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200"
-              >
-                <X size={16} />
-              </button>
             </div>
           </div>
 
-          {/* Horizontal Navigation Tabs (Mobile & Overflow) */}
-          <div className="bg-white px-8 border-b border-slate-200/80 flex items-center gap-6 overflow-x-auto shrink-0 md:hidden">
+          {/* Horizontal Navigation Tabs (Mobile Only) */}
+          <div className="bg-white px-4 sm:px-8 border-b border-slate-200/80 flex items-center gap-6 overflow-x-auto shrink-0 md:hidden no-scrollbar">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -236,7 +249,7 @@ export function UserOrders({ onBackToChat }) {
                   }`}
                 >
                   <span>{tab.label}</span>
-                  <span className="px-1.5 py-0.2 text-[10px] bg-slate-100 text-slate-700 font-mono rounded">
+                  <span className="px-1.5 py-0.5 text-[10px] bg-slate-100 text-slate-700 font-mono rounded">
                     {tab.count}
                   </span>
                 </button>
@@ -245,7 +258,7 @@ export function UserOrders({ onBackToChat }) {
           </div>
 
           {/* Dashboard Body */}
-          <div className="flex-1 overflow-y-auto p-6 md:p-8">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
             <div className="max-w-5xl mx-auto space-y-4">
               
               {filteredOrders.length > 0 ? (
@@ -261,26 +274,26 @@ export function UserOrders({ onBackToChat }) {
                       <div 
                         key={order.id}
                         onClick={() => setSelectedOrder(isSelected ? null : order)}
-                        className={`bg-white rounded-2xl border p-5 shadow-sm transition-all cursor-pointer ${
+                        className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-sm transition-all cursor-pointer ${
                           isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-200/80 hover:border-slate-300'
                         }`}
                       >
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           
                           {/* Order Metadata */}
-                          <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-mono font-semibold shrink-0">
+                          <div className="flex items-start gap-3 sm:gap-4">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-mono font-semibold shrink-0">
                               <Package size={20} className="text-slate-500" />
                             </div>
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-mono font-semibold text-sm text-slate-900">{order.id}</span>
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusColor}`}>
                                   {order.status}
                                 </span>
                               </div>
                               <p className="text-xs font-medium text-slate-700">{order.vendor}</p>
-                              <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-1">
+                              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-slate-400 pt-1">
                                 <span className="flex items-center gap-1"><Calendar size={12} /> {order.date}</span>
                                 <span className="flex items-center gap-1"><MapPin size={12} /> {order.deliveryAddress}</span>
                               </div>
@@ -293,7 +306,10 @@ export function UserOrders({ onBackToChat }) {
                               <p className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Total Amount</p>
                               <p className="font-mono font-semibold text-sm text-slate-900 mt-0.5">KES {order.total.toLocaleString()}</p>
                             </div>
-                            <button className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100 transition-colors">
+                            <button 
+                              type="button"
+                              className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-600 hover:bg-slate-100 transition-colors"
+                            >
                               <ChevronRight size={16} className={`transition-transform duration-200 ${isSelected ? 'rotate-90' : ''}`} />
                             </button>
                           </div>
@@ -304,17 +320,22 @@ export function UserOrders({ onBackToChat }) {
                         <AnimatePresence>
                           {isSelected && (
                             <motion.div 
+                              key="order-items"
                               initial={{ opacity: 0, height: 0 }}
                               animate={{ opacity: 1, height: 'auto' }}
                               exit={{ opacity: 0, height: 0 }}
-                              className="mt-4 pt-4 border-t border-slate-100 space-y-3"
+                              className="mt-4 pt-4 border-t border-slate-100 space-y-3 overflow-hidden"
                             >
                               <h4 className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Items in this Order</h4>
                               <div className="bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-200/60">
                                 {order.items.map((item, idx) => (
                                   <div key={idx} className="flex justify-between items-center text-xs">
-                                    <span className="text-slate-700 font-medium">{item.name} <span className="text-slate-400 font-mono">x{item.qty}</span></span>
-                                    <span className="font-mono text-slate-900">KES {(item.price * item.qty).toLocaleString()}</span>
+                                    <span className="text-slate-700 font-medium">
+                                      {item.name} <span className="text-slate-400 font-mono">x{item.qty}</span>
+                                    </span>
+                                    <span className="font-mono text-slate-900">
+                                      KES {(item.price * item.qty).toLocaleString()}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
