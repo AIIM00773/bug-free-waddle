@@ -275,10 +275,8 @@ export function AuthOverlay() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
           <div className="absolute bottom-12 left-12 right-12 z-10 max-w-sm">
             <div className="space-y-4">
-              <span className="inline-block px-3 py-1 rounded-full bg-white text-gray-900 text-xs font-semibold tracking-wide uppercase">
-                Feature Update
-              </span>
-              <h2 className="text-xl font-semibold leading-relaxed bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+
+              <h2 className="text-xs font-semibold leading-relaxed bg-black/40 backdrop-blur-md p-4 rounded-2xl border border-white/10">
                 Everything is going more digital! Why not your online shopping experience?
               </h2>
               <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 text-gray-900 w-fit cursor-pointer hover:bg-gray-100 transition-colors shadow-lg">
