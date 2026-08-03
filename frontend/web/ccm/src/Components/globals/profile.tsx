@@ -1,29 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   User, Package, ShoppingBag, Compass, Hash, 
-  Mail, Phone, UserCircle, Plus, Minus, ChevronDown, 
-  X, Check, Loader2, Sparkles, MapPin, Calendar, 
-  ShieldCheck, ArrowLeft, Edit3, Trash2, ExternalLink,
-  ChevronLeft, ChevronRight,
-  Clipboard
+  Mail, Phone, Plus, Minus, X, Check, Loader2, 
+  MapPin, Calendar, ArrowLeft, ChevronLeft, 
+  ChevronRight, Clipboard, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from "../../Providers/CartContext"; 
 import { useProfile } from '../../Providers/profileContext';
 import { Counties } from "../../../db/counties";
 
-
-
 export function UserProfile({ onBackToChat }) {
   const { mpesaPhone, setMpesaPhone, cart, cartSummary, updateCartQty } = useCart();
-  const { isAuthenticated, user, isLoading, editIdentity, editLogistics } = useProfile();
+  const { isAuthenticated, user, isLoading, editIdentity, editLogistics, logout } = useProfile();
 
   const [activeTab, setActiveTab] = useState('identity');
   const [isSaving, setIsSaving] = useState(false);
   const [isModified, setIsModified] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-
-  // NEW: Sidebar minimization state
   const [isNavMinimized, setIsNavMinimized] = useState(true);
 
   const [profile, setProfile] = useState({
@@ -99,11 +93,30 @@ export function UserProfile({ onBackToChat }) {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !isAuthenticated) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#0B131D]/80 backdrop-blur-md flex flex-col items-center justify-center text-slate-400 gap-3">
-        <Loader2 className="animate-spin text-indigo-500" size={32} />
-        <span className="text-sm font-medium text-slate-200 tracking-wide">Loading Profile...</span>
+      <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center text-slate-400 gap-4">
+        {isLoading ? (
+          <>
+            <Loader2 className="animate-spin text-indigo-500" size={36} />
+            <span className="text-sm font-medium text-slate-200 tracking-wide">Loading Profile...</span>
+          </>
+        ) : (
+          <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl flex flex-col items-center gap-4 max-w-sm text-center shadow-xl">
+            <User size={36} className="text-slate-500" />
+            <div>
+              <h3 className="text-base font-semibold text-slate-100">Not Authenticated</h3>
+              <p className="text-xs text-slate-400 mt-1">Please sign in to view and manage your profile settings.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onBackToChat}
+              className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-xl transition-colors"
+            >
+              Go Back
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -112,97 +125,100 @@ export function UserProfile({ onBackToChat }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 animate-in fade-in duration-200">
-      <div className="w-full h-full md:max-w-full md:h-[100vh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative rounded-none shadow-2xl overflow-hidden">
+      <div className="w-full h-full md:max-w-full md:h-[100vh] bg-slate-50 text-slate-800 font-sans flex flex-col md:flex-row relative overflow-hidden">
         
-        {/* LEFT NAV SIDEBAR (Dark Navy Theme with Toggle Width) */}
-        <div  className={` bg-[#191a1a]  text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${ isNavMinimized ? 'md:w-15' : 'md:w-64'} w-full`}>
+        {/* LEFT NAV SIDEBAR */}
+        <div className={`bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 border-r border-slate-800/80 transition-all duration-300 ease-in-out ${isNavMinimized ? 'md:w-16' : 'md:w-60'} w-full`}>
           <div>
-            {/* Brand / Title Header with Toggle Button */}
-            <div className={`h-16 ${isNavMinimized ? 'pr-5':'px-4'} flex items-center justify-between border-b border-slate-800/80`}>
-              <div className="flex items-center gap-2.5 overflow-hidden">
-               {!isNavMinimized && (
-                 <div className="p-1.5 bg-none  border border-indigo-500/20 rounded-full  shrink-0">
-                  <User size={26} className="text-indigo-400" />
-                </div>
-               )}
-
+            {/* Header */}
+            <div className={`h-16 ${isNavMinimized ? 'px-3 justify-center' : 'px-5 justify-between'} flex items-center border-b border-slate-800/80`}>
+              <div className="flex items-center gap-3 overflow-hidden">
                 {!isNavMinimized && (
-                  <span className="font-semibold text-white tracking-wide text-sm whitespace-nowrap">
-                    PROFILE
+                  <div className="p-1.5 border border-indigo-500/20 rounded-full shrink-0">
+                    <User size={22} className="text-indigo-400" />
+                  </div>
+                )}
+                {!isNavMinimized && (
+                  <span className="font-semibold text-white tracking-wider text-xs uppercase">
+                    Profile
                   </span>
                 )}
               </div>
               
-              {/* Sidebar Collapse Toggle Button (Desktop only) */}
               <button
                 type="button"
                 onClick={() => setIsNavMinimized(!isNavMinimized)}
-                className={`hidden md:flex p-2.5 rounded-full text-slate-50 hover:text-white ${isNavMinimized ? 'bg-gray-950/20' : 'bg-gray-800'} cursor-pointer   hover:bg-slate-800 transition-colors`}
+                className="hidden md:flex p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
               >
-                {isNavMinimized ? <ChevronRight size={20} /> : <ChevronLeft size={16} />}
+                {isNavMinimized ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               </button>
-              
-              
             </div>
-            
 
-            {/* Navigation Menu */}
-            <div className="p-3 space-y-6 hidden md:inline-block w-full">
-              <div> {!isNavMinimized && (
-                  <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    My Info
-                  </p>
-                )}
-                <div className="space-y-3">
-                  {tabs.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => handleTabChange(tab.id)}
-                        title={isNavMinimized ? tab.label : undefined}
-                        className={` ${
-                          isNavMinimized ? 'justify-center py-2 px-2  w-fit flex items-center rounded-full ' : 'justify-between px-3 py-2.5 w-full flex items-center rounded-xl  '
-                        } text-xs font-medium transition-all duration-150 relative cursor-pointer  ${
-                          isActive 
-                            ? 'bg-none  text-white bg-slate-800/40  shadow-sm  uppercase ' 
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon size={18} className={isActive ? 'text-indigo-400 shrink-0' : 'text-slate-400 shrink-0'} />
-                          {!isNavMinimized && <span className="whitespace-nowrap">{tab.label}</span>}
-                        </div>
-                        
-                        {!!tab.badge && tab.badge > 0 && (
-                          <span className={`${
-                            isNavMinimized 
-                              ? 'absolute top-1 right-1 px-1.5 py-0.2 text-[9px]' 
-                              : 'px-2 py-0.5 text-[10px]'
-                          } bg-indigo-500/20 text-indigo-300 font-mono font-semibold rounded-full`}>
-                            {tab.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            {/* Nav Items */}
+            <div className="p-3 space-y-1 hidden md:block w-full">
+              {!isNavMinimized && (
+                <p className="px-3 py-2 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Navigation
+                </p>
+              )}
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => handleTabChange(tab.id)}
+                    title={isNavMinimized ? tab.label : undefined}
+                    className={`w-full flex items-center ${
+                      isNavMinimized ? 'justify-center py-2.5 px-0' : 'justify-between px-3 py-2.5'
+                    } text-xs font-medium rounded-xl transition-all relative ${
+                      isActive 
+                        ? 'text-white bg-slate-800/80 shadow-sm' 
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon size={18} className={isActive ? 'text-indigo-400 shrink-0' : 'text-slate-400 shrink-0'} />
+                      {!isNavMinimized && <span>{tab.label}</span>}
+                    </div>
+                    
+                    {!!tab.badge && tab.badge > 0 && (
+                      <span className={`${
+                        isNavMinimized 
+                          ? 'absolute top-1.5 right-1.5 px-1.5 py-0.5 text-[9px]' 
+                          : 'px-2 py-0.5 text-[10px]'
+                      } bg-indigo-500/20 text-indigo-300 font-mono font-semibold rounded-full`}>
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          
 
-          {/* Sidebar Footer / Close Action */}
-          <div className="p-3 border-t border-slate-800/80">
+          {/* Sidebar Footer / Actions */}
+          <div className="p-3 border-t border-slate-800/80 space-y-2">
+            <button
+              type="button"
+              onClick={logout}
+              title={isNavMinimized ? "Log Out" : undefined}
+              className={`w-full flex items-center ${
+                isNavMinimized ? 'justify-center py-2.5' : 'justify-start gap-3 px-3 py-2.5'
+              } rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-800/60 text-xs font-medium transition-colors`}
+            >
+              <LogOut size={16} className="shrink-0" />
+              {!isNavMinimized && <span>Log Out</span>}
+            </button>
+
             <button
               type="button"
               onClick={onBackToChat}
               title={isNavMinimized ? "Back to Chat" : undefined}
               className={`w-full flex items-center ${
-                isNavMinimized ? 'justify-center py-2.5' : 'justify-center gap-2 px-4 py-2.5'
+                isNavMinimized ? 'justify-center py-2.5' : 'justify-center gap-2 px-3 py-2.5'
               } rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-medium transition-all`}
             >
               <ArrowLeft size={16} className="shrink-0" />
@@ -212,22 +228,22 @@ export function UserProfile({ onBackToChat }) {
         </div>
 
         {/* RIGHT MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
           
           {/* Top Header Bar */}
-          <div className="h-16 px-8  bg-[#191a1a] border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="h-16 px-6 md:px-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0">
             <div>
-              <h1 className="text-lg font-semibold text-slate-50">Profile</h1>
+              <h1 className="text-base font-semibold text-slate-100">Account Overview</h1>
             </div>
 
-            {/* Top Right Actions */}
+            {/* Top Actions */}
             <div className="flex items-center gap-3">
               {['identity', 'logistics'].includes(activeTab) && isModified && (
                 <button
                   type="button"
                   onClick={handleFormSubmission}
                   disabled={isSaving}
-                  className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
                 >
                   {isSaving ? (
                     <>
@@ -245,15 +261,15 @@ export function UserProfile({ onBackToChat }) {
               <button 
                 type="button" 
                 onClick={onBackToChat}
-                className="md:hidden p-2 text-slate-500 hover:text-slate-800 rounded-lg border border-slate-200"
+                className="md:hidden p-2 text-slate-400 hover:text-white rounded-lg border border-slate-700"
               >
                 <X size={16} />
               </button>
             </div>
           </div>
 
-          {/* Horizontal Navigation Tabs */}
-          <div className="bg-white px-8 border-b border-slate-200/80 flex items-center gap-8 overflow-x-auto shrink-0">
+          {/* Horizontal Navigation Tabs (Mobile/Responsive Bar) */}
+          <div className="bg-white px-6 md:px-8 border-b border-slate-200 flex items-center gap-8 overflow-x-auto shrink-0">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
@@ -261,15 +277,15 @@ export function UserProfile({ onBackToChat }) {
                   key={tab.id}
                   type="button"
                   onClick={() => handleTabChange(tab.id)}
-                  className={`py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${
+                  className={`py-3.5 text-xs font-medium border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${
                     isActive 
-                      ? 'border-slate-900 text-slate-900 font-semibold' 
+                      ? 'border-indigo-600 text-slate-900 font-semibold' 
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   <span>{tab.label}</span>
                   {!!tab.badge && tab.badge > 0 && (
-                    <span className="px-1.5 py-0.2 text-[10px] bg-slate-100 text-slate-700 font-mono font-semibold rounded">
+                    <span className="px-1.5 py-0.5 text-[10px] bg-slate-100 text-slate-700 font-mono font-semibold rounded">
                       {tab.badge}
                     </span>
                   )}
@@ -282,13 +298,13 @@ export function UserProfile({ onBackToChat }) {
           <div className="flex-1 overflow-y-auto p-6 md:p-8">
             <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               
-              {/* LEFT COLUMN: User Summary Card */}
+              {/* LEFT COLUMN: User Summary Card (Only on Identity Tab) */}
               {activeTab === 'identity' && (
-                <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6">
+                <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
                   
-                  {/* Profile Avatar & Header */}
+                  {/* Avatar & Header */}
                   <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
-                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-700 font-bold text-xl shrink-0">
+                    <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 font-bold text-xl shrink-0">
                       {profile.first_name?.[0] || 'U'}
                     </div>
                     <div className="overflow-hidden">
@@ -304,9 +320,9 @@ export function UserProfile({ onBackToChat }) {
                     </div>
                   </div>
 
-                  {/* Section 1: About */}
+                  {/* Section 1: Contact */}
                   <div className="space-y-3 pb-6 border-b border-slate-100">
-                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">About</h4>
+                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Contact</h4>
                     <div className="space-y-2.5 text-xs">
                       <div className="flex items-center gap-3 text-slate-600">
                         <Phone size={14} className="text-slate-400 shrink-0" />
@@ -337,10 +353,10 @@ export function UserProfile({ onBackToChat }) {
                     </div>
                   </div>
 
-                  {/* Section 3: Account Details */}
+                  {/* Section 3: Identity Details */}
                   <div className="space-y-3">
-                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">User details</h4>
-                    <div className="space-y-2.5 text-xs">
+                    <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">User Details</h4>
+                    <div className="space-y-2 text-xs">
                       <div className="flex items-center justify-between py-1">
                         <span className="text-slate-500 flex items-center gap-2">
                           <Calendar size={14} className="text-slate-400" />
@@ -381,7 +397,7 @@ export function UserProfile({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -421,7 +437,7 @@ export function UserProfile({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -433,8 +449,8 @@ export function UserProfile({ onBackToChat }) {
                         <CleanInput label="Country" value={profile.country} onChange={(v) => handleFieldChange('country', v)} />
 
                         {/* County Selector */}
-                        <div className="flex items-center gap-2">
-                          <div className="w-full flex flex-col gap-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white transition-all">
+                        <div className="flex items-end gap-2">
+                          <div className="w-full flex flex-col gap-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-all">
                             <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">County</label>
                             <select 
                               value={profile.county || ''} 
@@ -464,8 +480,8 @@ export function UserProfile({ onBackToChat }) {
                         </div>
 
                         {/* Sub-County Selector */}
-                        <div className="flex items-center gap-2">
-                          <div className="w-full flex flex-col gap-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white transition-all">
+                        <div className="flex items-end gap-2">
+                          <div className="w-full flex flex-col gap-1.5 bg-slate-50/60 p-3 rounded-xl border border-slate-200 focus-within:border-indigo-400 focus-within:bg-white transition-all">
                             <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Sub-County</label>
                             <select 
                               value={profile.sub_county || ''} 
@@ -505,7 +521,7 @@ export function UserProfile({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6"
+                        className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -560,7 +576,7 @@ export function UserProfile({ onBackToChat }) {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm"
+                        className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm"
                       >
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                           <div>
@@ -595,56 +611,60 @@ function CleanInput({ label, value, onChange, type = "text", icon, disabled = fa
   return (
     <div className={`flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50/60 border transition-all w-full ${
       disabled 
-        ? 'border-slate-200/50 opacity-60 bg-slate-100/50' 
-        : 'border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white focus-within:shadow-sm'
+        ? 'border-slate-200/50 opacity-60 bg-slate-100/50 cursor-not-allowed' 
+        : 'border-slate-200 focus-within:border-indigo-400 focus-within:bg-white focus-within:shadow-sm'
     }`}>
-      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
+      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+        {label}
+      </label>
       <div className="flex items-center gap-2">
         {icon && <span className="text-slate-400">{icon}</span>}
-        <input 
-          type={type} 
-          value={value ?? ''} 
-          disabled={disabled} 
-          onChange={(e) => !disabled && onChange && onChange(e.target.value)} 
-          className="w-full bg-transparent text-xs text-slate-900 outline-none disabled:cursor-not-allowed placeholder-slate-400 font-medium" 
+        <input
+          type={type}
+          disabled={disabled}
+          value={value || ''}
+          onChange={(e) => onChange?.(e.target.value)}
+          className="bg-transparent text-xs text-slate-900 outline-none w-full placeholder:text-slate-400 disabled:cursor-not-allowed"
+          placeholder={`Enter ${label.toLowerCase()}...`}
         />
       </div>
     </div>
   );
 }
 
-function CleanSelect({ label, value, onChange, options, disabled = false }) {
+function CleanSelect({ label, value, onChange, options = [], disabled = false }) {
   return (
-    <div className={`flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50/60 border transition-all relative w-full ${
+    <div className={`flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50/60 border transition-all w-full ${
       disabled 
-        ? 'border-slate-200/50 opacity-60 bg-slate-100/50' 
-        : 'border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white focus-within:shadow-sm'
+        ? 'border-slate-200/50 opacity-60 bg-slate-100/50 cursor-not-allowed' 
+        : 'border-slate-200 focus-within:border-indigo-400 focus-within:bg-white focus-within:shadow-sm'
     }`}>
-      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
-      <div className="relative flex items-center">
-        <select 
-          disabled={disabled}
-          value={value ?? ''} 
-          onChange={(e) => onChange && onChange(e.target.value)} 
-          className="w-full bg-transparent text-xs text-slate-900 outline-none appearance-none cursor-pointer disabled:cursor-not-allowed pr-4 font-medium"
-        >
-          {!value && <option value="" className="text-slate-400">Select {label}</option>}
-          {options.map(opt => (
-            <option key={opt} value={opt} className="text-slate-800">{opt}</option>
-          ))}
-        </select>
-        <ChevronDown size={14} className="absolute right-0 text-slate-400 pointer-events-none" />
-      </div>
+      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+        {label}
+      </label>
+      <select
+        disabled={disabled}
+        value={value || ''}
+        onChange={(e) => onChange?.(e.target.value)}
+        className="bg-transparent text-xs text-slate-900 outline-none w-full cursor-pointer disabled:cursor-not-allowed"
+      >
+        <option value="" disabled className="text-slate-400">Select {label}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt} className="text-slate-800">
+            {opt}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
 
-function ChangeButton({ onClick, label = "Edit" }) {
+function ChangeButton({ label = "Clear", onClick }) {
   return (
-    <button 
-      type="button" 
-      onClick={onClick} 
-      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 shrink-0"
+    <button
+      type="button"
+      onClick={onClick}
+      className="px-3 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors shrink-0"
     >
       {label}
     </button>
@@ -653,11 +673,13 @@ function ChangeButton({ onClick, label = "Edit" }) {
 
 function EmptyState({ icon: Icon, text }) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
-      <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60">
-        {Icon && <Icon size={24} className="text-slate-400" />}
-      </div>
-      <p className="text-xs font-medium text-slate-500">{text}</p>
+    <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
+      {Icon && (
+        <div className="p-3 bg-slate-100/80 rounded-full text-slate-400">
+          <Icon size={24} />
+        </div>
+      )}
+      <p className="text-xs font-medium text-slate-500 max-w-xs">{text}</p>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../Providers/profileContext';
+import  displayuno from  '../../assets/display02.jpg'; // image 
 
 type AuthRoute = 'login' | 'signup' | 'forgot';
 
@@ -282,13 +283,13 @@ export function AuthOverlay() {
           </form>
         </div>
 
+
+
         {/* Right Side (Image and Feature Area): Visual Context and Updates */}
         <div
           className="flex-1 min-h-[400px] md:min-h-0 bg-cover bg-center bg-no-repeat relative p-8 md:p-12 text-white hidden md:block"
           style={{
-            backgroundImage:
-              "url('https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1000&auto=format&fit=crop')",
-          }}
+            backgroundImage: `url(${displayuno})`,}}
         >
           {/* Main Content Area */}
           <div className="absolute bottom-12 left-12 right-12 z-10 max-w-sm">

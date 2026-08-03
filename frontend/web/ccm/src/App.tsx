@@ -24,8 +24,6 @@ import { EmptyState } from './Components/chat/EmptyState';
 import { ChatFeed } from './Components/chat/ChatFeed';
 import { ProductDetails } from './Components/chat/ProductDetails';
 
-// Checkout Components
-import { MpesaModal } from './Components/checkout/MpesaModal';
 
 // ==========================================
 // Hook: Modal Back Button Interceptor
