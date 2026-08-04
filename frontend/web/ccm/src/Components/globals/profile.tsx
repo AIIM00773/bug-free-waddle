@@ -252,11 +252,11 @@ export function UserProfile({ onBackToChat }) {
                   onClick={() => handleTabChange(tab.id)}
                   className={`py-3.5 px-3 text-xs font-bold border-b-2 transition-all whitespace-nowrap flex items-center gap-2 shrink-0 ${
                     isActive 
-                      ? 'border-indigo-600 text-indigo-600' 
+                      ? 'border-[#3C3147]/90  text-[#3C3147]' 
                       : 'border-transparent text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <Icon size={16} className={isActive ? 'text-indigo-600' : 'text-slate-400'} />
+                  <Icon size={16} className={isActive ? 'text-[#3C3147]' : 'text-slate-400'} />
                   <span>{tab.label}</span>
                   {!!tab.badge && tab.badge > 0 && (
                     <span className="px-1.5 py-0.5 text-[10px] bg-indigo-100 text-indigo-700 font-mono font-bold rounded-full">
@@ -278,16 +278,14 @@ export function UserProfile({ onBackToChat }) {
                   
                   {/* User Profile Card */}
                   <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
-                    <div className="w-14 h-14 rounded-full  bg-[#3C3147] text-white flex items-center justify-center font-bold text-xl shadow-md shadow-indigo-100 shrink-0">
-                      {profile.first_name?.[0]?.toUpperCase() || 'U'}
-                    </div>
+               
                     <div className="overflow-hidden">
                       <h3 className="font-bold text-slate-900 text-base truncate">
                         {fullNameDisplay}
                       </h3>
                       <div className="flex items-center gap-1.5 mt-1">
                         <span className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        <span className="text-[10px] font-light text-[#3C3147] lowercase tracking-wider">
                           {isAuthenticated ? 'Verified Account' : 'Guest Account'}
                         </span>
                       </div>
