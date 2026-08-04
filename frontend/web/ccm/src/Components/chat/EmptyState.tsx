@@ -58,32 +58,11 @@ export interface CardItem {
   badgeColor?: string; // Added for cohesive badge styling
 }
 
-const DEFAULT_CARDS: CardItem[] = [
-  {
-    id: 'groceries',
-    icon: ShoppingBag,
-    title: 'Mama Mboga & Fresh',
-    badge: '15m Delivery',
-    description: 'Find fresh organic vegetables, fruits, and greens from nearby stalls.',
-    query: 'Show me fresh vegetables and fruits available near me right now',
-    // Smooth sage-green wash that complements deep plum
-    gradient: 'from-emerald-50/80 via-white to-slate-50/50',
-    accentColor: 'text-emerald-700',
-    badgeColor: 'bg-emerald-100/80 text-emerald-800 border border-emerald-200/60',
-  },
-  {
-    id: 'butchery',
-    icon: Store,
-    title: 'Butchery & Meats',
-    badge: 'Verified',
-    description: 'Get prime beef, goat meat, and fresh chicken from local butcheries.',
-    query: 'Find butcheries near me with fresh beef and chicken today',
-    // Warm amber-terracotta wash (much more natural for food/butchery than pink/rose)
-    gradient: 'from-amber-50/80 via-white to-slate-50/50',
-    accentColor: 'text-amber-700',
-    badgeColor: 'bg-amber-100/80 text-amber-900 border border-amber-200/60',
-  },
-];
+
+
+
+
+
 
 // ==========================================
 // Search Types Dropdown Component
@@ -120,7 +99,7 @@ export function SearchTypesDropdown({
   };
 
   return (
-    <div ref={dropdownRef} className="relative inline-block text-left font-sans">
+    <div ref={dropdownRef} className="relative inline-block text-left font-sans bg-gray-450 ">
       {/* Trigger Button */}
       <button
         type="button"
@@ -173,16 +152,20 @@ export function SearchTypesDropdown({
       )}
     </div>
   );
-}
+};
+
+
+
+
+
+
 
 // ==========================================
 // Empty State Component
 // ==========================================
 
-export function EmptyState({
-  onSendSuggested,
-  onSendMessage,
-}: EmptyStateProps) {
+export function EmptyState({ onSendSuggested, onSendMessage,}: EmptyStateProps) {
+  
   const {
     inputText,
     setInputText,
@@ -191,8 +174,40 @@ export function EmptyState({
     searchTypes = SEARCH_TYPES,
     activeSearchType = 'Direct Search',
     setActiveSearchType,
-    defaultCards = DEFAULT_CARDS,
   } = useSearch();
+  
+
+
+  const DEFAULT_CARDS: CardItem[] = [
+  {
+    id: 'groceries',
+    icon: ShoppingBag,
+    title: 'Mama Mboga & Fresh',
+    badge: '15m Delivery',
+    description: 'Find fresh organic vegetables, fruits, and greens from nearby stalls.',
+    query: 'Show me fresh vegetables and fruits available near me right now',
+    // Smooth sage-green wash that complements deep plum
+    gradient: 'from-orange-600/90 via-orange-400  to-orange-950/50',
+    accentColor: 'text-emerald-700',
+    badgeColor: 'bg-emerald-100/80 text-emerald-800 border border-emerald-200/60',
+  },
+  
+  {
+    id: 'butchery',
+    icon: Store,
+    title: 'Butchery & Meats',
+    badge: 'Verified',
+    description: 'Get prime beef, goat meat, and fresh chicken from local butcheries.',
+    query: 'Find butcheries near me with fresh beef and chicken today',
+    // Warm amber-terracotta wash (much more natural for food/butchery than pink/rose)
+    gradient: 'from-green-950/80 via-green-400 to-green-550/50',
+    accentColor: 'text-amber-700',
+    badgeColor: 'bg-amber-100/80 text-amber-900 border border-amber-200/60',
+  },
+  
+];
+
+
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -204,6 +219,7 @@ export function EmptyState({
       textarea.style.height = `${Math.min(textarea.scrollHeight, 160)}px`;
     }
   }, [inputText]);
+  
 
   // Send handler with fallback to context action
   const dispatchSendMessage = (text: string) => {
@@ -214,6 +230,8 @@ export function EmptyState({
     }
   };
 
+  
+
   const dispatchSendSuggested = (query: string) => {
     if (onSendSuggested) {
       onSendSuggested(query);
@@ -221,6 +239,7 @@ export function EmptyState({
       providerSendMessage(query);
     }
   };
+  
 
   const handleSubmit = () => {
     if (inputText.trim()) {
@@ -242,11 +261,12 @@ export function EmptyState({
       {/* Header Area */}
       <div className="mb-8 space-y-2 text-left">
       
-        <h1 className="font-serif text-3xl font-normal tracking-tight text-slate-900 sm:text-4xl">
-          What are you looking for today?
+        <h1 className="font-sanserif text-3xl font-normal tracking-tight text-slate-900 sm:text-4xl">
+          Where should we start ? 
         </h1>
-        <p className="text-sm text-slate-500">
-          Discover authentic products from merchants and shops right in your neighborhood.
+        <p className="text-sm text-slate-500 font-sanserif  ">
+          Discover authentic products from merchants and shops right in your neighborhood and country-wide , 
+          Shop , Badget and  Find any product inteligently ..
         </p>
       </div>
 
@@ -317,11 +337,12 @@ export function EmptyState({
         </div>
       </div>
 
+
       {/* Suggestion Cards Grid */}
  {/* Suggestion Cards Grid */}
-{defaultCards && defaultCards.length > 0 && (
+{DEFAULT_CARDS && DEFAULT_CARDS.length > 0 && (
   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-    {defaultCards.map((card) => {
+    {DEFAULT_CARDS.map((card) => {
       const Icon = card.icon || Store;
       return (
         <button
@@ -362,6 +383,8 @@ export function EmptyState({
     })}
   </div>
 )}
+
+
 
     </div>
   );

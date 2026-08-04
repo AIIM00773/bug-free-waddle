@@ -160,7 +160,7 @@ export default function App() {
       <AuthOverlay />
 
       {/* Outer Shell: Switched from dark #0d0f12 to Soko AI clean editorial slate-50 */}
-      <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-800 antialiased selection:bg-[#3C3147] selection:text-white">
+      <div className="flex h-screen overflow-hidden bg-gray-450 font-sans text-slate-800 antialiased selection:bg-gray-450  selection:text-white">
         {notification && <HomeNotificationToast notification={notification} />}
 
         {!isNavigationHidden &&  (proceedWithoutAuth || isAuthenticated) &&  (
@@ -182,7 +182,7 @@ export default function App() {
         )}
 
         {/* Main Content Area */}
-        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-white/80">
+        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-gray-450/50 ">
           {!isNavigationHidden && (
             <Header
               activeTab={ShoppingMode}

@@ -1,39 +1,42 @@
-
-
 import React, { useState } from 'react';
-import { ChevronRight, X, ExternalLink, Globe } from 'lucide-react';
+import { ChevronRight, X, ExternalLink, Store, MapPin, ShieldCheck } from 'lucide-react';
 
-// Example source item interface
-interface SourceItem {
+// Interface for Merchant / Source items
+export interface SourceItem {
   id: string;
   title: string;
-  url: string;
-  domain: string;
+  url?: string;
+  domain?: string;
+  location?: string;
   snippet?: string;
+  isVerified?: boolean;
 }
 
-// Sample fallback sources if not passed from props
+// Sample fallback merchants/sources aligned with the neighborhood Soko AI context
 const SAMPLE_SOURCES: SourceItem[] = [
   {
     id: '1',
-    title: 'Jumia Kenya - Electronics & Local Deals',
-    url: 'https://www.jumia.co.ke',
-    domain: 'jumia.co.ke',
-    snippet: 'Best online prices for smartphones, home appliances & groceries.',
+    title: 'Mama Jane Fresh Greens & Veggies',
+    domain: 'Kilimani Market Stall #14',
+    location: '0.4 km away',
+    snippet: 'Fresh farm spinach, sukuma wiki, and organic tomatoes delivered daily.',
+    isVerified: true,
   },
   {
     id: '2',
-    title: 'Kilimall Kenya - Online Shopping Marketplace',
-    url: 'https://www.kilimall.co.ke',
-    domain: 'kilimall.co.ke',
-    snippet: 'Find top quality products with fast local delivery options.',
+    title: 'City Choice Butchery & Meat Hub',
+    domain: 'Ngong Road Branch',
+    location: '1.2 km away',
+    snippet: 'Prime beef cuts, local goat meat, and fresh poultry. Cold-chain guaranteed.',
+    isVerified: true,
   },
   {
     id: '3',
-    title: 'Jiji Kenya - Free Classifieds Marketplace',
-    url: 'https://jiji.co.ke',
-    domain: 'jiji.co.ke',
-    snippet: 'Buy and sell second-hand or new items directly from verified sellers.',
+    title: 'QuickMart Express Neighborhood',
+    domain: 'Valley Arcade',
+    location: '0.8 km away',
+    snippet: 'Pantry essentials, dairy items, and fresh baked goods ready for fast dispatch.',
+    isVerified: true,
   },
 ];
 
@@ -51,13 +54,18 @@ export function SourcesPanel({
   if (!openSources) return null;
 
   return (
-    <div className="hidden lg:block ml-2 border-l border-gray-400/20 p-4 rounded-xl">
-      <div className="sticky top-6 w-full max-w-[280px] rounded-xl border border-[#2d2d2d] bg-[#202020] p-4 transition-all hover:border-[#3d3d3d]">
+    <div className="hidden lg:block border-l border-slate-200/80 pl-6 pt-2">
+      <div className="sticky top-6 w-full max-w-[320px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-300">Sources</span>
-            <span className="rounded-full bg-[#2a2a2a] px-2 py-0.5 text-[10px] font-semibold text-teal-400">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3C3147]/10 text-[#3C3147]">
+              <Store size={13} />
+            </div>
+            <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Verified Merchants
+            </span>
+            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-mono font-bold text-slate-700">
               {sources.length}
             </span>
           </div>
@@ -68,7 +76,7 @@ export function SourcesPanel({
               type="button"
               onClick={() => setExpandSources((prev) => !prev)}
               aria-label="Expand sources"
-              className="flex items-center text-xs font-semibold text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2a2a2a]"
+              className="flex items-center rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3C3147]/20"
             >
               <ChevronRight
                 size={14}
@@ -82,7 +90,7 @@ export function SourcesPanel({
               type="button"
               onClick={() => setOpenSources(false)}
               aria-label="Close sources"
-              className="flex items-center text-xs font-semibold text-gray-400 hover:text-white transition-colors p-1 rounded-md hover:bg-[#2a2a2a]"
+              className="flex items-center rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3C3147]/20"
             >
               <X size={14} />
             </button>
@@ -91,39 +99,64 @@ export function SourcesPanel({
 
         {/* Collapsible Source Links Listing */}
         {expandSources && (
-          <div className="custom-scrollbar mt-3 max-h-80 space-y-2 overflow-y-auto pt-2 border-t border-[#2a2a2a]">
-            {sources.map((source, index) => (
-              <a
-                key={source.id || index}
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col gap-1 rounded-lg border border-transparent bg-[#181818] p-2.5 transition-all hover:border-[#333333] hover:bg-[#252525]"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Globe size={12} className="shrink-0 text-teal-400" />
-                    <span className="truncate text-[10px] font-medium text-gray-400">
-                      {source.domain}
-                    </span>
+          <div className="mt-3 max-h-[420px] space-y-2.5 overflow-y-auto pr-1 text-left custom-scrollbar">
+            {sources.map((source, index) => {
+              const Wrapper = source.url ? 'a' : 'div';
+              const wrapperProps = source.url
+                ? {
+                    href: source.url,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                  }
+                : {};
+
+              return (
+                <Wrapper
+                  key={source.id || index}
+                  {...wrapperProps}
+                  className="group flex flex-col gap-1.5 rounded-xl border border-slate-100 bg-slate-50/70 p-3 transition-all hover:border-[#3C3147]/30 hover:bg-white hover:shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <Store size={12} className="shrink-0 text-slate-400 group-hover:text-[#3C3147]" />
+                      <span className="truncate text-[10px] font-semibold text-slate-500">
+                        {source.domain || 'Verified Local Vendor'}
+                      </span>
+                    </div>
+
+                    {source.isVerified !== false && (
+                      <div className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded-full border border-emerald-200/60 shrink-0">
+                        <ShieldCheck size={10} />
+                        <span>Verified</span>
+                      </div>
+                    )}
                   </div>
-                  <ExternalLink
-                    size={10}
-                    className="shrink-0 text-gray-500 opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-gray-300"
-                  />
-                </div>
 
-                <h5 className="line-clamp-2 text-xs font-semibold leading-snug text-gray-200 transition-colors group-hover:text-teal-400">
-                  {source.title}
-                </h5>
+                  <h5 className="line-clamp-1 text-xs font-bold text-slate-800 transition-colors group-hover:text-[#3C3147] flex items-center justify-between">
+                    <span>{source.title}</span>
+                    {source.url && (
+                      <ExternalLink
+                        size={11}
+                        className="shrink-0 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100 group-hover:text-slate-700 ml-1"
+                      />
+                    )}
+                  </h5>
 
-                {source.snippet && (
-                  <p className="line-clamp-2 text-[11px] leading-normal text-gray-400">
-                    {source.snippet}
-                  </p>
-                )}
-              </a>
-            ))}
+                  {source.snippet && (
+                    <p className="line-clamp-2 text-[11px] leading-relaxed text-slate-500 font-normal">
+                      {source.snippet}
+                    </p>
+                  )}
+
+                  {source.location && (
+                    <div className="flex items-center gap-1 pt-1 text-[10px] font-medium text-slate-400">
+                      <MapPin size={10} className="shrink-0 text-slate-400" />
+                      <span>{source.location}</span>
+                    </div>
+                  )}
+                </Wrapper>
+              );
+            })}
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ import {
   Check,
   Paperclip,
   ShieldCheck,
+  User,
 } from 'lucide-react';
 
 import { SUGGESTIONS } from '../../Constants/fakedb';
@@ -38,7 +39,7 @@ export interface Product {
   distance?: string;
   isDirectMerchant?: boolean;
   readyInMinutes?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SuggestionItem {
@@ -118,8 +119,9 @@ export function SearchTypesDropdown({
     <div ref={dropdownRef} className="relative inline-block text-left font-sans">
       <button
         type="button"
+        aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-100 active:scale-95 shadow-2xs"
+        className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-100 active:scale-95 shadow-xs"
       >
         <Store size={14} className="text-[#3C3147]" />
         <span>{activeSearchType !== 'All Local Stores' ? activeSearchType : 'Focus Store'}</span>
@@ -177,7 +179,7 @@ function ProductCard({
   };
 
   return (
-    <div className="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-300/90 shadow-md p-3.5 transition-all duration-200 hover:border-emerald-600 hover:shadow-2xl">
+    <div className="group flex flex-col justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm transition-all duration-200 hover:border-emerald-600 hover:shadow-lg">
       {/* Image & Badges */}
       <div className="relative overflow-hidden rounded-xl bg-slate-100 border border-slate-100">
         <img
@@ -189,7 +191,7 @@ function ProductCard({
           onError={handleImageError}
           className="h-36 w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
-        <span className="absolute left-2.5 top-2.5 rounded-full border border-white/40 bg-white/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-800 backdrop-blur-md shadow-2xs">
+        <span className="absolute left-2.5 top-2.5 rounded-full border border-white/40 bg-white/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-800 backdrop-blur-md shadow-xs">
           {product.category || 'Local Goods'}
         </span>
         <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-slate-900/80 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-md">
@@ -254,7 +256,7 @@ function ProductCard({
             e.preventDefault();
             onAddToBasket?.(product);
           }}
-          className="flex items-center justify-center gap-1.5 rounded-xl bg-[#3C3147] px-2.5 py-2 text-xs font-semibold text-white transition-all hover:bg-[#2C2434] active:scale-95 shadow-2xs"
+          className="flex items-center justify-center gap-1.5 rounded-xl bg-[#3C3147] px-2.5 py-2 text-xs font-semibold text-white transition-all hover:bg-[#2C2434] active:scale-95 shadow-xs"
         >
           <ShoppingCart size={14} strokeWidth={2.2} />
           <span>Add</span>
@@ -273,9 +275,9 @@ interface SokoInputProps {
   setInputText: (text: string) => void;
   handleSend: () => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  searchTypes: any[];
-  activeSearchType: any;
-  setActiveSearchType: (type: any) => void;
+  searchTypes: SearchType[];
+  activeSearchType: SearchType;
+  setActiveSearchType: (type: SearchType) => void;
 }
 
 export function SokoAIInput({
@@ -303,7 +305,7 @@ export function SokoAIInput({
   return (
     <div className="fixed bottom-0 left-0 z-30 w-full bg-gradient-to-t from-white via-white/95 to-transparent pt-6 pb-4 md:pb-6">
       <div className="mx-auto w-full max-w-3xl px-4 md:px-0">
-        <div className="group relative rounded-2xl border border-[#3C3147]/20  bg-white/80 p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl transition-all duration-200 focus-within:border-[#3C3147]/50 focus-within:bg-white focus-within:shadow-[0_8px_30px_rgb(60,49,71,0.08)] focus-within:ring-4 focus-within:ring-[#3C3147]/5">
+        <div className="group relative rounded-2xl border border-[#3C3147]/20 bg-white/80 p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl transition-all duration-200 focus-within:border-[#3C3147]/50 focus-within:bg-white focus-within:shadow-[0_8px_30px_rgb(60,49,71,0.08)] focus-within:ring-4 focus-within:ring-[#3C3147]/5">
           {/* Input Area */}
           <textarea
             ref={textareaRef}
@@ -439,9 +441,21 @@ export function ChatFeed({
             if (isUser) {
               return (
                 <div key={message.id} className="pt-4">
-                  <h1 className="font-serif text-2xl md:text-3xl font-normal text-slate-900 tracking-tight leading-snug">
-                    {message.text}
+                  {/* Topic / Search Preview Header */}
+                  <h1 className="text-2xl md:text-3xl font-normal text-slate-900 tracking-tight leading-snug mb-4">
+                    {message.text.length > 80 ? `${message.text.slice(0, 80)}...` : message.text}
                   </h1>
+
+                  {/* User Search Query */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#3C3147]/10 text-[#3C3147]">
+                      <User size={14} />
+                    </div>
+
+                    <p className="text-sm font-normal text-slate-600 tracking-tight leading-snug">
+                      {message.text}
+                    </p>
+                  </div>
                 </div>
               );
             }
@@ -460,7 +474,7 @@ export function ChatFeed({
                   <button
                     type="button"
                     onClick={() => setOpenSources((prev) => !prev)}
-                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:text-slate-900 shadow-2xs"
+                    className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition-all hover:border-slate-300 hover:text-slate-900 shadow-xs"
                   >
                     <Store size={13} className="text-slate-500" />
                     <span>Verified Merchants</span>
@@ -473,7 +487,7 @@ export function ChatFeed({
 
                 {/* Response Text */}
                 <div className="prose max-w-none text-sm leading-relaxed text-slate-700">
-                  <p className="whitespace-pre-wrap">{message.text}</p>
+                  <p className="whitespace-pre-wrap font-sans">{message.text}</p>
                 </div>
 
                 {/* Suggested Follow-up Chips */}
@@ -498,7 +512,7 @@ export function ChatFeed({
                               e.preventDefault();
                               handleSuggestedClick(queryText);
                             }}
-                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 transition-all hover:border-[#3C3147]/30 hover:bg-white hover:text-[#3C3147] hover:shadow-2xs"
+                            className="group flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 transition-all hover:border-[#3C3147]/30 hover:bg-white hover:text-[#3C3147] hover:shadow-xs"
                           >
                             <span>{queryText}</span>
                             <Plus size={14} className="text-slate-400 transition-transform group-hover:rotate-90 group-hover:text-[#3C3147]" />
