@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // Context Providers
-import {useAuth} from "./Providers/profileContext";
+import { useAuth } from "./Providers/profileContext";
 import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
 import { useShoppingMode } from './Providers/ui/ShoppingModeManager';
@@ -23,7 +23,6 @@ import { LoadingScreen } from './Components/globals/LoadingScreen';
 import { EmptyState } from './Components/chat/EmptyState';
 import { ChatFeed } from './Components/chat/ChatFeed';
 import { ProductDetails } from './Components/chat/ProductDetails';
-
 
 // ==========================================
 // Hook: Modal Back Button Interceptor
@@ -56,7 +55,6 @@ export default function App() {
     proceedWithoutAuth,
   } = useAuth();
 
-
   // Global Search & Session Context (100% Merchant-Provided Engine)
   const {
     sessions,
@@ -79,7 +77,7 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(() => {
     return sessionStorage.getItem('soko_isProfileOpen') === 'true';
   });
-  
+
   const [settingOpen, setSettingOpen] = useState(() => {
     return sessionStorage.getItem('soko_settingOpen') === 'true';
   });
@@ -159,11 +157,11 @@ export default function App() {
     <>
       <AuthOverlay />
 
-      {/* Outer Shell: Switched from dark #0d0f12 to Soko AI clean editorial slate-50 */}
-      <div className="flex h-screen overflow-hidden bg-gray-450 font-sans text-slate-800 antialiased selection:bg-gray-450  selection:text-white">
+      {/* Main Shell: Replaced bg-gray-450 with clean Slate neutral design */}
+      <div className="flex h-screen overflow-hidden bg-slate-50 font-sans text-slate-800 antialiased selection:bg-slate-900 selection:text-white">
         {notification && <HomeNotificationToast notification={notification} />}
 
-        {!isNavigationHidden &&  (proceedWithoutAuth || isAuthenticated) &&  (
+        {!isNavigationHidden && (proceedWithoutAuth || isAuthenticated) && (
           <Sidebar
             sessions={sessions}
             activeSessionId={activeSessionId}
@@ -181,8 +179,8 @@ export default function App() {
           />
         )}
 
-        {/* Main Content Area */}
-        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-gray-450/50 ">
+        {/* Main Content Workspace */}
+        <main className="relative flex flex-1 min-w-0 flex-col overflow-hidden bg-white">
           {!isNavigationHidden && (
             <Header
               activeTab={ShoppingMode}

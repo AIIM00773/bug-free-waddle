@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import {
-  Sparkles,
   Plus,
   Box,
   History,
@@ -55,7 +54,7 @@ export function Sidebar({
   isCheckoutOpen,
   setIsCheckoutOpen,
 }: SidebarProps) {
-  const { cart, openCart, setOpenCart } = useCart();
+  const { cart } = useCart();
   const { user, isAuthenticated, setProceedWithoutAuth } = useAuth();
 
   // Consume mobile & desktop states/actions from sidebarContext
@@ -110,43 +109,39 @@ export function Sidebar({
       {onMobile.open && (
         <div
           onClick={() => onMobile.toggleOpen()}
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs transition-opacity md:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/30 backdrop-blur-xs transition-opacity md:hidden"
           aria-hidden="true"
         />
       )}
 
-      {/* Main Sidebar Shell: Clean white background with slate-200 borders */}
+      {/* Main Sidebar Shell: Clean background with light slate border */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r  select-none transition-all duration-300 ease-in-out md:static ${
-          isExpanded ? 'w-60 border-[#3C3147]/30    bg-gray-450/70  p-3 ' : 'w-16 border-[#3C3147]/50   bg-gray-450 p-3 '
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-slate-200/80 bg-white p-3 select-none transition-all duration-300 ease-in-out md:static ${
+          isExpanded ? 'w-60' : 'w-16 items-center'
         } ${
           onMobile.open
             ? 'translate-x-0'
             : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="flex flex-col space-y-4 overflow-y-auto overflow-x-hidden no-scrollbar">
+        <div className="flex w-full flex-col space-y-4 overflow-y-auto overflow-x-hidden no-scrollbar">
           {/* Top Logo & Toggle Header */}
           <div
             className={`flex items-center ${
-              isExpanded ? 'justify-between px-1.5 py-1' : 'justify-center py-1'
+              isExpanded ? 'justify-between px-1 py-1' : 'justify-center py-1'
             }`}
           >
             <div
               onClick={handleNewChat}
-              className="flex cursor-pointer items-center gap-2.5 rounded-lg transition-opacity hover:opacity-80"
+              className="flex cursor-pointer items-center gap-2.5 transition-opacity hover:opacity-80"
               title="Soko AI"
             >
-              <div
-                className={`flex h-8 w-8 items-center justify-center rounded-xl bg-[#3C3147]/10 border border-[#3C3147]/20 text-[#3C3147] ${
-                  isExpanded ? '' : 'hidden'
-                }`}
-              >
+              <div className={`flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100 border border-slate-200 text-slate-900 ${!isExpanded ?'hidden':''}`}>
                 <Store className="h-4 w-4" />
               </div>
 
               {isExpanded && (
-                <span className="font-serif text-lg font-normal tracking-tight text-slate-900">
+                <span className="text-base font-semibold tracking-tight text-slate-900">
                   Soko AI
                 </span>
               )}
@@ -170,15 +165,15 @@ export function Sidebar({
           <button
             type="button"
             onClick={handleNewChat}
-            className={`group flex items-center rounded-full border border-slate-200/80 bg-slate-50 font-medium text-xs text-slate-700 transition-all hover:border-[#3C3147]/30 hover:bg-white hover:text-[#3C3147] hover:shadow-2xs active:scale-[0.98] ${
+            className={`group flex items-center rounded-full border border-slate-200 bg-slate-50 font-medium text-xs text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-100 active:scale-[0.98] ${
               isExpanded
                 ? 'w-full justify-between px-3.5 py-2.5'
-                : 'h-9 w-9 justify-center mx-auto'
+                : 'h-9 w-9 justify-center'
             }`}
             title="New Local Search (Ctrl+K)"
           >
             <div className="flex items-center gap-2">
-              <Plus className="h-4 w-4 text-[#3C3147] transition-transform group-hover:rotate-90" />
+              <Plus className="h-4 w-4 text-slate-700 transition-transform group-hover:rotate-90" />
               {isExpanded && <span className="font-semibold">New Local Search</span>}
             </div>
             {isExpanded && (
@@ -194,11 +189,11 @@ export function Sidebar({
               type="button"
               onClick={() => setIsCartOpen?.(!isCartOpen)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
-                isCartOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+                isCartOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
               title="Shopping Cart"
             >
-              <ShoppingCart className="h-4 w-4 shrink-0 text-slate-400" />
+              <ShoppingCart className="h-4 w-4 shrink-0 text-slate-500" />
               {isExpanded && <span>Cart</span>}
             </button>
 
@@ -206,11 +201,11 @@ export function Sidebar({
               type="button"
               onClick={() => setIsOrdersOpen?.(!isOrdersOpen)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
-                isOrdersOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+                isOrdersOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
               title="My Orders"
             >
-              <Box className="h-4 w-4 shrink-0 text-slate-400" />
+              <Box className="h-4 w-4 shrink-0 text-slate-500" />
               {isExpanded && <span>Orders</span>}
             </button>
 
@@ -218,11 +213,11 @@ export function Sidebar({
               type="button"
               onClick={() => setIsCheckoutOpen?.(!isCheckoutOpen)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
-                isCheckoutOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+                isCheckoutOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
               title="Checkouts"
             >
-              <Wallet className="h-4 w-4 shrink-0 text-slate-400" />
+              <Wallet className="h-4 w-4 shrink-0 text-slate-500" />
               {isExpanded && <span>Checkouts</span>}
             </button>
 
@@ -230,11 +225,11 @@ export function Sidebar({
               type="button"
               onClick={() => setSettingOpen?.(!settingOpen)}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
-                settingOpen ? 'bg-slate-100 text-[#3C3147] font-semibold' : ''
+                settingOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
               title="Settings"
             >
-              <Settings className="h-4 w-4 shrink-0 text-slate-400" />
+              <Settings className="h-4 w-4 shrink-0 text-slate-500" />
               {isExpanded && <span>Settings</span>}
             </button>
           </nav>
@@ -246,11 +241,11 @@ export function Sidebar({
             {isExpanded ? (
               <div className="mb-2 flex items-center justify-between px-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
                 <span className="flex items-center gap-1.5">
-                  <History className="h-3 w-3 text-[#3C3147]" />
+                  <History className="h-3 w-3 text-slate-400" />
                   Recent Searches
                 </span>
                 {sessions.length > 0 && (
-                  <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600 font-mono">
+                  <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 font-mono">
                     {sessions.length}
                   </span>
                 )}
@@ -275,11 +270,13 @@ export function Sidebar({
                       handleNavigation(() => setActiveSessionId(session.id))
                     }
                     title={session.title}
-                    className={`group relative flex items-center justify-between  text-xs transition-all ${
-                      isExpanded ? 'justify-center px-0 w-full rounded-sm  px-3 py-2 ' : 'w-fit rounded-full ml-2 border border-[1px] border-gray-950/30  px-2 py-2'
+                    className={`group relative flex w-full items-center justify-between text-xs transition-all ${
+                      isExpanded
+                        ? 'rounded-xl px-3 py-2'
+                        : 'justify-center rounded-lg p-2'
                     } ${
                       isActive
-                        ? 'bg-[#3C3147] font-semibold text-white shadow-xs'
+                        ? 'bg-slate-900 font-medium text-white shadow-xs'
                         : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
@@ -294,7 +291,7 @@ export function Sidebar({
                             }}
                             className={`rounded-lg p-1 transition-opacity ${
                               isActive
-                                ? 'text-white/70 hover:bg-[#2C2434] hover:text-white'
+                                ? 'text-white/70 hover:bg-slate-800 hover:text-white'
                                 : 'text-slate-400 opacity-0 hover:bg-slate-200 hover:text-red-500 group-hover:opacity-100'
                             }`}
                             title="Delete Thread"
@@ -306,7 +303,7 @@ export function Sidebar({
                     ) : (
                       <div
                         className={`h-1.5 w-1.5 rounded-full ${
-                          isActive ? 'bg-[#3C3147]' : 'bg-slate-300'
+                          isActive ? 'bg-slate-900' : 'bg-slate-300'
                         }`}
                       />
                     )}
@@ -318,16 +315,16 @@ export function Sidebar({
         </div>
 
         {/* User Account / Profile Footer */}
-        <div className="pt-2 border-t border-slate-100">
+        <div className="w-full pt-2 border-t border-slate-100">
           <button
             type="button"
             onClick={() => handleProtectedAction(() => setIsProfileOpen(true))}
-            className={`flex w-full items-center gap-2.5 rounded-2xl p-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 ${
+            className={`flex w-full items-center gap-2.5 rounded-xl p-2 text-xs font-medium text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900 ${
               !isExpanded && 'justify-center'
             }`}
             title={isAuthenticated ? user?.name || 'Profile' : 'Sign In'}
           >
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3C3147]/10 border border-[#3C3147]/20 text-[#3C3147] font-bold">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 border border-slate-200 text-slate-800 font-semibold">
               {isAuthenticated && user?.name ? (
                 user.name.charAt(0).toUpperCase()
               ) : (

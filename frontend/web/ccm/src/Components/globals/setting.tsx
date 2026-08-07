@@ -1,32 +1,40 @@
-import React, { useState } from 'react';
-import { 
-  Bell, 
-  MessageSquare, 
-  Shield, 
-  Trash2, 
-  Globe, 
-  CheckCircle2, 
-  Eye, 
-  X, 
-  ChevronDown, 
-  Loader2, 
-  ChevronLeft, 
-  ChevronRight, 
-  ArrowLeft, 
-  Check, 
-  Terminal, 
-  Settings 
+import React, { useState, useCallback, useEffect } from 'react';
+import {
+  Bell,
+  MessageSquare,
+  Shield,
+  Trash2,
+  Globe,
+  CheckCircle2,
+  Eye,
+  ChevronDown,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  Check,
+  Terminal,
+  Settings,
+  Sparkles,
+  Smartphone,
+  Truck,
+  CreditCard,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface UserSettingsProps {
+export interface UserSettingsProps {
   onBackToChat: () => void;
+  onSave?: (settings: SettingsState) => Promise<void> | void;
 }
 
-interface SettingsState {
+export interface SettingsState {
   pushNotifications: boolean;
   whatsappAlerts: boolean;
   smsTracking: boolean;
+  orderDispatchAlerts: boolean;
+  mpesaReceiptAlerts: boolean;
+  runnerLocationUpdates: boolean;
   autoScrollChat: boolean;
   enterToSend: boolean;
   highContrastChat: boolean;
@@ -38,413 +46,513 @@ interface SelectOption {
   value: string;
 }
 
-export function UserSettings({ onBackToChat }: UserSettingsProps) {
-  const [activeTab, setActiveTab] = useState<string>('notifications');
+interface TabItem {
+  id: 'notifications' | 'interface' | 'privacy';
+  label: string;
+  icon: LucideIcon;
+}
+
+const TABS: TabItem[] = [
+  { id: 'notifications', label: 'Alerts & Channels', icon: Bell },
+  { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
+  { id: 'privacy', label: 'Data & Security', icon: Shield },
+];
+
+const LANGUAGE_OPTIONS: SelectOption[] = [
+  { label: 'English (Default)', value: 'en' },
+  { label: 'Kiswahili (Sanifu)', value: 'sw' },
+];
+
+export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
+  const [activeTab, setActiveTab] = useState<TabItem['id']>('notifications');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showNotification, setShowNotification] = useState<boolean>(false);
-  const [isNavMinimized, setIsNavMinimized] = useState<boolean>(true);
+  const [isNavMinimized, setIsNavMinimized] = useState<boolean>(false);
 
   const [settings, setSettings] = useState<SettingsState>({
     pushNotifications: true,
     whatsappAlerts: true,
     smsTracking: false,
+    orderDispatchAlerts: true,
+    mpesaReceiptAlerts: true,
+    runnerLocationUpdates: true,
     autoScrollChat: true,
     enterToSend: true,
     highContrastChat: false,
     language: 'en',
   });
 
-  const handleToggle = (key: keyof SettingsState) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  // Handle Escape key dismissal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onBackToChat();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onBackToChat]);
 
-  const handleSelectChange = (key: keyof SettingsState, value: string) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  };
+  const handleToggle = useCallback((key: keyof SettingsState) => {
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
-  const handleSaveSettings = (e: React.FormEvent) => {
+  const handleSelectChange = useCallback((key: keyof SettingsState, value: string) => {
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    
-    setTimeout(() => {
-      setIsSaving(false);
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 2500);
-    }, 500);
-  };
+    if (isSaving) return;
 
-  const handleClearCache = () => {
-    if (window.confirm('Clear local chat cache? Active transaction channels will remain intact.')) {
-      alert('Local workspace optimized.');
+    setIsSaving(true);
+    try {
+      if (onSave) {
+        await onSave(settings);
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 600));
+      }
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const tabs = [
-    { id: 'notifications', label: 'Alerts & Notifications', icon: Bell },
-    { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
-    { id: 'privacy', label: 'Data & Privacy', icon: Shield }
-  ];
+  const handleClearCache = () => {
+    if (
+      window.confirm(
+        'Clear local feed cache? Your active order channels, M-Pesa receipts, and runner links will remain intact.'
+      )
+    ) {
+      alert('Local merchant workspace optimized.');
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-0 animate-in fade-in duration-200">
-      <div className="w-full h-full md:max-w-full md:h-[100vh] bg-[#F8FAFC] text-slate-800 font-sans flex flex-col md:flex-row relative rounded-none shadow-2xl overflow-hidden">
-        
-        {/* LEFT NAV SIDEBAR (Hidden on Mobile, Visible on Tablet/Desktop) */}
-        <div 
-          className={`hidden md:flex bg-[#191a1a] text-slate-300 flex-col justify-between shrink-0 border-r border-slate-800 transition-all duration-300 ease-in-out ${
-            isNavMinimized ? 'md:w-16' : 'md:w-64'
-          }`}
-        >
-          <div>
-            {/* Header with Toggle */}
-            <div className="h-16 px-4 flex items-center justify-between border-b border-slate-800/80">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                <div className="p-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg shrink-0">
-                  <Settings size={18} className="text-indigo-400" />
-                </div>
-                {!isNavMinimized && (
-                  <span className="font-semibold text-white tracking-wide text-sm whitespace-nowrap">
-                    Settings
-                  </span>
-                )}
-              </div>
-              
-              <button
-                type="button"
-                onClick={() => setIsNavMinimized(!isNavMinimized)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                title={isNavMinimized ? "Expand Sidebar" : "Minimize Sidebar"}
-              >
-                {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-              </button>
-            </div>
-
-            {/* Navigation Menu */}
-            <div className="p-3 space-y-6 w-full">
-              <div>
-                {!isNavMinimized && (
-                  <p className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                    Preferences
-                  </p>
-                )}
-                
-                <div className="space-y-1">
-                  {tabs.map((tab) => {
-                    const isActive = activeTab === tab.id;
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setActiveTab(tab.id)}
-                        title={isNavMinimized ? tab.label : undefined}
-                        className={`w-full flex items-center ${
-                          isNavMinimized ? 'justify-center py-3' : 'justify-between px-3 py-2.5'
-                        } rounded-xl text-xs font-medium transition-all duration-150 relative ${
-                          isActive 
-                            ? 'bg-slate-800/90 text-white shadow-sm border border-slate-700/50' 
-                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon size={18} className={isActive ? 'text-indigo-400 shrink-0' : 'text-slate-400 shrink-0'} />
-                          {!isNavMinimized && <span className="whitespace-nowrap">{tab.label}</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar Footer / Back Action */}
-          <div className="p-3 border-t border-slate-800/80">
+    <div
+      onClick={onBackToChat}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-0 backdrop-blur-sm sm:p-1 md:p-0 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Merchant Workspace Preferences"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative flex h-full w-full  flex-col overflow-hidden bg-slate-50 font-sans text-slate-800 shadow-2xl  sm:rounded-0  "
+      >
+        {/* Top Header Bar */}
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={onBackToChat}
-              title={isNavMinimized ? "Back to Chat" : undefined}
-              className={`w-full flex items-center ${
-                isNavMinimized ? 'justify-center py-2.5' : 'justify-center gap-2 px-4 py-2.5'
-              } rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 text-slate-300 hover:text-white text-xs font-medium transition-all`}
+              className="rounded-lg bg-white/10 p-2 text-white transition-colors hover:bg-white/20 active:scale-95 sm:hidden"
+              title="Back"
+              aria-label="Back to chat"
             >
-              <ArrowLeft size={16} className="shrink-0" />
-              {!isNavMinimized && <span className="whitespace-nowrap">Back to Chat</span>}
+              <ArrowLeft size={18} />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
+                <Sparkles className="text-white" size={18} />
+              </div>
+              <div>
+                <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">
+                  Soko AI
+                </h1>
+                <p className="hidden text-[11px] font-medium text-orange-100 sm:block">
+                  Merchant Workspace Preferences
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Right Actions */}
+          <div className="flex items-center gap-3">
+            <AnimatePresence>
+              {showNotification && (
+                <motion.span
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="flex items-center gap-1.5 rounded-full bg-emerald-950/30 px-3 py-1 font-mono text-xs font-semibold text-emerald-100 backdrop-blur-sm"
+                >
+                  <CheckCircle2 size={14} className="text-emerald-300" /> Saved
+                </motion.span>
+              )}
+            </AnimatePresence>
+
+            <button
+              type="button"
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-semibold text-white shadow-md transition-all hover:bg-slate-800 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={14} className="animate-spin text-orange-400" />
+                  <span>Syncing...</span>
+                </>
+              ) : (
+                <>
+                  <Check size={14} className="text-orange-400" strokeWidth={3} />
+                  <span>Save Changes</span>
+                </>
+              )}
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* RIGHT MAIN CONTENT AREA */}
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
-          
-          {/* Top Header Bar */}
-          <div className="h-16 px-4 sm:px-8 bg-[#191a1a] border-b border-slate-800 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={onBackToChat}
-                className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg bg-slate-800/60 border border-slate-700/60"
-                title="Back"
-              >
-                <ArrowLeft size={16} />
-              </button>
-              <h1 className="text-lg font-semibold text-slate-50">Settings</h1>
-            </div>
+        {/* Main Workspace Layout */}
+        <div className="relative flex flex-1 overflow-hidden">
+          {/* LEFT NAV SIDEBAR (Desktop Only) */}
+          <aside
+            className={`hidden shrink-0 flex-col justify-between border-r border-slate-200/80 bg-white transition-all duration-300 ease-in-out md:flex ${
+              isNavMinimized ? 'w-18' : 'w-64'
+            }`}
+          >
+            <div>
+              {/* Sidebar Header with Minimize Toggle */}
+              <div className="flex h-14 items-center justify-between border-b border-slate-100 px-4">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="shrink-0 rounded-lg bg-slate-100 p-1.5 text-slate-700">
+                    <Settings size={17} />
+                  </div>
+                  {!isNavMinimized && (
+                    <span className="whitespace-nowrap text-xs font-bold tracking-wider text-slate-800 uppercase">
+                      Settings
+                    </span>
+                  )}
+                </div>
 
-            {/* Top Right Actions */}
-            <div className="flex items-center gap-3">
-              {showNotification && (
-                <span className="text-xs text-emerald-400 font-mono font-medium flex items-center gap-1.5 animate-in fade-in duration-200">
-                  <CheckCircle2 size={14} /> Saved successfully
-                </span>
-              )}
-              
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg shadow-sm transition-all active:scale-95 disabled:opacity-50"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Saving...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check size={14} />
-                    <span>Save Changes</span>
-                  </>
-                )}
-              </button>
-              
-            </div>
-          </div>
-
-          {/* Horizontal Navigation Tabs (Mobile Only) */}
-          <div className="bg-white px-4 sm:px-8 border-b border-slate-200/80 flex items-center gap-6 overflow-x-auto shrink-0 md:hidden no-scrollbar">
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.id;
-              return (
                 <button
-                  key={tab.id}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`py-3 text-xs font-medium border-b-2 transition-all whitespace-nowrap flex items-center gap-2 ${
-                    isActive 
-                      ? 'border-slate-900 text-slate-900 font-semibold' 
-                      : 'border-transparent text-slate-500 hover:text-slate-800'
-                  }`}
+                  onClick={() => setIsNavMinimized(!isNavMinimized)}
+                  className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                  title={isNavMinimized ? 'Expand Sidebar' : 'Minimize Sidebar'}
+                  aria-label={isNavMinimized ? 'Expand Sidebar' : 'Minimize Sidebar'}
                 >
-                  <span>{tab.label}</span>
+                  {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                 </button>
-              );
-            })}
-          </div>
+              </div>
 
-          {/* 2-Column Dashboard Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-            <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              
-              {/* LEFT COLUMN: System Overview Card */}
-              <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6">
-                
-                {/* Status Header */}
-                <div className="flex items-center gap-4 pb-6 border-b border-slate-100">
-                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-600 shrink-0">
-                    <Terminal size={22} />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 text-sm">
-                      System Preferences
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                        Active Profile Sync
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Quick Status Breakdown */}
-                <div className="space-y-3 pb-6 border-b border-slate-100">
-                  <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Active Summary</h4>
-                  <div className="space-y-2.5 text-xs">
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="text-slate-500">Language</span>
-                      <span className="font-mono font-medium text-slate-800">
-                        {settings.language === 'sw' ? 'Kiswahili' : 'English'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="text-slate-500">WhatsApp Alerts</span>
-                      <span className={`font-semibold ${settings.whatsappAlerts ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {settings.whatsappAlerts ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-slate-600">
-                      <span className="text-slate-500">Auto-Scroll Feed</span>
-                      <span className={`font-semibold ${settings.autoScrollChat ? 'text-emerald-600' : 'text-slate-400'}`}>
-                        {settings.autoScrollChat ? 'Enabled' : 'Disabled'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Storage & Environment Info */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wider">Environment</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Changes made here apply instantly across your local merchant session and dispatch alerts.
+              {/* Navigation Menu */}
+              <nav className="space-y-1 p-3">
+                {!isNavMinimized && (
+                  <p className="mb-2 px-3 text-[10px] font-bold tracking-wider text-slate-400 uppercase">
+                    Preferences
                   </p>
+                )}
+
+                {TABS.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setActiveTab(tab.id)}
+                      title={isNavMinimized ? tab.label : undefined}
+                      className={`group relative flex w-full items-center rounded-xl text-xs font-medium transition-all duration-150 ${
+                        isNavMinimized
+                          ? 'justify-center py-3'
+                          : 'justify-between px-3 py-2.5'
+                      } ${
+                        isActive
+                          ? 'bg-orange-50 font-semibold text-orange-950 shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          size={18}
+                          className={`shrink-0 transition-colors ${
+                            isActive
+                              ? 'text-orange-600'
+                              : 'text-slate-400 group-hover:text-slate-700'
+                          }`}
+                        />
+                        {!isNavMinimized && (
+                          <span className="whitespace-nowrap">{tab.label}</span>
+                        )}
+                      </div>
+                      {isActive && !isNavMinimized && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-orange-600" />
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {/* Bottom Status (When expanded) */}
+            {!isNavMinimized && (
+              <div className="m-3 rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-left">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                  <span>Sync Channel: Active</span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Connected to M-Pesa & WhatsApp Gateway.
+                </p>
+              </div>
+            )}
+          </aside>
+
+          {/* RIGHT MAIN CONTENT AREA */}
+          <main className="flex flex-1 flex-col overflow-hidden bg-slate-50/50">
+            {/* Horizontal Navigation Tabs (Mobile Only) */}
+            <div className="no-scrollbar flex shrink-0 items-center gap-6 overflow-x-auto border-b border-slate-200/80 bg-white px-4 md:hidden">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-2 whitespace-nowrap border-b-2 py-3.5 text-xs font-medium transition-all ${
+                      isActive
+                        ? 'border-orange-500 font-semibold text-slate-900'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 2-Column Dashboard Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+              <div className="mx-auto grid max-w-5xl grid-cols-1 items-start gap-6 lg:grid-cols-12 lg:gap-8">
+                {/* LEFT COLUMN: System Overview Card */}
+                <div className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6 lg:col-span-4">
+                  <div className="flex items-center gap-3.5 border-b border-slate-100 pb-5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50 text-slate-800">
+                      <Terminal size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900">
+                        Session Profile
+                      </h3>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        <span className="text-[11px] font-medium tracking-wider text-emerald-700 uppercase">
+                          Live Environment
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 border-b border-slate-100 pb-5">
+                    <h4 className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      Active Settings
+                    </h4>
+                    <div className="space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span className="text-slate-500">Language</span>
+                        <span className="font-mono font-medium text-slate-900">
+                          {settings.language === 'sw' ? 'Kiswahili' : 'English'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span className="text-slate-500">WhatsApp Dispatch</span>
+                        <span
+                          className={`font-semibold ${
+                            settings.whatsappAlerts
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {settings.whatsappAlerts ? 'Active' : 'Muted'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-slate-600">
+                        <span className="text-slate-500">Auto-Scroll Feed</span>
+                        <span
+                          className={`font-semibold ${
+                            settings.autoScrollChat
+                              ? 'text-emerald-600'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {settings.autoScrollChat ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                      Dispatch Guarantee
+                    </h4>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      Changes apply across your active merchant session and immediate
+                      runner dispatch queues.
+                    </p>
+                  </div>
                 </div>
 
+                {/* RIGHT COLUMN: Settings Forms */}
+                <div className="space-y-6 lg:col-span-8">
+                  <form onSubmit={handleSaveSettings}>
+                    <AnimatePresence mode="wait">
+                      {activeTab === 'notifications' && (
+                        <motion.div
+                          key="notifications"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.16 }}
+                          className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
+                        >
+                          <div className="border-b border-slate-100 pb-4">
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              Alerts & Dispatch Channels
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              Configure how runner tracking, orders, and payment signals reach your devices.
+                            </p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <SettingsToggle
+                              title="WhatsApp Dispatch Alerts"
+                              description="Receive runner map links and live order updates directly on your connected line"
+                              checked={settings.whatsappAlerts}
+                              onChange={() => handleToggle('whatsappAlerts')}
+                              icon={<Smartphone size={16} className="text-emerald-600" />}
+                            />
+                            <SettingsToggle
+                              title="In-App Push Notifications"
+                              description="Real-time status banners inside the active merchant browser viewport"
+                              checked={settings.pushNotifications}
+                              onChange={() => handleToggle('pushNotifications')}
+                              icon={<Bell size={16} className="text-orange-500" />}
+                            />
+                            <SettingsToggle
+                              title="Fallback SMS Tracking Pings"
+                              description="Standard text alerts when off-grid or when data connectivity drops"
+                              checked={settings.smsTracking}
+                              onChange={() => handleToggle('smsTracking')}
+                            />
+                          </div>
+
+                          <div className="border-t border-slate-100 pt-5">
+                            <h4 className="mb-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                              Event Filters
+                            </h4>
+                            <div className="space-y-3">
+                              <SettingsToggle
+                                title="M-Pesa & Payment Receipts"
+                                description="Instant notification upon verified till or paybill transaction settlement"
+                                checked={settings.mpesaReceiptAlerts}
+                                onChange={() => handleToggle('mpesaReceiptAlerts')}
+                                icon={<CreditCard size={16} className="text-blue-600" />}
+                              />
+                              <SettingsToggle
+                                title="Order Dispatch Checkpoints"
+                                description="Notify when a runner accepts, picks up, or completes delivery"
+                                checked={settings.orderDispatchAlerts}
+                                onChange={() => handleToggle('orderDispatchAlerts')}
+                                icon={<Truck size={16} className="text-amber-600" />}
+                              />
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'interface' && (
+                        <motion.div
+                          key="interface"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.16 }}
+                          className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
+                        >
+                          <div className="border-b border-slate-100 pb-4">
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              Feed Mechanics
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              Customize display localization and live chat interaction behaviors.
+                            </p>
+                          </div>
+
+                          <CleanSelect
+                            label="Display Language / Lugha"
+                            icon={<Globe size={14} />}
+                            value={settings.language}
+                            onChange={(v) => handleSelectChange('language', v)}
+                            options={LANGUAGE_OPTIONS}
+                          />
+
+                          <div className="space-y-3 pt-2">
+                            <SettingsToggle
+                              title="Auto-Scroll Feed"
+                              description="Automatically stick to the bottom as new logistics updates and bids arrive"
+                              checked={settings.autoScrollChat}
+                              onChange={() => handleToggle('autoScrollChat')}
+                            />
+                            <SettingsToggle
+                              title="Enter Key to Send"
+                              description="Press Enter to send instructions immediately instead of adding a line break"
+                              checked={settings.enterToSend}
+                              onChange={() => handleToggle('enterToSend')}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {activeTab === 'privacy' && (
+                        <motion.div
+                          key="privacy"
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -6 }}
+                          transition={{ duration: 0.16 }}
+                          className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
+                        >
+                          <div className="border-b border-slate-100 pb-4">
+                            <h3 className="text-sm font-semibold text-slate-900">
+                              Data & Workspace Security
+                            </h3>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              Manage local storage footprints and encrypted communication payloads.
+                            </p>
+                          </div>
+
+                          <div className="space-y-2 rounded-xl border border-slate-200/80 bg-slate-50/80 p-4">
+                            <h4 className="flex items-center gap-2 text-xs font-semibold text-slate-900">
+                              <Eye size={15} className="text-slate-700" />
+                              End-to-End Transport Encryption
+                            </h4>
+                            <p className="text-xs leading-relaxed text-slate-600">
+                              All order tags, buyer phone numbers, and M-Pesa verification tokens
+                              are encrypted in transit. Clearing local application cache improves
+                              browser performance without interrupting active runner routes.
+                            </p>
+                          </div>
+
+                          <div className="pt-2">
+                            <button
+                              type="button"
+                              onClick={handleClearCache}
+                              className="flex cursor-pointer items-center gap-2 rounded-xl border border-rose-200 bg-rose-50/80 px-4 py-2.5 text-xs font-semibold text-rose-700 transition-all hover:bg-rose-100 active:scale-95"
+                            >
+                              <Trash2 size={14} />
+                              <span>Clear Local Feed Cache</span>
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </form>
+                </div>
               </div>
-
-              {/* RIGHT COLUMN: Settings Forms */}
-              <div className="lg:col-span-8 space-y-6">
-                <form onSubmit={handleSaveSettings}>
-                  <AnimatePresence mode="wait">
-                    
-                    {/* TAB 1: NOTIFICATIONS */}
-                    {activeTab === 'notifications' && (
-                      <motion.div 
-                        key="notifications"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
-                      >
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                          <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Alerts & Pings</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Choose how runners and automated order checkpoints pipeline updates to your devices
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="space-y-3">
-                          <SettingsToggle 
-                            title="In-App Push Alerts" 
-                            description="Real-time status changes inside the viewport browser" 
-                            checked={settings.pushNotifications} 
-                            onChange={() => handleToggle('pushNotifications')} 
-                          />
-                          <SettingsToggle 
-                            title="WhatsApp Dispatch Alerts" 
-                            description="Receive runner map links directly on your connected M-Pesa line" 
-                            checked={settings.whatsappAlerts} 
-                            onChange={() => handleToggle('whatsappAlerts')} 
-                          />
-                          <SettingsToggle 
-                            title="Fallback SMS Pings" 
-                            description="Standard text messages when off-grid or offline" 
-                            checked={settings.smsTracking} 
-                            onChange={() => handleToggle('smsTracking')} 
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* TAB 2: INTERFACE / FEED MECHANICS */}
-                    {activeTab === 'interface' && (
-                      <motion.div 
-                        key="interface"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
-                      >
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                          <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Feed Mechanics</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Customize the display language and chat interaction controls
-                            </p>
-                          </div>
-                        </div>
-
-                        <CleanSelect
-                          label="Display Language / Lugha"
-                          icon={<Globe size={14} />}
-                          value={settings.language}
-                          onChange={(v) => handleSelectChange('language', v)}
-                          options={[
-                            { label: 'English (Default)', value: 'en' },
-                            { label: 'Kiswahili', value: 'sw' }
-                          ]}
-                        />
-
-                        <div className="space-y-3 pt-2">
-                          <SettingsToggle 
-                            title="Auto-Scroll Feed" 
-                            description="Automatically scroll down as new responses and offers arrive" 
-                            checked={settings.autoScrollChat} 
-                            onChange={() => handleToggle('autoScrollChat')} 
-                          />
-                          <SettingsToggle 
-                            title="Enter Key to Send" 
-                            description="Press Enter to send prompts instead of Shift + Enter" 
-                            checked={settings.enterToSend} 
-                            onChange={() => handleToggle('enterToSend')} 
-                          />
-                        </div>
-                      </motion.div>
-                    )}
-
-                    {/* TAB 3: PRIVACY & DATA */}
-                    {activeTab === 'privacy' && (
-                      <motion.div 
-                        key="privacy"
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-sm space-y-6"
-                      >
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                          <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Data & Privacy</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              Manage local encryption and cached application structures
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                          <h4 className="text-xs uppercase tracking-wider font-semibold text-slate-800 flex items-center gap-2">
-                            <Eye size={14} className="text-indigo-600" />
-                            Workspace Encryption
-                          </h4>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            Chat payloads, local micro-logistics tags, and sync routes are secured peer-to-peer. Clearing local app structures improves platform computation speeds without affecting active transactions.
-                          </p>
-                        </div>
-
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={handleClearCache}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition-all"
-                          >
-                            <Trash2 size={14} />
-                            <span>Clear Local Feed Caches</span>
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-
-                  </AnimatePresence>
-                </form>
-              </div>
-
             </div>
-          </div>
-
+          </main>
         </div>
       </div>
     </div>
@@ -452,7 +560,7 @@ export function UserSettings({ onBackToChat }: UserSettingsProps) {
 }
 
 /* =========================================================
-   SUB-COMPONENTS
+   REUSABLE UI PRIMITIVES
    ========================================================= */
 
 interface SettingsToggleProps {
@@ -460,37 +568,47 @@ interface SettingsToggleProps {
   description: string;
   checked: boolean;
   onChange: () => void;
+  icon?: React.ReactNode;
 }
 
-function SettingsToggle({ title, description, checked, onChange }: SettingsToggleProps) {
+function SettingsToggle({
+  title,
+  description,
+  checked,
+  onChange,
+  icon,
+}: SettingsToggleProps) {
   return (
-    <div 
-      onClick={onChange}
-      className="flex items-center justify-between p-4 rounded-xl bg-slate-50/60 border border-slate-200/80 hover:border-slate-300 transition-all cursor-pointer select-none"
-    >
-      <div className="pr-4">
-        <h4 className="text-xs font-semibold text-slate-900">{title}</h4>
-        <p className="text-xs text-slate-500 mt-0.5 leading-normal">{description}</p>
+    <label className="flex cursor-pointer select-none items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 transition-all hover:border-slate-300 hover:bg-white focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-orange-500/20">
+      <div className="flex items-start gap-3 pr-4">
+        {icon && <div className="mt-0.5 shrink-0">{icon}</div>}
+        <div>
+          <h4 className="text-xs font-semibold text-slate-900">{title}</h4>
+          <p className="mt-0.5 text-xs leading-normal text-slate-500">
+            {description}
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={(e) => {
-          e.stopPropagation();
-          onChange();
-        }}
-        className={`w-10 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none shrink-0 ${
-          checked ? 'bg-indigo-600' : 'bg-slate-300'
+
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="sr-only"
+      />
+
+      <div
+        className={`h-6 w-10 shrink-0 rounded-full p-0.5 transition-colors duration-200 ${
+          checked ? 'bg-orange-500' : 'bg-slate-300'
         }`}
       >
-        <div 
-          className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+        <div
+          className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
             checked ? 'translate-x-4' : 'translate-x-0'
-          }`} 
+          }`}
         />
-      </button>
-    </div>
+      </div>
+    </label>
   );
 }
 
@@ -502,26 +620,35 @@ interface CleanSelectProps {
   icon?: React.ReactNode;
 }
 
-function CleanSelect({ label, value, onChange, options, icon }: CleanSelectProps) {
+function CleanSelect({
+  label,
+  value,
+  onChange,
+  options,
+  icon,
+}: CleanSelectProps) {
   return (
-    <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-slate-50/60 border border-slate-200/80 focus-within:border-slate-400 focus-within:bg-white transition-all relative w-full">
-      <label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+    <div className="relative flex w-full flex-col gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 transition-all focus-within:border-slate-400 focus-within:bg-white">
+      <label className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
         {icon && <span className="text-slate-400">{icon}</span>}
         {label}
       </label>
       <div className="relative flex items-center">
-        <select 
-          value={value ?? ''} 
-          onChange={(e) => onChange && onChange(e.target.value)} 
-          className="w-full bg-transparent text-xs text-slate-900 outline-none appearance-none cursor-pointer pr-4 font-medium"
+        <select
+          value={value ?? ''}
+          onChange={(e) => onChange?.(e.target.value)}
+          className="w-full cursor-pointer appearance-none bg-transparent pr-8 text-xs font-medium text-slate-900 outline-none"
         >
-          {options.map(opt => (
+          {options.map((opt) => (
             <option key={opt.value} value={opt.value} className="text-slate-800">
               {opt.label}
             </option>
           ))}
         </select>
-        <ChevronDown size={14} className="absolute right-0 text-slate-400 pointer-events-none" />
+        <ChevronDown
+          size={14}
+          className="pointer-events-none absolute right-0 text-slate-400"
+        />
       </div>
     </div>
   );
