@@ -55,12 +55,12 @@ export function AuthOverlay() {
     }
   };
 
-  if (isAuthenticated || proceedWithoutAuth) return null;
+  if (isAuthenticated || proceedWithoutAuth || isLoading ) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
       
-      {/* Centered ChatGPT-Style Modal Card */}
+      {/* Centered  Modal Card */}
       <div className="relative w-full max-w-[420px] overflow-hidden rounded-2xl border border-white/10 bg-[#171717] p-8 text-white shadow-2xl sm:p-10 font-sans">
         
         {/* Top Right Close Button */}
@@ -82,8 +82,8 @@ export function AuthOverlay() {
             </span>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            {authRoute === 'login' && 'Welcome back'}
-            {authRoute === 'signup' && 'Create your account'}
+            {authRoute === 'login' && 'Sign-In'}
+            {authRoute === 'signup' && 'Sign-Up'}
             {authRoute === 'forgot' && 'Reset your password'}
           </h1>
         </div>

@@ -164,7 +164,14 @@ export function Sidebar({
           {/* New Thread / Local Search CTA Button */}
           <button
             type="button"
-            onClick={handleNewChat}
+            onClick={() => {
+               if(!isAuthenticated){
+                setProceedWithoutAuth(false);
+               }else{
+               handleNewChat
+               }
+              
+              }}
             className={`group flex items-center rounded-full border border-slate-200 bg-slate-50 font-medium text-xs text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-100 active:scale-[0.98] ${
               isExpanded
                 ? 'w-full justify-between px-3.5 py-2.5'
@@ -183,11 +190,19 @@ export function Sidebar({
             )}
           </button>
 
+
           {/* Core Navigation Links */}
           <nav className="space-y-1 text-xs font-medium text-slate-600">
             <button
               type="button"
-              onClick={() => setIsCartOpen?.(!isCartOpen)}
+              onClick={() => {
+               if(!isAuthenticated){
+                setProceedWithoutAuth(false);
+               }else{
+               setIsCartOpen?.(!isCartOpen)
+               }
+              
+              }}
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
                 isCartOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
@@ -197,9 +212,19 @@ export function Sidebar({
               {isExpanded && <span>Cart</span>}
             </button>
 
+
+
             <button
               type="button"
-              onClick={() => setIsOrdersOpen?.(!isOrdersOpen)}
+             onClick={() => {
+               if(!isAuthenticated){
+                setProceedWithoutAuth(false);
+               }else{
+               setIsOrdersOpen?.(!isOrdersOpen)
+               }
+              
+              }}
+              
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
                 isOrdersOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
@@ -209,9 +234,18 @@ export function Sidebar({
               {isExpanded && <span>Orders</span>}
             </button>
 
+
             <button
               type="button"
-              onClick={() => setIsCheckoutOpen?.(!isCheckoutOpen)}
+              onClick={() => {
+               if(!isAuthenticated){
+                setProceedWithoutAuth(false);
+               }else{
+               setIsCheckoutOpen?.(!isCheckoutOpen)
+               }
+              
+              }}
+              
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
                 isCheckoutOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}
@@ -221,9 +255,18 @@ export function Sidebar({
               {isExpanded && <span>Checkouts</span>}
             </button>
 
+
             <button
               type="button"
-              onClick={() => setSettingOpen?.(!settingOpen)}
+              onClick={() => {
+               if(!isAuthenticated){
+                setProceedWithoutAuth(false);
+               }else{
+               setSettingOpen?.(!settingOpen)
+               }
+              
+              }}
+              
               className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 transition-all hover:bg-slate-100 hover:text-slate-900 ${
                 settingOpen ? 'bg-slate-100 text-slate-900 font-semibold' : ''
               } ${!isExpanded && 'justify-center px-0'}`}

@@ -50,9 +50,11 @@ function useModalBackHandler(isOpen: boolean, onClose: () => void) {
 export default function App() {
   // Shopping mode UI Control Provider
   const { ShoppingMode, setShoppingMode, ModeLoading } = useShoppingMode();
+  
   const {
     isAuthenticated,
     proceedWithoutAuth,
+    isLoading
   } = useAuth();
 
   // Global Search & Session Context (100% Merchant-Provided Engine)
@@ -70,6 +72,7 @@ export default function App() {
     notification,
   } = useSearch();
 
+
   // E-Commerce / Cart Context
   const { showCheckoutModal, setShowCheckoutModal, handleAddToBasket } = useCart();
 
@@ -77,10 +80,12 @@ export default function App() {
   const [isProfileOpen, setIsProfileOpen] = useState(() => {
     return sessionStorage.getItem('soko_isProfileOpen') === 'true';
   });
+  
 
   const [settingOpen, setSettingOpen] = useState(() => {
     return sessionStorage.getItem('soko_settingOpen') === 'true';
   });
+
 
   const [isOrdersOpen, setIsOrdersOpen] = useState(() => {
     return sessionStorage.getItem('soko_isOrdersOpen') === 'true';
@@ -96,6 +101,9 @@ export default function App() {
 
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+
+
 
   // Sync modal states to sessionStorage on change
   useEffect(() => {
@@ -118,31 +126,38 @@ export default function App() {
     sessionStorage.setItem('soko_isCheckoutOpen', String(isCheckoutOpen));
   }, [isCheckoutOpen]);
 
+  
+
   // Modals Back-Button Handlers
   useModalBackHandler(filtersOpen, () => setFiltersOpen(false));
   useModalBackHandler(showDetailsModal, () => {
     setSelectedProduct(null);
     setShowDetailsModal(false);
   });
+
+  
   useModalBackHandler(showCheckoutModal, () => setShowCheckoutModal(false));
   useModalBackHandler(isProfileOpen, () => setIsProfileOpen(false));
   useModalBackHandler(settingOpen, () => setSettingOpen(false));
   useModalBackHandler(isOrdersOpen, () => setIsOrdersOpen(false));
   useModalBackHandler(isCartOpen, () => setIsCartOpen(false));
   useModalBackHandler(isCheckoutOpen, () => setIsCheckoutOpen(false));
+  
 
   const handleViewDetails = (product: any) => {
     setSelectedProduct(product);
     setShowDetailsModal(true);
   };
+  
 
   const handleCloseDetails = () => {
     setSelectedProduct(null);
     setShowDetailsModal(false);
   };
 
+
   // Render Soko AI Clean Loader
-  if (ModeLoading) {
+  if (ModeLoading || isLoading ) {
     return (
       <LoadingScreen
         message="Connecting to Neighborhood Merchants..."

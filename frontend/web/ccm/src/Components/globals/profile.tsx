@@ -100,37 +100,62 @@ export function UserProfile({ onBackToChat }) {
     }
   };
 
+  
 
 
-  if (isLoading || !isAuthenticated) {
-    return (
-      <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-md flex flex-col items-center justify-center p-4">
-        {isLoading ? (
-          <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center gap-4 text-center max-w-sm w-full">
-            <Loader2 className="animate-spin text-indigo-600" size={38} />
-            <span className="text-sm font-semibold text-slate-700 tracking-wide">Loading Profile...</span>
+
+if (isLoading || !isAuthenticated) {
+  return (
+    <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center px-5">
+      {isLoading ? (
+        <div className="flex flex-col items-center text-center">
+          <Loader2
+            className="animate-spin text-slate-500 mb-4"
+            size={24}
+            strokeWidth={1.8}
+          />
+
+          <span className="text-sm text-slate-700">
+            Loading profile
+          </span>
+
+          <span className="text-xs text-slate-400 mt-1">
+            Please wait a moment
+          </span>
+        </div>
+      ) : (
+        <div className="w-full max-w-[380px] bg-white border border-slate-200 rounded-xl px-7 py-8 text-center shadow-sm">
+          <div className="mx-auto mb-5 w-11 h-11 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center">
+            <User
+              size={20}
+              strokeWidth={1.7}
+              className="text-slate-500"
+            />
           </div>
-        ) : (
-          <div className="bg-white border border-slate-200/80 p-8 rounded-3xl flex flex-col items-center gap-5 max-w-sm text-center shadow-2xl">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-              <User size={32} />
-            </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Not Authenticated</h3>
-              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Please sign in to view and manage your profile settings.</p>
-            </div>
-            <button
-              type="button"
-              onClick={onBackToChat}
-              className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-semibold rounded-2xl shadow-md transition-all"
-            >
-              Go Back
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  }
+
+          <h3 className="text-[15px] font-medium text-slate-900">
+            Sign in required
+          </h3>
+
+          <p className="mt-2 text-[13px] leading-5 text-slate-500">
+            Sign in to view and manage your profile settings.
+          </p>
+
+          <button
+            type="button"
+            onClick={onBackToChat}
+            className="mt-6 w-full h-10 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium transition-colors"
+          >
+            Go back
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+
   
 
   const fullNameDisplay = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.full_name || 'Guest User';
