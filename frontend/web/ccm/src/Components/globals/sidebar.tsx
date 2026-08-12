@@ -116,7 +116,7 @@ export function Sidebar({
 
       {/* Main Sidebar Shell: Clean background with light slate border */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-slate-200/80 bg-white p-3 select-none transition-all duration-300 ease-in-out md:static ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col justify-between border-r border-slate-200/80 bg-white p-3 select-none transition-all duration-300 ease-in-out  md:static ${
           isExpanded ? 'w-60' : 'w-16 items-center'
         } ${
           onMobile.open
