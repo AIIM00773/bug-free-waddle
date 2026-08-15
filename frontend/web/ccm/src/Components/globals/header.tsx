@@ -25,6 +25,8 @@ export function Header({
   const onMobile = sidebarContext?.onMobile;
 
   const handleReload = () => {
+   localStorage.removeItem('showWelcomeBanner');
+   
     window.location.reload();
   };
 

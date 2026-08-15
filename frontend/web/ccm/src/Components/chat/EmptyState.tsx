@@ -240,7 +240,17 @@ export function EmptyState({
     setActiveSearchType,
   } = useSearch();
 
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(true);
+
+const [showWelcomeBanner, setShowWelcomeBanner] = useState(() => {
+  return localStorage.getItem('showWelcomeBanner') !== 'false';
+});
+
+const handleCloseWelcome = () => {
+  localStorage.setItem('showWelcomeBanner', 'false');
+  setShowWelcomeBanner(false);
+};
+
+
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -307,7 +317,7 @@ export function EmptyState({
   // ==========================================================
 
 
-if (showWelcomeBanner) {
+if (showWelcomeBanner ) {
   return (
     <div
       className="
@@ -319,7 +329,7 @@ if (showWelcomeBanner) {
         animate-in fade-in
         duration-300
       "
-      onClick={() => setShowWelcomeBanner(false)}
+      onClick={() => handleCloseWelcome()}
     >
       {/* ─────────────────────────────────────────────
           Background
@@ -425,7 +435,7 @@ if (showWelcomeBanner) {
         ───────────────────────────────────────── */}
         <button
           type="button"
-          onClick={() => setShowWelcomeBanner(false)}
+          onClick={() => handleCloseWelcome()}
           aria-label="Close welcome screen"
           className="
             absolute
@@ -478,7 +488,7 @@ if (showWelcomeBanner) {
         ───────────────────────────────────────── */}
         <button
           type="button"
-          onClick={() => setShowWelcomeBanner(false)}
+          onClick={() => handleCloseWelcome()}
           className="
             absolute
             bottom-5
