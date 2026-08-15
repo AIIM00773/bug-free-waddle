@@ -5,7 +5,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useSidebar } from '../../Providers/ui/sidebar';
-import ccmlogo1 from "../../assets/ccmlogo2.png";
+import ccmlogo1 from "../../assets/ccmlogo1.png";
 
 export interface HeaderProps {
   activeTab?: string;

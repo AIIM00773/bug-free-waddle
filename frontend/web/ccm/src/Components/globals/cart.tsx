@@ -21,6 +21,8 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+import ccmlogo2 from "../../assets/ccmlogo1.png";
+
 
 export interface UserCartProps {
   onBackToChat: () => void;
@@ -84,7 +86,7 @@ const formatCurrency = (value: number) =>
 
 export function UserCart({ onBackToChat }: UserCartProps) {
   const [activeTab, setActiveTab] = useState<CartTab>("active");
-  const [isNavMinimized, setIsNavMinimized] = useState(false);
+  const [isNavMinimized, setIsNavMinimized] = useState(true);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -241,14 +243,35 @@ export function UserCart({ onBackToChat }: UserCartProps) {
     },
   ];
 
+
+  const handleReload = () => {
+   localStorage.removeItem('showWelcomeBanner');
+   
+    window.location.reload();
+  };
+
+
+  
   return (
-    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-slate-950/70 font-sans backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-[#FFFFFF] font-sans ">
 
       {/* =========================================================
           TOP BAR
       ========================================================= */}
-      <header className="relative z-30 flex h-[68px] shrink-0 items-center justify-between border-b border-white/10 bg-orange-500  px-4 text-white shadow-2xl sm:px-6">
-
+    <header
+      className="
+        sticky top-0 z-30
+        flex h-14 w-full items-center justify-between
+        border-b border-slate-200/60
+        bg-orange-500 
+        px-3
+        backdrop-blur-sm
+        sm:px-2 
+        sm:pl-0
+        lg:px-3 
+        lg:pl-0 
+      "
+    >
 
         <div className="relative flex min-w-0 items-center gap-3">
 
@@ -260,31 +283,41 @@ export function UserCart({ onBackToChat }: UserCartProps) {
           >
             <ArrowLeft size={17} />
           </button>
+    
 
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border  border-1 border-white  bg-gradient-to-br from-orange-500 to-amber-400 shadow-lg shadow-orange-500/20">
-            <Sparkles size={19} />
-          </div>
+        <nav className="flex min-w-0 items-center">
+          <button
+            type="button"
+            onClick={handleReload}
+            aria-label="Go to Soko AI home"
+            className="
+              group
+              flex min-w-0 items-Left
+              bg-[transparent] ,
+              rounded-full 
+              
+            "
+          >
+            <span className="flex min-w-0 items-center ">
+        
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black tracking-[0.18em] text-white">
-                SOKO AI
-              </span>
+               <img src={ccmlogo2}  height={90}  width={70}  
+                  className="
+                   shrink-0
+                  text-indigo-500
+                  transition-colors duration-150
+                  group-hover:text-indigo-600
+                  
+                "
+                strokeWidth={2}/> 
+    
+            </span>
+          </button>
+        </nav>
 
-              <span className="hidden text-slate-600 sm:inline">
-                /
-              </span>
-
-              <span className="hidden text-xs font-medium text-slate-900 sm:inline">
-                Shopping Basket
-              </span>
-            </div>
-
-            <p className="mt-0.5 truncate text-[10px] text-slate-500">
-              Your local shopping workspace
-            </p>
-          </div>
         </div>
+
+        
 
         <div className="relative flex items-center gap-2">
 
@@ -353,25 +386,15 @@ export function UserCart({ onBackToChat }: UserCartProps) {
             <div className="flex h-[82px] shrink-0 items-center justify-between border-b border-slate-100 px-4">
 
               <div className="flex min-w-0 items-center gap-3">
+
+            {!isNavMinimized && (
+
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-orange-50 text-orange-600">
                   <ShoppingCart size={18} />
                 </div>
-
-                {!isNavMinimized && (
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-slate-900">
-                      Soko Basket
-                    </p>
-
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-
-                      <span className="text-[10px] font-medium text-slate-400">
-                        Juja Hub
-                      </span>
-                    </div>
-                  </div>
-                )}
+            )}
+                
+              
               </div>
 
               <button
