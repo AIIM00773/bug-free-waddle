@@ -12,6 +12,7 @@ import { useCart } from "../../Providers/CartContext";
 import { useProfile } from '../../Providers/profileContext';
 import { Counties } from "../../../db/counties";
 
+import ccmlogo2 from '../../assets/ccmlogo3.png'
 
 
 
@@ -103,6 +104,13 @@ export function UserProfile({ onBackToChat }) {
   
 
 
+  const handleReload = () => {
+   localStorage.removeItem('showWelcomeBanner');
+   
+    window.location.reload();
+  };
+
+
 
 if (isLoading || !isAuthenticated) {
   return (
@@ -162,12 +170,39 @@ if (isLoading || !isAuthenticated) {
 return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-50 text-slate-800 font-sans overflow-hidden animate-in fade-in duration-200">
       {/* UNIFIED TOP HEADER BAR */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 z-20 shadow-sm">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0  z-20 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
-              <Sparkles className="text-white" size={18} />
-            </div>
+              <nav className="flex min-w-0 items-center">
+          <button
+            type="button"
+            onClick={handleReload}
+            aria-label="Go to Soko AI home"
+            className="
+              group
+              flex min-w-0 items-Left
+              bg-[transparent] ,
+              rounded-full 
+              
+            "
+          >
+            <span className="flex min-w-0 items-center ">
+        
+
+               <img src={ccmlogo2}  height={90}  width={70}  
+                  className="
+                   shrink-0
+                  text-indigo-500
+                  transition-colors duration-150
+                  group-hover:text-indigo-600
+                  
+                "
+                strokeWidth={2}/> 
+    
+            </span>
+          </button>
+        </nav>
+        
             <div>
               <h1 className="text-base font-bold tracking-tight text-white sm:text-lg leading-tight">
                 Soko AI

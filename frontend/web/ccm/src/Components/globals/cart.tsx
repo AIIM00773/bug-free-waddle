@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import ccmlogo2 from "../../assets/ccmlogo1.png";
+import ccmlogo2 from "../../assets/ccmlogo3.png";
 
 
 export interface UserCartProps {
