@@ -1,4 +1,5 @@
 
+import ccmlogo1 from '../../assets/ccmlogo1.png'
 
 
 import React from 'react';
@@ -34,6 +35,7 @@ export const LoadingScreen = ({
           <div className="w-full h-full bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-shimmer" />
         </div>
 
+<img src= {ccmlogo1} height={150} width={150} /> 
       </div>
     </div>
   );
