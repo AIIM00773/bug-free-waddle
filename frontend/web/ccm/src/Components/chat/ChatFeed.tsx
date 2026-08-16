@@ -21,6 +21,7 @@ import {
 import { SUGGESTIONS } from '../../Constants/fakedb';
 import { useSearch } from '../../Providers/SearchContext';
 import { SourcesPanel } from './sources';
+import ccmLogo from "../../assets/ccmlogo3.png";
 
 // ==========================================
 // Types & Interfaces
@@ -465,8 +466,8 @@ export function ChatFeed({
                 {/* Status & Verified Merchants Header */}
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#3C3147]/10 text-[#3C3147]">
-                      <Sparkles size={14} />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3C3147]/10 text-[#3C3147]">
+                    <img src={ccmLogo} alt="CCM Logo" height={70} width={70} />
                     </div>
                     <span className="font-semibold text-slate-700">{activeSearchType}</span>
                   </div>
@@ -547,6 +548,7 @@ export function ChatFeed({
           })}
 
           <div ref={feedEndRef} />
+          
         </div>
 
         {/* Verified Neighborhood Vendors Sidebar */}
