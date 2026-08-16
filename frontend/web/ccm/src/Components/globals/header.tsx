@@ -5,7 +5,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useSidebar } from '../../Providers/ui/sidebar';
-import ccmlogo1 from "../../assets/ccmlogo3.png";
+import ccmlogo1 from "../../assets/ccmlogo1.png";
 
 export interface HeaderProps {
   activeTab?: string;
@@ -36,7 +36,7 @@ export function Header({
         sticky top-0 z-30
         flex h-14 w-full items-center justify-between
         border-b border-slate-200/60
-        bg-white/95
+        bg-orange-500/95
         px-3
         backdrop-blur-sm
         sm:px-2 

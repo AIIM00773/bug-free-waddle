@@ -7,6 +7,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../../Providers/profileContext';
+import ccmlogo1 from "../../assets/ccmlogo1.png";
 
 type AuthRoute = 'login' | 'signup' | 'forgot';
 
@@ -77,9 +78,8 @@ export function AuthOverlay() {
         {/* Centered Brand / Logo Header */}
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center justify-center">
-            <span className="text-sm font-semibold tracking-[0.2em] text-gray-400 uppercase">
-              SOKO AI
-            </span>
+         
+            <img src ={ccmlogo1} height={80}  width={80}  /> 
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
             {authRoute === 'login' && 'Sign-In'}
