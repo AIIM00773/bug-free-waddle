@@ -87,6 +87,13 @@ const DEFAULT_SEARCH_TYPES: SearchType[] = [
   'Express Runner (15m)',
 ];
 
+
+
+
+
+
+
+
 // ==========================================
 // Sub-Components
 // ==========================================
@@ -164,6 +171,15 @@ export function SearchTypesDropdown({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
 
 function ProductCard({
   product,
@@ -267,6 +283,16 @@ function ProductCard({
   );
 }
 
+
+
+
+
+
+
+
+
+
+
 // ==========================================
 // Conversational Input Component
 // ==========================================
@@ -368,6 +394,12 @@ export function SokoAIInput({
   );
 }
 
+
+
+
+
+
+
 // ==========================================
 // Main Chat Feed Component
 // ==========================================
@@ -467,7 +499,7 @@ export function ChatFeed({
                 <div className="flex items-center justify-between gap-3 text-xs">
                   <div className="flex items-center gap-2">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#3C3147]/10 text-[#3C3147]">
-                    <img src={ccmLogo} alt="CCM Logo" height={70} width={70} />
+                    <img src={ccmLogo} alt={`...` } height={70} width={70} />
                     </div>
                     <span className="font-semibold text-slate-700">{activeSearchType}</span>
                   </div>
@@ -554,6 +586,7 @@ export function ChatFeed({
         {/* Verified Neighborhood Vendors Sidebar */}
         <SourcesPanel openSources={openSources} setOpenSources={setOpenSources} />
       </div>
+
 
       {/* Floating Soko AI Conversational Input Bar */}
       <SokoAIInput

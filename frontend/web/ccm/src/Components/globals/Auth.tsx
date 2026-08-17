@@ -81,9 +81,9 @@ export function AuthOverlay() {
          
             <img src ={ccmlogo1} height={80}  width={80}  /> 
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+          <h1 className="text-sm  font-semibold tracking-tight text-white sm:text-sm ">
             {authRoute === 'login' && 'Sign-In'}
-            {authRoute === 'signup' && 'Sign-Up'}
+            {authRoute === 'signup' && ''}
             {authRoute === 'forgot' && 'Reset your password'}
           </h1>
         </div>
@@ -123,7 +123,7 @@ export function AuthOverlay() {
           )}
 
           {/* Phone Input (Login & Signup) */}
-          {authRoute !== 'forgot' && (
+          {!!authRoute  && (
             <div className="space-y-1.5">
               <label
                 htmlFor="phone"

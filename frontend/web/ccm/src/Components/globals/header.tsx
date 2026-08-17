@@ -35,8 +35,8 @@ export function Header({
       className="
         sticky top-0 z-30
         flex h-14 w-full items-center justify-between
-        border-b border-slate-200/60
-        bg-orange-500/95
+        border-b border-[#00645B]
+        bg-orange-500  
         px-3
         backdrop-blur-sm
         sm:px-2 

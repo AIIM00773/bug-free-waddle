@@ -20,6 +20,7 @@ import {
   Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ccmLogo from '../../assets/ccmlogo1.png'
 
 export interface OrderItem {
   name: string;
@@ -170,7 +171,7 @@ export function UserOrders({ onBackToChat, onReorder }: UserOrdersProps) {
       <div className="w-full h-full bg-gray-50 text-gray-900 font-sans relative shadow-2xl  flex flex-col overflow-hidden">
         
         {/* Top Header Bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 shadow-xs">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0  shadow-xs">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -183,20 +184,16 @@ export function UserOrders({ onBackToChat, onReorder }: UserOrdersProps) {
             </button>
 
             <div className="gap-2.5 hidden md:flex items-center ">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 border border-white/20 backdrop-blur-sm shadow-xs">
-                <Sparkles className="text-white" size={18} />
-              </div>
+             <div className="">
+              <img src={ccmLogo} className="text-white"  height={70} width={70} />
+            </div>
+            
               <div className=" gap-2 flex items-center ">
-                <h1 className="text-xs font-bold text-white uppercase tracking-wider">
-                  SOKO AI
-                </h1>
-                <span className="text-white/60">•</span>
+            
                 <span className="text-xs font-semibold text-white/95">
-                  Deliveries Feed
+                 Orders
                 </span>
-                <span className="hidden sm:inline-block text-[10px] uppercase font-mono tracking-wider font-bold px-2 py-0.5 rounded-md bg-white/20 text-white border border-white/20">
-                  Live
-                </span>
+                
               </div>
             </div>
           </div>

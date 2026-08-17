@@ -21,7 +21,8 @@ import {
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import ccmlogo2 from "../../assets/ccmlogo3.png";
+import ccmLogo from '../../assets/ccmlogo1.png'
+
 
 
 export interface UserCartProps {
@@ -298,22 +299,13 @@ export function UserCart({ onBackToChat }: UserCartProps) {
               
             "
           >
-            <span className="flex min-w-0 items-center ">
-        
+         <div className="">
+              <img src={ccmLogo} className="text-white"  height={70} width={70} />
+            </div>
 
-               <img src={ccmlogo2}  height={90}  width={70}  
-                  className="
-                   shrink-0
-                  text-indigo-500
-                  transition-colors duration-150
-                  group-hover:text-indigo-600
-                  
-                "
-                strokeWidth={2}/> 
-    
-            </span>
           </button>
         </nav>
+     <p className="text-white/90 text-sm "> Shoping Cart  </p>
 
         </div>
 

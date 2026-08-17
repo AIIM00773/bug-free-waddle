@@ -54,8 +54,8 @@ export function SourcesPanel({
   if (!openSources) return null;
 
   return (
-    <div className="hidden lg:block border-l border-slate-200/80 pl-6 pt-2">
-      <div className="sticky top-6 w-full max-w-[320px] rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+    <div className="hidden lg:block border-l border-slate-200/80  pl-6 pt-2 ">
+      <div className="sticky top-6 w-full max-w-[320px] rounded-2xl border border-orange-500 bg-white p-4 shadow-sm transition-all hover:shadow-md">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2">

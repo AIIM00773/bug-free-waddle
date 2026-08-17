@@ -15,7 +15,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework import serializers
-# Explicitly import all updated backend schemas for the atomic pipeline
+
+# backend schemas for the atomic pipeline
 from ..models import  UserReview, UserAlert, UserSearches, CartGroup, SubCart, SubCartItem , UserOrderGroup, UserSubOrder, UserSubOrderItem
 
 # AUTH VALIDATION HELPERS
@@ -35,6 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         exclude = ['password', 'account_validation_code', 'is_staff', 'is_superuser']
+
 
 
 

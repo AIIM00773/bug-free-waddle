@@ -15,13 +15,16 @@ import {
   Check,
   Terminal,
   Settings,
-  Sparkles,
   Smartphone,
   Truck,
   CreditCard,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ccmLogo from '../../assets/ccmlogo1.png';
+
+// Import your custom hook (adjust the path to match your project structure)
+import { useProfile } from '../../Providers/profileContext';
 
 export interface UserSettingsProps {
   onBackToChat: () => void;
@@ -41,10 +44,7 @@ export interface SettingsState {
   language: string;
 }
 
-interface SelectOption {
-  label: string;
-  value: string;
-}
+interface SelectOption {label: string;value: string;}
 
 interface TabItem {
   id: 'notifications' | 'interface' | 'privacy';
@@ -58,29 +58,55 @@ const TABS: TabItem[] = [
   { id: 'privacy', label: 'Data & Security', icon: Shield },
 ];
 
-const LANGUAGE_OPTIONS: SelectOption[] = [
-  { label: 'English (Default)', value: 'en' },
-  { label: 'Kiswahili (Sanifu)', value: 'sw' },
-];
+
+const LANGUAGE_OPTIONS: SelectOption[] = [{ label: 'English (Default)', value: 'en' },];
+
+
+// Helper to load UI-only settings that don't exist in the DB
+const loadLocalUISettings = () => ({
+  autoScrollChat: JSON.parse(localStorage.getItem('soko_ui_autoScrollChat') ?? 'true'),
+  enterToSend: JSON.parse(localStorage.getItem('soko_ui_enterToSend') ?? 'true'),
+  highContrastChat: JSON.parse(localStorage.getItem('soko_ui_highContrastChat') ?? 'false'),
+});
+
 
 export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
+  const { user, editIdentity } = useProfile();
+
   const [activeTab, setActiveTab] = useState<TabItem['id']>('notifications');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showNotification, setShowNotification] = useState<boolean>(false);
   const [isNavMinimized, setIsNavMinimized] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Initialize state with user profile data + local UI data
   const [settings, setSettings] = useState<SettingsState>({
-    pushNotifications: true,
-    whatsappAlerts: true,
-    smsTracking: false,
-    orderDispatchAlerts: true,
-    mpesaReceiptAlerts: true,
-    runnerLocationUpdates: true,
-    autoScrollChat: true,
-    enterToSend: true,
-    highContrastChat: false,
-    language: 'en',
+    pushNotifications: user?.allow_push_notification,
+    whatsappAlerts: user?.allow_whatsApp_dispatch_alerts ,
+    smsTracking: user?.allow_sms_tracking_pings,
+    orderDispatchAlerts: user?.allow_order_dispatch_checkpoints_alerts,
+    mpesaReceiptAlerts: user?.allow_payment_receipt_alert ,
+    runnerLocationUpdates: user?.allow_location_access,
+    language: user?.preferred_language || 'en',
   });
+  
+
+  // Re-sync settings if the user object finishes loading asynchronously
+  useEffect(() => {
+    if (user) {
+      setSettings((prev) => ({
+        ...prev,
+        pushNotifications: user.allow_push_notification ?? prev.pushNotifications,
+        whatsappAlerts: user.allow_whatsApp_dispatch_alerts ?? prev.whatsappAlerts,
+        smsTracking: user.allow_sms_tracking_pings ?? prev.smsTracking,
+        orderDispatchAlerts: user.allow_order_dispatch_checkpoints_alerts ?? prev.orderDispatchAlerts,
+        mpesaReceiptAlerts: user.allow_payment_receipt_alert ?? prev.mpesaReceiptAlerts,
+        runnerLocationUpdates: user.allow_location_access ?? prev.runnerLocationUpdates,
+        language: user.preferred_language || prev.language,
+      }));
+    }
+  }, [user]);
+
 
   // Handle Escape key dismissal
   useEffect(() => {
@@ -91,27 +117,54 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onBackToChat]);
 
+
+
   const handleToggle = useCallback((key: keyof SettingsState) => {
     setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
+
   const handleSelectChange = useCallback((key: keyof SettingsState, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   }, []);
+  
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
 
     setIsSaving(true);
+    setSaveError(null);
+    
     try {
+      // 1. Save Backend Preferences via Provider
+      if (user) {
+        await editIdentity({
+          allow_push_notification: settings.pushNotifications,
+          allow_whatsApp_dispatch_alerts: settings.whatsappAlerts,
+          allow_sms_tracking_pings: settings.smsTracking,
+          allow_order_dispatch_checkpoints_alerts: settings.orderDispatchAlerts,
+          allow_payment_receipt_alert: settings.mpesaReceiptAlerts,
+          allow_location_access: settings.runnerLocationUpdates,
+          preferred_language: settings.language,
+        });
+      }
+
+      // 2. Persist UI-only settings to LocalStorage
+      localStorage.setItem('soko_ui_autoScrollChat', JSON.stringify(settings.autoScrollChat));
+      localStorage.setItem('soko_ui_enterToSend', JSON.stringify(settings.enterToSend));
+      localStorage.setItem('soko_ui_highContrastChat', JSON.stringify(settings.highContrastChat));
+
+      // 3. Trigger optional prop callback
       if (onSave) {
         await onSave(settings);
-      } else {
-        await new Promise((resolve) => setTimeout(resolve, 600));
       }
+
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
+    } catch (error: any) {
+      console.error('Failed to save settings:', error);
+      setSaveError(error.message || 'Failed to sync settings.');
     } finally {
       setIsSaving(false);
     }
@@ -123,9 +176,13 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
         'Clear local feed cache? Your active order channels, M-Pesa receipts, and runner links will remain intact.'
       )
     ) {
-      alert('Local merchant workspace optimized.');
+      alert('Local  workspace optimized.');
     }
   };
+
+
+
+  
 
   return (
     <div
@@ -137,10 +194,10 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex h-full w-full  flex-col overflow-hidden bg-slate-50 font-sans text-slate-800 shadow-2xl  sm:rounded-0  "
+        className="relative flex h-full w-full flex-col overflow-hidden bg-slate-50 font-sans text-slate-800 shadow-2xl sm:rounded-0"
       >
         {/* Top Header Bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -153,15 +210,10 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
             </button>
 
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
-                <Sparkles className="text-white" size={18} />
-              </div>
+              <img src={ccmLogo} height={70} width={70} className="text-white" alt="Logo" />
               <div>
-                <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">
-                  Soko AI
-                </h1>
                 <p className="hidden text-[11px] font-medium text-orange-100 sm:block">
-                  Merchant Workspace Preferences
+                  Settings Preferences
                 </p>
               </div>
             </div>
@@ -230,7 +282,6 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                   onClick={() => setIsNavMinimized(!isNavMinimized)}
                   className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
                   title={isNavMinimized ? 'Expand Sidebar' : 'Minimize Sidebar'}
-                  aria-label={isNavMinimized ? 'Expand Sidebar' : 'Minimize Sidebar'}
                 >
                   {isNavMinimized ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
                 </button>
@@ -267,14 +318,10 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                         <Icon
                           size={18}
                           className={`shrink-0 transition-colors ${
-                            isActive
-                              ? 'text-orange-600'
-                              : 'text-slate-400 group-hover:text-slate-700'
+                            isActive ? 'text-orange-600' : 'text-slate-400 group-hover:text-slate-700'
                           }`}
                         />
-                        {!isNavMinimized && (
-                          <span className="whitespace-nowrap">{tab.label}</span>
-                        )}
+                        {!isNavMinimized && <span className="whitespace-nowrap">{tab.label}</span>}
                       </div>
                       {isActive && !isNavMinimized && (
                         <span className="h-1.5 w-1.5 rounded-full bg-orange-600" />
@@ -285,12 +332,12 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
               </nav>
             </div>
 
-            {/* Bottom Status (When expanded) */}
+            {/* Bottom Status */}
             {!isNavMinimized && (
               <div className="m-3 rounded-xl border border-slate-200/60 bg-slate-50 p-3 text-left">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
                   <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  <span>Sync Channel: Active</span>
+                  <span>Sync Channel: {user ? 'Active' : 'Offline'}</span>
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
                   Connected to M-Pesa & WhatsApp Gateway.
@@ -332,13 +379,11 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                       <Terminal size={20} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">
-                        Session Profile
-                      </h3>
+                      <h3 className="text-sm font-semibold text-slate-900">Session Profile</h3>
                       <div className="mt-1 flex items-center gap-1.5">
                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
                         <span className="text-[11px] font-medium tracking-wider text-emerald-700 uppercase">
-                          Live Environment
+                          {user?.full_name || 'Live Environment'}
                         </span>
                       </div>
                     </div>
@@ -359,9 +404,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                         <span className="text-slate-500">WhatsApp Dispatch</span>
                         <span
                           className={`font-semibold ${
-                            settings.whatsappAlerts
-                              ? 'text-emerald-600'
-                              : 'text-slate-400'
+                            settings.whatsappAlerts ? 'text-emerald-600' : 'text-slate-400'
                           }`}
                         >
                           {settings.whatsappAlerts ? 'Active' : 'Muted'}
@@ -371,9 +414,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                         <span className="text-slate-500">Auto-Scroll Feed</span>
                         <span
                           className={`font-semibold ${
-                            settings.autoScrollChat
-                              ? 'text-emerald-600'
-                              : 'text-slate-400'
+                            settings.autoScrollChat ? 'text-emerald-600' : 'text-slate-400'
                           }`}
                         >
                           {settings.autoScrollChat ? 'Enabled' : 'Disabled'}
@@ -387,8 +428,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                       Dispatch Guarantee
                     </h4>
                     <p className="text-xs leading-relaxed text-slate-500">
-                      Changes apply across your active merchant session and immediate
-                      runner dispatch queues.
+                      Changes apply across your active merchant session and immediate runner dispatch queues.
                     </p>
                   </div>
                 </div>
@@ -396,6 +436,13 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                 {/* RIGHT COLUMN: Settings Forms */}
                 <div className="space-y-6 lg:col-span-8">
                   <form onSubmit={handleSaveSettings}>
+                    {/* Error Banner */}
+                    {saveError && (
+                      <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs font-semibold text-rose-700">
+                        {saveError}
+                      </div>
+                    )}
+
                     <AnimatePresence mode="wait">
                       {activeTab === 'notifications' && (
                         <motion.div
@@ -407,9 +454,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                           className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
                         >
                           <div className="border-b border-slate-100 pb-4">
-                            <h3 className="text-sm font-semibold text-slate-900">
-                              Alerts & Dispatch Channels
-                            </h3>
+                            <h3 className="text-sm font-semibold text-slate-900">Alerts & Dispatch Channels</h3>
                             <p className="mt-0.5 text-xs text-slate-500">
                               Configure how runner tracking, orders, and payment signals reach your devices.
                             </p>
@@ -472,9 +517,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                           className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
                         >
                           <div className="border-b border-slate-100 pb-4">
-                            <h3 className="text-sm font-semibold text-slate-900">
-                              Feed Mechanics
-                            </h3>
+                            <h3 className="text-sm font-semibold text-slate-900">Feed Mechanics</h3>
                             <p className="mt-0.5 text-xs text-slate-500">
                               Customize display localization and live chat interaction behaviors.
                             </p>
@@ -515,9 +558,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                           className="space-y-6 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs sm:p-6"
                         >
                           <div className="border-b border-slate-100 pb-4">
-                            <h3 className="text-sm font-semibold text-slate-900">
-                              Data & Workspace Security
-                            </h3>
+                            <h3 className="text-sm font-semibold text-slate-900">Data & Workspace Security</h3>
                             <p className="mt-0.5 text-xs text-slate-500">
                               Manage local storage footprints and encrypted communication payloads.
                             </p>
@@ -529,9 +570,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                               End-to-End Transport Encryption
                             </h4>
                             <p className="text-xs leading-relaxed text-slate-600">
-                              All order tags, buyer phone numbers, and M-Pesa verification tokens
-                              are encrypted in transit. Clearing local application cache improves
-                              browser performance without interrupting active runner routes.
+                              All order tags, buyer phone numbers, and M-Pesa verification tokens are encrypted in transit. Clearing local application cache improves browser performance without interrupting active runner routes.
                             </p>
                           </div>
 
@@ -571,31 +610,18 @@ interface SettingsToggleProps {
   icon?: React.ReactNode;
 }
 
-function SettingsToggle({
-  title,
-  description,
-  checked,
-  onChange,
-  icon,
-}: SettingsToggleProps) {
+function SettingsToggle({ title, description, checked, onChange, icon }: SettingsToggleProps) {
   return (
     <label className="flex cursor-pointer select-none items-center justify-between rounded-xl border border-slate-200/80 bg-slate-50/60 p-4 transition-all hover:border-slate-300 hover:bg-white focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-orange-500/20">
       <div className="flex items-start gap-3 pr-4">
         {icon && <div className="mt-0.5 shrink-0">{icon}</div>}
         <div>
           <h4 className="text-xs font-semibold text-slate-900">{title}</h4>
-          <p className="mt-0.5 text-xs leading-normal text-slate-500">
-            {description}
-          </p>
+          <p className="mt-0.5 text-xs leading-normal text-slate-500">{description}</p>
         </div>
       </div>
 
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={onChange}
-        className="sr-only"
-      />
+      <input type="checkbox" checked={checked} onChange={onChange} className="sr-only" />
 
       <div
         className={`h-6 w-10 shrink-0 rounded-full p-0.5 transition-colors duration-200 ${
@@ -620,13 +646,7 @@ interface CleanSelectProps {
   icon?: React.ReactNode;
 }
 
-function CleanSelect({
-  label,
-  value,
-  onChange,
-  options,
-  icon,
-}: CleanSelectProps) {
+function CleanSelect({ label, value, onChange, options, icon }: CleanSelectProps) {
   return (
     <div className="relative flex w-full flex-col gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/60 p-3.5 transition-all focus-within:border-slate-400 focus-within:bg-white">
       <label className="flex items-center gap-1.5 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
@@ -645,10 +665,7 @@ function CleanSelect({
             </option>
           ))}
         </select>
-        <ChevronDown
-          size={14}
-          className="pointer-events-none absolute right-0 text-slate-400"
-        />
+        <ChevronDown size={14} className="pointer-events-none absolute right-0 text-slate-400" />
       </div>
     </div>
   );

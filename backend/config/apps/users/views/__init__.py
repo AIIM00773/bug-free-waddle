@@ -5,6 +5,7 @@ from .login import UserLoginView
 from .registration import   UserRegistrationView
 from .validate_auth import ValidateAuth
 from .logout import  UserLogoutView
+from .recover import RecoverPasswordView
 
 
 

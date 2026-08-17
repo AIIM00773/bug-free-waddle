@@ -17,9 +17,7 @@ import { processQuery } from '../utils/queryProcessor';
 
 export const SEARCH_TYPES = [
   'Direct Search',
-  'Intelligent Search',
-  'Web Search',
-  'Local Search',
+  'Intelligent Search'
 ] as const;
 
 

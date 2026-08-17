@@ -52,33 +52,57 @@ class UserProfileIdentityUpdateView(APIView):
         user = request.user
         data = request.data
         
-        # Extract and clean inputs
-        email = data.get("email", "").strip().lower()
-        national_id = data.get("national_id_number", "").strip()
-        dob = data.get("dob", "").strip()
-        gender = data.get("gender", "").strip().lower()
+        print("Incoming patch data:", data)
 
-        print(data)
+        # Profile Edit Update logic
+        if "email" in data and data["email"] is not None:
+            email = data["email"].strip().lower()
+            if email:
+                user.email = email
+                
+        if "national_id_number" in data and data["national_id_number"] is not None:
+            national_id = data["national_id_number"].strip()
+            if national_id:
+                user.national_id_number = national_id
 
-        # Update logic
-        if email:
-            user.email = email
+        if "dob" in data and data["dob"] is not None and not user.date_of_birth:
+            dob = data["dob"].strip()
+            if dob:
+                user.date_of_birth = dob
+
+        if "gender" in data and data["gender"] is not None and not user.gender:
+            gender = data["gender"].strip().lower()
+            if gender:
+                user.gender = gender
+
+        # Settings Edit Update logic (Key-presence check allows True or False updates)
+        if "allow_push_notification" in data:
+            user.allow_push_notification = bool(data["allow_push_notification"])
             
-        if national_id:
-            user.national_id_number = national_id
+        if "allow_whatsApp_dispatch_alerts" in data:
+            user.allow_whatsApp_dispatch_alerts = bool(data["allow_whatsApp_dispatch_alerts"])
 
-        if dob and not user.date_of_birth:
-            user.date_of_birth = dob
+        if "allow_sms_tracking_pings" in data:
+            user.allow_sms_tracking_pings = bool(data["allow_sms_tracking_pings"])
 
-        if gender and not user.gender:
-            user.gender = gender
+        if "allow_order_dispatch_checkpoints_alerts" in data:
+            user.allow_order_dispatch_checkpoints_alerts = bool(data["allow_order_dispatch_checkpoints_alerts"])
+
+        if "allow_payment_receipt_alert" in data:
+            user.allow_payment_receipt_alert = bool(data["allow_payment_receipt_alert"])
+
+        if "allow_location_access" in data:
+            user.allow_location_access = bool(data["allow_location_access"])
+
+        if "preferred_language" in data and data["preferred_language"] is not None:
+            preferred_language = str(data["preferred_language"]).strip()
+            if preferred_language:
+                user.preferred_language = preferred_language
 
         user.save()
         
         serializer = UserSerializer(user)
         return Response({"user": serializer.data}, status=status.HTTP_200_OK)
-
-
 
 
 

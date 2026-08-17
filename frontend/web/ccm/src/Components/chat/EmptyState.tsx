@@ -9,6 +9,7 @@ import {
   Search,
   ShoppingBag,
   Store,
+  ChevronRight
 } from 'lucide-react';
 
 import { useSearch, SEARCH_TYPES } from '../../Providers/SearchContext';
@@ -84,6 +85,8 @@ const DEFAULT_CARDS: CardItem[] = [
 // ============================================================
 // Search Types Dropdown
 // ============================================================
+
+
 
 export function SearchTypesDropdown({
   searchTypes = SEARCH_TYPES,
@@ -439,7 +442,7 @@ if (showWelcomeBanner ) {
           aria-label="Close welcome screen"
           className="
             absolute
-            right-4
+            left-4
             top-4
             z-20
             flex
@@ -486,14 +489,17 @@ if (showWelcomeBanner ) {
         {/* ─────────────────────────────────────────
             Skip / Continue
         ───────────────────────────────────────── */}
-        <button
-          type="button"
-          onClick={() => handleCloseWelcome()}
-          className="
+        <button 
+            type="button"  
+             onClick={() => handleCloseWelcome()}
+         className="
             absolute
-            bottom-5
-            left-1/2
+            right-0 
+            top-4
             z-20
+            h-fit 
+            
+            
             -translate-x-1/2
             rounded-full
             border
@@ -516,10 +522,17 @@ if (showWelcomeBanner ) {
             focus-visible:ring-2
             focus-visible:ring-slate-300
             sm:bottom-6
-          "
+            flex flex-row items-center gap-1 
+          ">
+        <span
+    
         >
-          Continue to marketplace
+          Continue 
+        </span>
+         <ChevronRight color={"white"} size={13}/> 
         </button>
+
+
       </div>
     </div>
   );

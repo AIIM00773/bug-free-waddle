@@ -18,6 +18,8 @@ import {
   Sparkles 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ccmLogo from '../../assets/ccmlogo1.png'
+
 
 export function UserCheckout({ onBackToChat }) {
   const [activeTab, setActiveTab] = useState('payment');
@@ -127,16 +129,14 @@ export function UserCheckout({ onBackToChat }) {
       <div className="w-full h-full bg-gray-50 text-gray-900 font-sans relative shadow-2xl  flex flex-col overflow-hidden">
 
       {/* UNIFIED TOP HEADER BAR */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 z-20 shadow-sm">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0  z-20 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/15 backdrop-blur-sm">
-              <Sparkles className="text-white" size={18} />
+            <div className="">
+              <img src={ccmLogo} className="text-white"  height={70} width={70} />
             </div>
             <div>
-              <h1 className="text-base font-bold tracking-tight text-white sm:text-lg leading-tight">
-                Soko AI
-              </h1>
+     
               <p className="text-[11px] font-medium text-orange-100 leading-none mt-0.5">
                Checkout and Transactions  
               </p>
