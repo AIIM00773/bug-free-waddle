@@ -3,6 +3,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  Package,
   type LucideIcon,
 } from "lucide-react";
 
@@ -15,7 +16,7 @@ export interface TabItem {
   count?: number;
 }
 
-export interface CartSidebarProps {
+export interface OrdersSidebarProps {
   onBackToChat: () => void;
   activeTab: string;
   setActiveTab: (tabId: string) => void;
@@ -24,15 +25,16 @@ export interface CartSidebarProps {
   tabs: TabItem[];
 }
 
-export function CartSidebar({
+export function OrdersSidebar({
   activeTab,
   setActiveTab,
   isNavMinimized,
   setIsNavMinimized,
   tabs,
-}: CartSidebarProps) {
+}: OrdersSidebarProps) {
   return (
     <aside
+      aria-label="Order filters"
       className={[
         "hidden shrink-0 flex-col border-r border-slate-200 bg-white",
         "transition-all duration-300 md:flex",
@@ -45,9 +47,8 @@ export function CartSidebar({
           {!isNavMinimized ? (
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex shrink-0 items-center justify-center rounded-xl border border-orange-100 bg-orange-50 p-1 text-orange-600">
-                <img src={ccmLogo} alt="ccm" className="h-10 w-10 object-contain" />
+                <img src={ccmLogo} alt="ccm logo" className="h-10 w-10 object-contain" />
               </div>
-         
             </div>
           ) : (
             <div className="mx-auto flex items-center justify-center">
@@ -81,11 +82,11 @@ export function CartSidebar({
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3" aria-label="Basket navigation">
+        {/* Navigation / Filters */}
+        <nav className="flex-1 p-3" aria-label="Order filters" role="tablist">
           {!isNavMinimized && (
             <p className="mb-2 px-3 py-2 text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">
-              Basket
+              Orders Portal
             </p>
           )}
 
@@ -93,10 +94,13 @@ export function CartSidebar({
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const hasCount = typeof tab.count === "number" && tab.count > 0;
 
               return (
                 <button
                   key={tab.id}
+                  role="tab"
+                  aria-selected={isActive}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
                   title={isNavMinimized ? tab.label : undefined}
@@ -129,7 +133,7 @@ export function CartSidebar({
                     )}
                   </span>
 
-                  {!isNavMinimized && Boolean(tab.count) && (
+                  {!isNavMinimized && hasCount && (
                     <span
                       className={[
                         "min-w-5 rounded-md px-1.5 py-0.5 text-center",
@@ -148,17 +152,20 @@ export function CartSidebar({
           </div>
         </nav>
 
-        {/* Smart routing information */}
+        {/* Info card matching the cart sidebar style */}
         {!isNavMinimized && (
           <div className="m-3 rounded-2xl border border-orange-100 bg-gradient-to-br from-orange-50 to-amber-50/40 p-4">
             <div className="mb-2 flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm">
+                <Package size={13} strokeWidth={2} />
+              </div>
               <span className="text-[10px] font-bold text-orange-900">
-                Smart Routing
+                Live Tracking
               </span>
             </div>
 
             <p className="text-[10px] leading-relaxed text-orange-900/60">
-              Your basket is automatically grouped by nearby vendors for efficient local delivery.
+              Monitor your regional fulfillments and live shipping updates in real-time.
             </p>
           </div>
         )}

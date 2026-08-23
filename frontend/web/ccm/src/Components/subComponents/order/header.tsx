@@ -1,21 +1,19 @@
+
+
 import React from "react";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, Search  } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ccmLogo from "../../../assets/ccmlogo1.png";
 
-export interface CartHeaderProps {
-  onBackToChat: () => void;
-  handleReload: () => void;
-  notification: string | null;
-}
 
-export function CartHeader({
+
+export function OrdersHeader({
   onBackToChat,
   handleReload,
   notification,
   searchQuery,
   setSearchQuery
-}: CartHeaderProps) {
+}:any) {
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between bg-orange-950/90 px-3 md:bg-white sm:px-2 lg:px-3">
       {/* Left side: Mobile back button, logo / app name, and title */}
@@ -29,7 +27,7 @@ export function CartHeader({
         >
           <nav className="flex flex-row items-center gap-1">
             <ArrowLeft size={17} />
-            <span className="text-xs">Exit Cart</span>
+            <span className="text-xs">Exit Orders</span>
           </nav>
         </button>
 
@@ -47,9 +45,10 @@ export function CartHeader({
 
         {/* Desktop Header Title */}
         <p className="hidden font-bold text-orange-500/90 md:inline text-sm">
-          Shopping Basket
+          Orders Management
         </p>
       </div>
+
 
       {/* Right side: Notifications & Close Action */}
       <div className="relative flex items-center gap-2">
