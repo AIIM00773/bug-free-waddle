@@ -16,7 +16,6 @@ import {SearchProvider} from "./Providers/SearchContext";
 
 import{SidebarProvider} from "./Providers/ui/sidebar";
 import {SettingsProvider} from "./Providers/ui/settings";
-import {ShoppingModeProvider} from "./Providers/ui/ShoppingModeManager.tsx";
 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -24,7 +23,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
   <SidebarProvider>
   <SettingsProvider>
-  <ShoppingModeProvider> 
     <AuthProvider>
     <SearchProvider>
     <CartProvider>
@@ -34,7 +32,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </CartProvider> 
     </SearchProvider> 
     </AuthProvider>
-    </ShoppingModeProvider> 
     </SettingsProvider>
   </SidebarProvider>
 

@@ -171,7 +171,7 @@ export function UserOrders({ onBackToChat, onReorder }: UserOrdersProps) {
       <div className="w-full h-full bg-gray-50 text-gray-900 font-sans relative shadow-2xl  flex flex-col overflow-hidden">
         
         {/* Top Header Bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0  shadow-xs">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-white to-amber-50 px-4 sm:px-6 sm:pl-0  shadow-xs">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -190,7 +190,7 @@ export function UserOrders({ onBackToChat, onReorder }: UserOrdersProps) {
             
               <div className=" gap-2 flex items-center ">
             
-                <span className="text-xs font-semibold text-white/95">
+                <span className="text-xs font-semibold text-orange-500/95">
                  Orders
                 </span>
                 
@@ -199,7 +199,7 @@ export function UserOrders({ onBackToChat, onReorder }: UserOrdersProps) {
           </div>
 
           {/* Top Right Actions & Search */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-amber-300  to-amber-500 p-[2px] rounded-2xl  ">
             <AnimatePresence>
               {notification && (
                 <motion.span

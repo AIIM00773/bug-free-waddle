@@ -1,10 +1,11 @@
+
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // Context Providers
 import { useAuth } from "./Providers/profileContext";
 import { useCart } from './Providers/CartContext';
 import { useSearch } from './Providers/SearchContext';
-import { useShoppingMode } from './Providers/ui/ShoppingModeManager';
 
 // Global Layout Components
 import { Sidebar } from './Components/globals/Sidebar';
@@ -17,7 +18,9 @@ import { UserOrders } from './Components/globals/Orders';
 import { UserCheckout } from './Components/globals/checkout';
 // import { MpesaModal } from './Components/globals/MpesaModal';
 import { AuthOverlay } from './Components/globals/Auth';
-import { HomeNotificationToast } from './Components/globals/homeNotificationToast';
+
+
+import {HomeNotificationToast} from "./Components/toasts/home_notification_toast";
 import { LoadingScreen } from './Components/globals/LoadingScreen';
 
 // Chat & Hyper-Local E-Commerce Components
@@ -73,7 +76,6 @@ function useModalBackHandler(isOpen: boolean, onClose: () => void) {
 // ==========================================
 export default function App() {
   // Shopping mode UI Control Provider
-  const { ShoppingMode, setShoppingMode, ModeLoading } = useShoppingMode();
 
   const {
     isAuthenticated,
@@ -108,6 +110,7 @@ export default function App() {
 
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [ShoppingMode,setShoppingMode] = useState("")
 
   // Persistence Effects
   useEffect(() => { sessionStorage.setItem('soko_isProfileOpen', String(isProfileOpen)); }, [isProfileOpen]);
@@ -145,7 +148,7 @@ export default function App() {
   useModalBackHandler(isCartOpen, handleCloseCart);
   useModalBackHandler(isCheckoutOpen, handleCloseCheckout);
 
-  if (ModeLoading || isLoading) {
+  if (isLoading) {
     return (
       <LoadingScreen
         message="Connecting to Neighborhood Merchants..."
@@ -154,7 +157,7 @@ export default function App() {
     );
   }
 
-  const isNavigationHidden = ShoppingMode !== "AI mode";
+  const isNavigationHidden = false 
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-slate-50 font-sans text-slate-800 antialiased selection:bg-slate-900 selection:text-white">

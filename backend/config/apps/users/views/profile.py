@@ -75,6 +75,8 @@ class UserProfileIdentityUpdateView(APIView):
             if gender:
                 user.gender = gender
 
+                
+
         # Settings Edit Update logic (Key-presence check allows True or False updates)
         if "allow_push_notification" in data:
             user.allow_push_notification = bool(data["allow_push_notification"])

@@ -129,7 +129,7 @@ export function UserCheckout({ onBackToChat }) {
       <div className="w-full h-full bg-gray-50 text-gray-900 font-sans relative shadow-2xl  flex flex-col overflow-hidden">
 
       {/* UNIFIED TOP HEADER BAR */}
-      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0  z-20 shadow-sm">
+      <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-white to-amber-500 px-4 sm:px-6 sm:pl-0  z-20 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2.5">
             <div className="">
@@ -137,7 +137,7 @@ export function UserCheckout({ onBackToChat }) {
             </div>
             <div>
      
-              <p className="text-[11px] font-medium text-orange-100 leading-none mt-0.5">
+              <p className="text-[11px] font-medium text-orange-500 leading-none mt-0.5">
                Checkout and Transactions  
               </p>
             </div>

@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import { useProfile } from '../../Providers/profileContext';
+import { useProfile } from '../../../Providers/profileContext';
 
 interface ProfileOverviewProps {
   activeTab: string | null;

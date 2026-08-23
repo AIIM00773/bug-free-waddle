@@ -13,17 +13,20 @@ import { useCart } from '../../Providers/CartContext';
 import { useProfile } from '../../Providers/profileContext';
 import { Counties } from '../../../db/counties';
 
-import { ProfileLoadingAndNoAuth } from '../profileInpageComponents/ProfileLoadingAndNoAuth';
-import { ProfileHeader } from '../profileInpageComponents/ProfileHeader';
-import { ProfileAside } from '../profileInpageComponents/genralSidebar';
-import { ProfileOverview } from '../profileInpageComponents/profileOverview';
-import { FloatingSaveBar } from '../profileInpageComponents/floatingSaveBar';
+import { ProfileLoadingAndNoAuth } from '../subComponents/profile/ProfileLoadingAndNoAuth';
+import { ProfileHeader } from '../subComponents/profile/ProfileHeader';
+import { ProfileAside } from '../subComponents/profile/genralSidebar';
+import { ProfileOverview } from '../subComponents/profile/profileOverview';
+import { FloatingSaveBar } from '../subComponents/profile/floatingSaveBar';
+
+
 
 import {
   CleanInput,
   CleanSelect,
   ChangeButton,
-} from '../profileInpageComponents/cleanSubComponents';
+} from '../subComponents/profile/cleanSubComponents';
+
 
 // Helper function to safely extract default user values
 const getDefaultProfile = (userData) => ({
@@ -46,7 +49,7 @@ const getDefaultProfile = (userData) => ({
 });
 
 export function UserProfile({ onBackToChat }) {
-  const { mpesaPhone, setMpesaPhone } = useCart();
+  const { mpesaPhone, setMpesaPhoneNumber } = useCart();
   const { isAuthenticated, user, isLoading, editIdentity, editLogistics, logout } = useProfile();
 
   const [activeTab, setActiveTab] = useState('identity');
@@ -68,9 +71,9 @@ export function UserProfile({ onBackToChat }) {
   // 2. Safely sync M-Pesa phone separately
   useEffect(() => {
     if (user?.phone && !mpesaPhone) {
-      setMpesaPhone(user.phone);
+      setMpesaPhoneNumber(user.phone);
     }
-  }, [user?.phone, mpesaPhone, setMpesaPhone]);
+  }, [user?.phone, mpesaPhone, setMpesaPhoneNumber]);
 
   // Memoized derived properties
   const tabs = useMemo(() => [

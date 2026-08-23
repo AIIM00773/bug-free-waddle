@@ -37,7 +37,7 @@ export interface SettingsState {
   smsTracking: boolean;
   orderDispatchAlerts: boolean;
   mpesaReceiptAlerts: boolean;
-  runnerLocationUpdates: boolean;
+  LocationAccess: boolean;
   autoScrollChat: boolean;
   enterToSend: boolean;
   highContrastChat: boolean;
@@ -55,7 +55,7 @@ interface TabItem {
 const TABS: TabItem[] = [
   { id: 'notifications', label: 'Alerts & Channels', icon: Bell },
   { id: 'interface', label: 'Feed Mechanics', icon: MessageSquare },
-  { id: 'privacy', label: 'Data & Security', icon: Shield },
+  { id: 'privacy', label: 'Data & Security', icon: Shield }
 ];
 
 
@@ -86,7 +86,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
     smsTracking: user?.allow_sms_tracking_pings,
     orderDispatchAlerts: user?.allow_order_dispatch_checkpoints_alerts,
     mpesaReceiptAlerts: user?.allow_payment_receipt_alert ,
-    runnerLocationUpdates: user?.allow_location_access,
+    LocationAccess: user?.allow_location_access,
     language: user?.preferred_language || 'en',
   });
   
@@ -101,7 +101,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
         smsTracking: user.allow_sms_tracking_pings ?? prev.smsTracking,
         orderDispatchAlerts: user.allow_order_dispatch_checkpoints_alerts ?? prev.orderDispatchAlerts,
         mpesaReceiptAlerts: user.allow_payment_receipt_alert ?? prev.mpesaReceiptAlerts,
-        runnerLocationUpdates: user.allow_location_access ?? prev.runnerLocationUpdates,
+        LocationAccess: user.allow_location_access ?? prev.LocationAccess,
         language: user.preferred_language || prev.language,
       }));
     }
@@ -145,7 +145,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
           allow_sms_tracking_pings: settings.smsTracking,
           allow_order_dispatch_checkpoints_alerts: settings.orderDispatchAlerts,
           allow_payment_receipt_alert: settings.mpesaReceiptAlerts,
-          allow_location_access: settings.runnerLocationUpdates,
+          allow_location_access: settings.LocationAccess,
           preferred_language: settings.language,
         });
       }
@@ -197,7 +197,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
         className="relative flex h-full w-full flex-col overflow-hidden bg-slate-50 font-sans text-slate-800 shadow-2xl sm:rounded-0"
       >
         {/* Top Header Bar */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-white to-amber-500 px-4 sm:px-6 sm:pl-0">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -212,7 +212,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
             <div className="flex items-center gap-2.5">
               <img src={ccmLogo} height={70} width={70} className="text-white" alt="Logo" />
               <div>
-                <p className="hidden text-[11px] font-medium text-orange-100 sm:block">
+                <p className="hidden text-[11px] font-medium text-orange-500 sm:block">
                   Settings Preferences
                 </p>
               </div>
@@ -461,6 +461,16 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                           </div>
 
                           <div className="space-y-3">
+
+                           <SettingsToggle
+                              title="Location access"
+                              description="Allow access to location for acurate surgestions  and efficient Delivery "
+                              checked={settings.LocationAccess}
+                              onChange={() => handleToggle('LocationAccess')}
+                              icon={<Smartphone size={16} className="text-emerald-600" />}
+                            />
+
+                            
                             <SettingsToggle
                               title="WhatsApp Dispatch Alerts"
                               description="Receive runner map links and live order updates directly on your connected line"
@@ -468,6 +478,7 @@ export function UserSettings({ onBackToChat, onSave }: UserSettingsProps) {
                               onChange={() => handleToggle('whatsappAlerts')}
                               icon={<Smartphone size={16} className="text-emerald-600" />}
                             />
+                            
                             <SettingsToggle
                               title="In-App Push Notifications"
                               description="Real-time status banners inside the active merchant browser viewport"

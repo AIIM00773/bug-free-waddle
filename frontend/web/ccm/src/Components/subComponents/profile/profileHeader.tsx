@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import ccmLogo from '../../assets/ccmlogo1.png';
+import ccmLogo from '../../../assets/ccmlogo1.png';
 
 export  function ProfileHeader({
   onBackToChat,
@@ -11,7 +11,7 @@ export  function ProfileHeader({
   handleReload: () => void;
 }) {
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-orange-500 to-amber-500 px-4 sm:px-6 sm:pl-0 z-20 shadow-sm">
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-orange-500/20 bg-gradient-to-r from-white to-amber-500 px-4 sm:px-6 sm:pl-0 z-20 shadow-sm">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2.5">
           <nav className="flex min-w-0 items-center">
@@ -33,8 +33,8 @@ export  function ProfileHeader({
             </button>
           </nav>
           <div>
-            <p className="text-[11px] font-medium text-orange-100 leading-none mt-0.5">
-              Profile & Account Settings
+            <p className="text-[11px] font-medium text-orange-500 leading-none mt-0.5">
+              Profile 
             </p>
           </div>
         </div>
